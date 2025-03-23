@@ -18,6 +18,16 @@ NeuroVision tackles the global burden of brain tumors by providing accessible, A
 
 By reducing diagnostic delays, improving surgical outcomes, and enhancing survival predictions, NeuroVision aims to save lives and optimize healthcare delivery worldwide.
 
+![image](https://github.com/user-attachments/assets/8ac37713-78b4-407a-9aea-369be0c56810)
+![image](https://github.com/user-attachments/assets/5aee3bb4-497e-4cc1-bd37-19c16e1ab3d5)
+![image](https://github.com/user-attachments/assets/dd2caaae-3668-45a1-9ea6-b2de573d4d8f)
+![image](https://github.com/user-attachments/assets/70537c30-1ece-4be0-adc6-8906aefc9bb0)
+![image](https://github.com/user-attachments/assets/53de2aba-44c0-4608-afe3-73d63e479cd7)
+![image](https://github.com/user-attachments/assets/b1a75fc5-a1d5-4453-b9ef-32dab2749d63)
+![WhatsApp Image 2025-03-23 at 10 57 33_14f62e47](https://github.com/user-attachments/assets/8ad61586-f9b0-4522-9c41-896df6f6c687)
+![WhatsApp Image 2025-03-23 at 10 57 33_04d9aeda](https://github.com/user-attachments/assets/6410aafd-de58-404a-83a4-8f3b325e6a1d)
+![WhatsApp Image 2025-03-23 at 10 57 34_161549ec](https://github.com/user-attachments/assets/981142f0-65c3-4dbf-a92f-ea262f6559b9)
+
 ---
 
 ## 🔍 Problem Space
