@@ -1,6 +1,12 @@
 # NeuroVision: AI-Powered Brain Tumor Diagnosis & Treatment Platform
 
-![NeuroVision Logo](https://via.placeholder.com/150.png?text=NeuroVision) <!-- Replace with actual logo URL -->
+![image](https://github.com/user-attachments/assets/599f52ee-be57-47d6-b74f-3968d2aeac5e)
+
+
+
+
+
+
 
 **Enhancing Healthcare with Intelligent Imaging**
 
