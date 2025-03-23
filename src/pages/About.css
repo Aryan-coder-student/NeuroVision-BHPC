@@ -1,0 +1,350 @@
+<<<<<<< HEAD
+/* pages/About.css */
+/* Add to your About.css file */
+
+.hero-section {
+    margin-bottom: 3rem;
+}
+
+
+
+.section-with-image {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin: 1.5rem;
+}
+
+.section-content {
+    flex: 1;
+    margin: 0.5px 0.5px;
+}
+
+.section-image {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.image-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.grid-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.grid-image:hover {
+    transform: scale(1.05);
+}
+
+.image-caption {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .section-with-image {
+        flex-direction: column;
+    }
+
+    .section-image {
+        width: 300px;
+        height: 300px;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+.about-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    color: #333;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+}
+
+.about-content {
+    background: rgb(255, 253, 253);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.about-title {
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.about-section {
+    margin-bottom: 3rem;
+}
+
+.about-section h2 {
+    font-size: 1.8rem;
+    color: #2a2a2a;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.about-section h3 {
+    font-size: 1.4rem;
+    color: #3a3a3a;
+    margin: 1.5rem 0 1rem;
+    font-weight: 600;
+}
+
+.about-section h4 {
+    font-size: 1.2rem;
+    color: #4a4a4a;
+    margin: 1rem 0;
+    font-weight: 500;
+}
+
+.about-section p {
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    color: #4a4a4a;
+}
+
+.about-section ul {
+    list-style-type: none;
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.about-section ul li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.about-section ul li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .about-container {
+        padding: 1rem;
+    }
+
+    .about-title {
+        font-size: 2rem;
+    }
+
+    .about-section h2 {
+        font-size: 1.6rem;
+    }
+
+    .about-section h3 {
+        font-size: 1.3rem;
+    }
+
+    .about-section p {
+        font-size: 1rem;
+    }
+=======
+/* pages/About.css */
+/* Add to your About.css file */
+
+.hero-section {
+    margin-bottom: 3rem;
+}
+
+
+
+.section-with-image {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin: 1.5rem;
+}
+
+.section-content {
+    flex: 1;
+    margin: 0.5px 0.5px;
+}
+
+.section-image {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.image-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.grid-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.grid-image:hover {
+    transform: scale(1.05);
+}
+
+.image-caption {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .section-with-image {
+        flex-direction: column;
+    }
+
+    .section-image {
+        width: 300px;
+        height: 300px;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+.about-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    color: #333;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+}
+
+.about-content {
+    background: rgb(255, 253, 253);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.about-title {
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.about-section {
+    margin-bottom: 3rem;
+}
+
+.about-section h2 {
+    font-size: 1.8rem;
+    color: #2a2a2a;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.about-section h3 {
+    font-size: 1.4rem;
+    color: #3a3a3a;
+    margin: 1.5rem 0 1rem;
+    font-weight: 600;
+}
+
+.about-section h4 {
+    font-size: 1.2rem;
+    color: #4a4a4a;
+    margin: 1rem 0;
+    font-weight: 500;
+}
+
+.about-section p {
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    color: #4a4a4a;
+}
+
+.about-section ul {
+    list-style-type: none;
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.about-section ul li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.about-section ul li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .about-container {
+        padding: 1rem;
+    }
+
+    .about-title {
+        font-size: 2rem;
+    }
+
+    .about-section h2 {
+        font-size: 1.6rem;
+    }
+
+    .about-section h3 {
+        font-size: 1.3rem;
+    }
+
+    .about-section p {
+        font-size: 1rem;
+    }
+>>>>>>> 0de1c88 (Updated project files)
+}
