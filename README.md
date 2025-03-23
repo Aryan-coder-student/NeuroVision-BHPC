@@ -184,6 +184,42 @@ See `docs/api.md` for detailed API documentation.
 
 ---
 
+## 🧪 NeuroVision BHPC: 3D Brain Tumor Segmentation
+
+*High-Performance Computing for Precision Diagnostics*
+
+The NeuroVision BHPC (Brain High-Performance Computing) project, hosted at [github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain](https://github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain), is a specialized implementation of the NeuroVision platform. It leverages high-performance computing (HPC) to enhance 3D brain tumor segmentation, delivering faster and more accurate results for clinical applications. Developed by Aryan-coder-student, this iteration focuses on optimizing AI models for real-time tumor analysis, making it a powerful tool for researchers, developers, and healthcare professionals.
+
+---
+
+### 🎯 Key Features
+
+- *HPC-Optimized 3D Segmentation*: Utilizes advanced computational techniques to process complex brain imaging data at scale, reducing processing time for 3D tumor segmentation.
+- *Enhanced Precision*: Fine-tuned AI models for improved boundary detection and tumor characterization, critical for surgical planning.
+- *Open-Source Development*: Freely available on GitHub, encouraging collaboration and innovation within the medical AI community.
+- *Scalable Architecture*: Designed to handle large datasets, making it suitable for both small clinics and large research institutions.
+
+---
+
+### 🔧 Technical Highlights
+
+The NeuroVision BHPC project builds on the core NeuroVision platform with specific enhancements:
+
+- *High-Performance Computing Integration*: Leverages multi-core CPUs and GPU acceleration for rapid inference, cutting segmentation times from minutes to seconds.
+- *Custom AI Models*: Includes pre-trained models optimized for 3D brain tumor segmentation, with support for transfer learning on new datasets.
+- *Data Formats*: Compatible with standard medical imaging formats (DICOM, NIfTI), ensuring seamless integration into existing workflows.
+- *Modular Design*: Allows developers to extend functionality, such as adding new visualization tools or integrating with other AI pipelines.
+
+---
+
+### 🌐 Use Cases
+
+- *Clinical Research*: Enables rapid prototyping and validation of tumor segmentation algorithms on large datasets.
+- *Real-Time Diagnostics*: Supports near-instant tumor analysis in time-sensitive surgical settings.
+- *Educational Tool*: Provides students and developers with a hands-on platform to explore AI in medical imaging.
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions from the community! To contribute:
