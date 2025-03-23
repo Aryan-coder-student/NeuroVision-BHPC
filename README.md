@@ -74,6 +74,9 @@ NeuroVision’s impact is demonstrated through significant improvements in key m
 | Surgical Completeness   | 55%       | 88%      | +33% (60% gain)   | 90%          |
 | Survival Prediction     | 75%       | 83%      | +8% (10.7% gain)  | 85%          |
 
+
+![Screenshot 2025-03-23 111042](https://github.com/user-attachments/assets/19ab5bbd-7928-40d1-8aa0-aafa6d35bf07)
+
 NeuroVision nearly closes the gap between India and the USA, standardizing high-quality care across diverse healthcare systems.
 
 ---
