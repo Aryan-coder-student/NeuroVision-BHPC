@@ -220,6 +220,42 @@ The NeuroVision BHPC project builds on the core NeuroVision platform with specif
 
 ---
 
+## 🤖 NeuroVision BHPC-VQA: AI-Powered Visual Question Answering for Brain Imaging
+
+*Empowering Medical Insights with High-Performance VQA*
+
+The NeuroVision BHPC-VQA (Brain High-Performance Computing - Visual Question Answering) project, hosted at [github.com/Aryan-coder-student/NeuroVision-BHPC-VQA](https://github.com/Aryan-coder-student/NeuroVision-BHPC-VQA), is an advanced extension of the NeuroVision platform. Developed by Aryan-coder-student, this iteration combines high-performance computing with an AI-driven Visual Question Answering (VQA) system tailored for brain tumor imaging. It enables healthcare professionals and researchers to interactively query medical scans, providing instant, precise answers to complex questions about brain tumors.
+
+---
+
+### 🎯 Key Features
+
+- *HPC-Enhanced VQA*: Leverages high-performance computing to process and analyze brain imaging data rapidly, delivering real-time answers to medical queries.
+- *Interactive Medical Chatbot*: Allows users to ask specific questions about brain scans (e.g., "What is the tumor’s location?" or "Is this a malignant growth?"), with AI-generated responses.
+- *3D Segmentation Integration*: Combines VQA with 3D tumor segmentation for a holistic diagnostic toolset, enhancing visualization and interpretation.
+- *Open-Source Availability*: Hosted on GitHub, fostering collaboration and customization by the global AI and medical community.
+
+---
+
+### 🔧 Technical Highlights
+
+NeuroVision BHPC-VQA builds on the NeuroVision ecosystem with a focus on VQA capabilities:
+
+- *High-Performance Computing*: Utilizes GPU-accelerated processing to handle large-scale imaging datasets and complex VQA models efficiently.
+- *Pre-trained VQA Models*: Includes optimized models for medical image interpretation, with support for fine-tuning on specific brain tumor datasets.
+- *Multi-Modal AI*: Integrates visual data (e.g., MRI scans) with natural language processing to provide context-aware answers.
+- *Extensible Framework*: Designed for easy integration with other NeuroVision components, such as 3D visualization tools.
+
+---
+
+### 🌐 Use Cases
+
+- *Clinical Decision Support*: Enables doctors to ask detailed questions about scans during diagnosis or surgery planning.
+- *Research and Development*: Facilitates exploration of brain tumor characteristics through interactive querying of large datasets.
+- *Training and Education*: Provides a practical tool for medical students to learn about brain tumor imaging and AI diagnostics.
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions from the community! To contribute:
