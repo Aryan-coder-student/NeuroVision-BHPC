@@ -8,9 +8,6 @@
 
 
 
-**Enhancing Healthcare with Intelligent Imaging**
-
-NeuroVision is a pioneering platform that democratizes access to AI-powered medical imaging analysis for brain tumor diagnosis and treatment. As the first publicly available solution to integrate interactive 3D brain tumor segmentation with AI-driven medical image interpretation, NeuroVision empowers healthcare professionals—regardless of specialized AI expertise—with cutting-edge diagnostic tools. Our mission is to transform brain tumor care, particularly in resource-constrained settings like India, while addressing a global health challenge.
 
 ---
 
