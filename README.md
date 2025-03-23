@@ -32,7 +32,8 @@ By reducing diagnostic delays, improving surgical outcomes, and enhancing surviv
 ![WhatsApp Image 2025-03-23 at 10 57 34_161549ec](https://github.com/user-attachments/assets/981142f0-65c3-4dbf-a92f-ea262f6559b9)
 
 ---
-
+[VQA Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-VQA)
+[3D Braintumor Segmentation Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain)
 ## 🔍 Problem Space
 
 Brain tumors are a significant health challenge globally, with stark statistics highlighting the need for better diagnostics:
@@ -191,7 +192,7 @@ See `docs/api.md` for detailed API documentation.
 
 *High-Performance Computing for Precision Diagnostics*
 
-The NeuroVision BHPC (Brain High-Performance Computing) project, hosted at [github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain](https://github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain), is a specialized implementation of the NeuroVision platform. It leverages high-performance computing (HPC) to enhance 3D brain tumor segmentation, delivering faster and more accurate results for clinical applications. Developed by Aryan-coder-student, this iteration focuses on optimizing AI models for real-time tumor analysis, making it a powerful tool for researchers, developers, and healthcare professionals.
+The NeuroVision BHPC (Brain High-Performance Computing) project, hosted at [3D Braintumor Segmentation Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain), is a specialized implementation of the NeuroVision platform. It leverages high-performance computing (HPC) to enhance 3D brain tumor segmentation, delivering faster and more accurate results for clinical applications. Developed by Aryan-coder-student, this iteration focuses on optimizing AI models for real-time tumor analysis, making it a powerful tool for researchers, developers, and healthcare professionals.
 
 ---
 
@@ -227,7 +228,7 @@ The NeuroVision BHPC project builds on the core NeuroVision platform with specif
 
 *Empowering Medical Insights with High-Performance VQA*
 
-The NeuroVision BHPC-VQA (Brain High-Performance Computing - Visual Question Answering) project, hosted at [github.com/Aryan-coder-student/NeuroVision-BHPC-VQA](https://github.com/Aryan-coder-student/NeuroVision-BHPC-VQA), is an advanced extension of the NeuroVision platform. Developed by Aryan-coder-student, this iteration combines high-performance computing with an AI-driven Visual Question Answering (VQA) system tailored for brain tumor imaging. It enables healthcare professionals and researchers to interactively query medical scans, providing instant, precise answers to complex questions about brain tumors.
+The NeuroVision BHPC-VQA (Brain High-Performance Computing - Visual Question Answering) project, hosted at [VQA Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-VQA), is an advanced extension of the NeuroVision platform. Developed by Aryan-coder-student, this iteration combines high-performance computing with an AI-driven Visual Question Answering (VQA) system tailored for brain tumor imaging. It enables healthcare professionals and researchers to interactively query medical scans, providing instant, precise answers to complex questions about brain tumors.
 
 ---
 
