@@ -38,6 +38,7 @@ By reducing diagnostic delays, improving surgical outcomes, and enhancing surviv
 [3D Braintumor Segmentation Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-3D-Brain)
 ---
 [Visual Question Answering Pipeline](https://github.com/Aryan-coder-student/NeuroVision-BHPC-VQA)
+---
 ## 🔍 Problem Space
 
 Brain tumors are a significant health challenge globally, with stark statistics highlighting the need for better diagnostics:
