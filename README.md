@@ -146,11 +146,7 @@ NeuroVision is well-positioned to capture the growing AI in medical imaging mark
    pip install -r requirements.txt
    ```
 
-4. **Download Pre-trained Models**:
-   - Download the pre-trained AI models for 3D segmentation and VQA chatbot from [this link](#) (replace with actual link).
-   - Place the models in the `models/` directory.
-
-5. **Run the Application**:
+4. **Run the Application**:
    ```bash
    python app.py
    ```
@@ -279,19 +275,6 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct]
 
 ---
 
-## 📜 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 Contact
-
-- **Email**: support@neurovision.ai
-- **GitHub Issues**: Open an issue [here](https://github.com/yourusername/neurovision/issues)
-- **Website**: [www.neurovision.ai](#) (replace with actual URL)
-
----
 
 ## 📚 References
 
