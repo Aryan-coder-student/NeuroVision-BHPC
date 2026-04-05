@@ -13,8 +13,12 @@ echo ""
 echo "[2/2] Hydrating Backend Environment..."
 cd backend
 python -m venv venv
-# OS agnostic virtual environment activation check
-source venv/Scripts/activate 2>/dev/null || source venv/bin/activate
+# Robust OS-agnostic activation
+if [ -d "venv/Scripts" ]; then
+    source venv/Scripts/activate
+else
+    source venv/bin/activate
+fi
 pip install -r requirements.txt
 python manage.py migrate
 
