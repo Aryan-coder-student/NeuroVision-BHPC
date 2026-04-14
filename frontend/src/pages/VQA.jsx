@@ -77,7 +77,7 @@ export default function VQA() {
 
   return (
     <>
-      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="dash-header">
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>
             VQA Diagnostic Chat

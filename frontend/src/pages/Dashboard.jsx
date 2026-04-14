@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="dash-header">
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>
             Dashboard
@@ -74,36 +74,38 @@ export default function Dashboard() {
         {/* Patient list */}
         <div className="dash-panel">
           <div className="dash-panel-title">Recent Patients</div>
-          <table className="patient-table">
-            <thead>
-              <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Scan Type</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {PATIENTS.map(p => (
-                <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/segmentation')}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{p.id}</td>
-                  <td className="patient-name">{p.name}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{p.age}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{p.scan}</td>
-                  <td>
-                    <span style={{
-                      fontSize: 11, fontWeight: 600, padding: '2px 8px',
-                      background: `${PRIORITY_COLORS[p.priority]}22`,
-                      color: PRIORITY_COLORS[p.priority],
-                    }}>{p.status}</span>
-                  </td>
-                  <td><ChevronRight size={13} style={{ color: 'var(--text-label)' }} /></td>
+          <div className="patient-table-container">
+            <table className="patient-table">
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Age</th>
+                  <th>Scan Type</th>
+                  <th>Status</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {PATIENTS.map(p => (
+                  <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/segmentation')}>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{p.id}</td>
+                    <td className="patient-name">{p.name}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{p.age}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{p.scan}</td>
+                    <td>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: '2px 8px',
+                        background: `${PRIORITY_COLORS[p.priority]}22`,
+                        color: PRIORITY_COLORS[p.priority],
+                      }}>{p.status}</span>
+                    </td>
+                    <td><ChevronRight size={13} style={{ color: 'var(--text-label)' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Alert feed */}

@@ -88,7 +88,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
 
   return (
     <>
-      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="dash-header">
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>
             3D Segmentation Workspace
