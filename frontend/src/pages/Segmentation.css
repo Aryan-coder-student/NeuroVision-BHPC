@@ -6,6 +6,25 @@
   height: calc(100vh - 108px);
 }
 
+@media (max-width: 1280px) {
+  .seg-workspace {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .seg-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .viewer-area {
+    min-height: 400px;
+    height: 60vh;
+  }
+}
+
 .seg-panel {
   background: var(--bg-card);
   border: 1px solid var(--outline-dim);
