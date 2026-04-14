@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const SEGMENTATION_BASE = 'http://127.0.0.1:5000';
+const SEGMENTATION_BASE = import.meta.env.VITE_SEGMENTATION_URL || 'http://127.0.0.1:5000';
 /** 3D Brain Segmentation: POST /predict */
 export async function runSegmentation(patientFolder, modelVersion) {
   const res = await axios.post(`${SEGMENTATION_BASE}/predict`, {
@@ -10,7 +10,7 @@ export async function runSegmentation(patientFolder, modelVersion) {
   return res.data;
 }
 
-const VQA_BASE = 'https://pahariaryan121-neurovision-api.hf.space';
+const VQA_BASE = import.meta.env.VITE_VQA_URL || 'https://pahariaryan121-neurovision-api.hf.space';
 
 /** VQA Chat: POST /predict/ */
 export async function sendVQAQuery(query, imageBlob, modelVersion) {
