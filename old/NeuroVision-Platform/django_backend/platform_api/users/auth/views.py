@@ -17,6 +17,7 @@ class RegistrationView(ModelViewSet):
         serializer = self.get_serializer(data=user_data)
         serializer.is_valid(raise_exception=True)
         user = UserService.register(serializer.validated_data)
+        UserService.send_otp(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class VerifyOTPView(ModelViewSet):
