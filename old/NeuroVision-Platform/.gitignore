@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+db.sqlite3
+/media/
+/static/
+.gemini/
+ai_test_script/
