@@ -10,6 +10,8 @@ services:
     envVars:
       - key: DEBUG
         value: "False"
+      - key: ENV
+        value: production
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
