@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     EMAIL_HOST_PASSWORD: str = ""
 
     ENCRYPTION_KEY: str
+    SECRET_KEY: str = "django-insecure-default-change-me-in-production"
     DATABASE_URL: str
     TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
