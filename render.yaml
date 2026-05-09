@@ -6,7 +6,6 @@ services:
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: deploy/render-orchestration
     rootDir: backend
-    preDeployCommand: python platform_api/manage.py migrate_schemas --noinput && python platform_api/manage.py init_platform
     plan: free
     envVars:
       - key: DEBUG

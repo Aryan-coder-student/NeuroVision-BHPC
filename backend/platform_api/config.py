@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     ENV: str = "development"
+    DEBUG: bool = True
 
     EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
     DEFAULT_FROM_EMAIL: str = "noreply@neurovision.com"
