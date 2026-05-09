@@ -1,0 +1,105 @@
+.org-select-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  padding: 48px 24px;
+}
+
+.org-select-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.org-select-greeting {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.org-select-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+}
+.org-select-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.org-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 960px;
+}
+.org-card {
+  background: var(--bg-card);
+  border: 1px solid var(--outline-dim);
+  padding: 28px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.org-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-high);
+}
+.org-card-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  background: var(--accent-container);
+  color: var(--accent-primary);
+}
+.org-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+  padding-right: 80px;
+}
+.org-card-location {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.org-card-stats {
+  display: flex;
+  gap: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--outline-dim);
+}
+.org-card-stat-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.org-card-stat-label {
+  font-size: 11px;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.org-select-logout {
+  margin-top: 40px;
+  background: none;
+  border: 1px solid var(--outline-dim);
+  color: var(--text-muted);
+  padding: 9px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.org-select-logout:hover { border-color: var(--error); color: var(--error); }
