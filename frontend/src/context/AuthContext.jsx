@@ -14,6 +14,11 @@ export function AuthProvider({ children }) {
   // 1. Initial Load: Check session and recover from subdomain cookies
   useEffect(() => {
     const initializeAuth = async () => {
+      // Safety timeout: don't block the app for more than 5 seconds
+      const timeout = setTimeout(() => {
+        setLoading(false);
+      }, 5000);
+
       const saved = sessionStorage.getItem('nv_session');
       
       const host = window.location.hostname;
@@ -21,10 +26,14 @@ export function AuthProvider({ children }) {
       const isSubdomain = !config.isMainDomain;
 
       if (saved) {
-        const { user, org } = JSON.parse(saved);
-        setUser(user);
-        setOrg(org);
-        await refreshWorkspaces();
+        try {
+          const { user, org } = JSON.parse(saved);
+          setUser(user);
+          setOrg(org);
+          await refreshWorkspaces();
+        } catch (e) {
+          console.error("Failed to parse saved session", e);
+        }
       } else {
         // Try to recover session from HttpOnly cookies via Profile API
         try {
@@ -53,6 +62,8 @@ export function AuthProvider({ children }) {
           console.log("No active session found");
         }
       }
+      
+      clearTimeout(timeout);
       setLoading(false);
     };
     
@@ -73,7 +84,6 @@ export function AuthProvider({ children }) {
     try {
       await loginUser({ email, password });
       
-      // Basic user profile from email for now
       const userProfile = { 
         id: 'user_backend', 
         name: email.split('@')[0], 
@@ -86,27 +96,12 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (err) {
       console.error('Login failed', err);
-      
       const data = err.response?.data;
-      
-      // DRF often returns errors as lists: { error: ["CODE"], email: ["email@..."] }
       const errorCode = Array.isArray(data?.error) ? data.error[0] : data?.error;
       const errorEmail = Array.isArray(data?.email) ? data.email[0] : data?.email;
       
-      // 1. Check if the error is OTP_NOT_VERIFIED
       if (errorCode === 'OTP_NOT_VERIFIED') {
         return { success: false, reason: 'OTP_NOT_VERIFIED', email: errorEmail || email };
-      }
-      
-      // 2. Check if the error is wrapped in non_field_errors
-      if (data?.non_field_errors && Array.isArray(data.non_field_errors)) {
-        const errorDetail = data.non_field_errors[0];
-        const nestedCode = typeof errorDetail === 'object' ? (Array.isArray(errorDetail.error) ? errorDetail.error[0] : errorDetail.error) : null;
-        const nestedEmail = typeof errorDetail === 'object' ? (Array.isArray(errorDetail.email) ? errorDetail.email[0] : errorDetail.email) : null;
-        
-        if (nestedCode === 'OTP_NOT_VERIFIED') {
-           return { success: false, reason: 'OTP_NOT_VERIFIED', email: nestedEmail || email };
-        }
       }
       
       setAuthError('Invalid credentials. Please try again.');
@@ -129,9 +124,7 @@ export function AuthProvider({ children }) {
     setOrg(workspace);
     sessionStorage.setItem('nv_session', JSON.stringify({ user, org: workspace }));
     
-    // Multi-Tenant Redirection Logic
     if (workspace.domain_url) {
-      // Use the current protocol and FRONTEND_PORT from config
       const portSuffix = config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : '';
       const targetUrl = `${config.protocol}//${workspace.domain_url}${portSuffix}/dashboard`;
       
@@ -152,6 +145,26 @@ export function AuthProvider({ children }) {
     setWorkspaces([]);
     sessionStorage.removeItem('nv_session');
   };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', 
+        justifyContent: 'center', background: '#0a0a0a', color: '#fff', 
+        fontFamily: 'Inter, system-ui, sans-serif' 
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="spin" style={{ 
+            width: '40px', height: '40px', border: '3px solid #333', 
+            borderTopColor: '#007AFF', borderRadius: '50%', margin: '0 auto 20px' 
+          }} />
+          <p style={{ fontSize: '14px', letterSpacing: '0.05em', opacity: 0.6 }}>
+            INITIALIZING NEUROVISION...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ 
