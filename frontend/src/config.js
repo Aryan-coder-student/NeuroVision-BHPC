@@ -20,10 +20,10 @@ const getEnvConfig = () => {
   // In production, we are always on the "Main Domain" (the central hub)
   const isMainDomain = isProd || hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === 'lvh.me';
 
-  // API URL logic
-  const API_URL = isProd 
+  // API URL logic - Prioritize Environment Variables
+  const API_URL = import.meta.env.VITE_API_URL || (isProd 
     ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
-    : `${protocol}//api.${BASE_DOMAIN}:8000/api/v1`;
+    : `${protocol}//api.localtest.me:8000/api/v1`);
 
   return {
     BASE_DOMAIN,
