@@ -26,10 +26,12 @@ class Command(BaseCommand):
         domain_url = getattr(settings, "TENANT_BASE_DOMAIN", "localtest.me")
 
         domain, created = Domain.objects.get_or_create(
-            domain=domain_url, tenant=tenant, is_primary=True
+            domain=domain_url, tenant=tenant
         )
 
         if created:
+            domain.is_primary = True
+            domain.save()
             self.stdout.write(
                 self.style.SUCCESS(f"Created domain for public tenant: {domain.domain}")
             )
