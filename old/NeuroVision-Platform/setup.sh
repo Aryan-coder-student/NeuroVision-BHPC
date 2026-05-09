@@ -11,8 +11,11 @@ echo "======================================"
 # 1. Start Database & Services
 echo ""
 echo "[1/4] Starting Database and Services (Postgres, MailHog)..."
-if command -v docker compose &> /dev/null; then
-    docker compose up -d
+if command -v podman compose &> /dev/null; then
+    podman compose up -d
+elif command -v docker compose &> /dev/null; then
+    # Try docker compose, but fallback if it fails (e.g. permission denied)
+    docker compose up -d || podman compose up -d
 elif command -v docker-compose &> /dev/null; then
     docker-compose up -d
 else
