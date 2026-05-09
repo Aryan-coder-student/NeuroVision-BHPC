@@ -1,0 +1,44 @@
+services:
+  # --- Backend Service (Docker) ---
+  - type: web
+    name: neurovision-backend
+    env: docker
+    repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
+    branch: deploy/render-orchestration
+    rootDir: backend/platform_api
+    plan: free # Change to starter/pro for production
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neurovision-db
+          property: connectionString
+      - key: ENCRYPTION_KEY
+        sync: false # Set this manually in Render dashboard
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+
+  # --- Frontend Service (Static) ---
+  - type: static
+    name: neurovision-frontend
+    env: static
+    repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
+    branch: deploy/render-orchestration
+    rootDir: frontend
+    buildCommand: npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: neurovision-backend
+          type: web
+          property: host
+
+databases:
+  - name: neurovision-db
+    plan: free
+    databaseName: neurovision
+    user: neuroadmin
