@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { config } from '../config';
 
 // --- Django Backend API Configuration ---
