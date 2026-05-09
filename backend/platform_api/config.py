@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     ENCRYPTION_KEY: str = "dummy-key-for-testing-only-1234567890="
     SECRET_KEY: str = "django-insecure-default-change-me-in-production"
-    DATABASE_URL: str = ""
+    DATABASE_URL: str = "postgres://localhost/neurovision"
     TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
 
