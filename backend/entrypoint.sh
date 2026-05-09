@@ -9,8 +9,9 @@ echo "🏗️  Starting NeuroVision Backend..."
 cd platform_api
 
 # Run migrations (idempotent)
-echo "🔄 Running migrations..."
+echo "🔄 Running migrations and collecting static files..."
 python manage.py migrate_schemas --noinput
+python manage.py collectstatic --noinput
 
 # Initialize/Sync the platform (creates public tenant/domain)
 echo "🔑 Initializing platform..."
