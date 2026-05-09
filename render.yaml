@@ -6,6 +6,7 @@ services:
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: deploy/render-orchestration
     rootDir: backend
+    preDeployCommand: python platform_api/manage.py migrate_schemas --noinput && python platform_api/manage.py init_platform
     plan: free
     envVars:
       - key: DEBUG
@@ -14,6 +15,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false # Set your Neon URL manually in the Render dashboard
+      - key: TENANT_BASE_DOMAIN
+        value: "neurovision-backend-99o7.onrender.com"
       - key: ENCRYPTION_KEY
         sync: false # Set your Fernet key manually in the Render dashboard
       - key: ALLOWED_HOSTS
