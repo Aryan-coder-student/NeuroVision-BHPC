@@ -181,13 +181,14 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localtest.me:5174",
     "http://*.localtest.me:5173",
     "http://*.localtest.me:5174",
+    "https://neurovision-backend-99o7.onrender.com",
 ]
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 
-# Cookie domains for Multi-Tenancy (Localhost)
-SESSION_COOKIE_DOMAIN = ".localtest.me"
-CSRF_COOKIE_DOMAIN = ".localtest.me"
+# Cookie domains for Multi-Tenancy (Sync with current domain)
+SESSION_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
+CSRF_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
 
 
 # Email Settings
