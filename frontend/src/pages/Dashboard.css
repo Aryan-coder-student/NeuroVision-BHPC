@@ -1,37 +1,9 @@
-.dash-header {
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-@media (max-width: 640px) {
-  .dash-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .dash-header div:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
 /* ── Dashboard ── */
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 28px;
-}
-
-@media (max-width: 1024px) {
-  .dash-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 640px) {
-  .dash-grid { grid-template-columns: 1fr; }
 }
 .dash-kpi {
   background: var(--bg-card);
@@ -67,10 +39,6 @@
   gap: 16px;
 }
 
-@media (max-width: 1200px) {
-  .dash-row { grid-template-columns: 1fr; }
-}
-
 .dash-panel {
   background: var(--bg-card);
   border: 1px solid var(--outline-dim);
@@ -86,17 +54,9 @@
 }
 
 /* Patient list table */
-.patient-table-container {
-  overflow-x: auto;
-  margin-left: -20px;
-  margin-right: -20px;
-  padding-left: 20px;
-  padding-right: 20px;
-}
 .patient-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px; /* Ensure table remains readable */
 }
 .patient-table th {
   font-size: 10px;

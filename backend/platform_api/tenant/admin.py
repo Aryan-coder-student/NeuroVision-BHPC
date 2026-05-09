@@ -7,5 +7,5 @@ class InstitutionAdmin(TenantAdminMixin, admin.ModelAdmin):
     list_display = ("name", "schema_name", "inst_type", "created_at")
 
 @admin.register(Domain)
-class DomainAdmin(TenantAdminMixin, admin.ModelAdmin):
+class DomainAdmin(admin.ModelAdmin):
     list_display = ("domain", "tenant", "is_primary")

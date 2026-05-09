@@ -1,23 +1,35 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Brain, Lock, Mail, ArrowRight, Loader } from 'lucide-react';
+import { Brain, Lock, Mail, ArrowRight, Loader, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
-  const { login, authError } = useAuth();
+  const { user, loading: authLoading, login, authError } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/select-org');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const ok = await login(email, password);
+    const result = await login(email, password);
     setLoading(false);
-    if (ok) navigate('/select-org');
+    
+    if (result.success) {
+      navigate('/select-org');
+    } else if (result.reason === 'OTP_NOT_VERIFIED') {
+      navigate('/verify-otp', { state: { email: result.email } });
+    }
   };
 
   return (
@@ -95,19 +107,33 @@ export default function Login() {
             </div>
             <div className="field-group">
               <label className="field-label"><Lock size={11} style={{ marginRight: 5 }} />Password</label>
-              <input
-                className="field-input"
-                type="password"
-                placeholder="••••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
+              <div className="password-input-wrapper">
+                <input
+                  className="field-input"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  style={{ paddingRight: '44px' }}
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <button className="login-btn" type="submit" disabled={loading}>
               {loading ? <Loader size={16} className="spin" /> : <><ArrowRight size={16} /> Sign In Securely</>}
             </button>
           </form>
+
+          <div style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+            Don't have a professional account? <Link to="/register" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>Create One</Link>
+          </div>
 
           <div className="login-demo-note">
             <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>Demo Credentials</p>
