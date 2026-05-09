@@ -6,18 +6,16 @@ services:
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: deploy/render-orchestration
     rootDir: backend/platform_api
-    plan: free # Change to starter/pro for production
+    plan: free
     envVars:
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: neurovision-db
-          property: connectionString
+        sync: false # Set your Neon URL manually in the Render dashboard
       - key: ENCRYPTION_KEY
-        sync: false # Set this manually in Render dashboard
+        sync: false # Set your Fernet key manually in the Render dashboard
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
 
@@ -36,9 +34,3 @@ services:
           name: neurovision-backend
           type: web
           property: host
-
-databases:
-  - name: neurovision-db
-    plan: free
-    databaseName: neurovision
-    user: neuroadmin
