@@ -11,7 +11,6 @@ from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase, registratio
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegistrationViewSuccess(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("register-list")
@@ -39,7 +38,6 @@ class TestRegistrationViewSuccess(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegistrationViewValidation(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("register-list")

@@ -7,9 +7,9 @@ from users.auth.tests.common import (
     registration_data,
 )
 
+
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestEmailValidation(TestCase):
-
     def test_valid_email_passes(self):
         s = RegistrationSerializer(data=registration_data(email="valid@example.com"))
         self.assertTrue(s.is_valid(), s.errors)
@@ -45,6 +45,8 @@ class TestEmailValidation(TestCase):
         self.assertIn("email", s.errors)
 
     def test_email_with_spaces_rejected(self):
-        s = RegistrationSerializer(data=registration_data(email="test user@example.com"))
+        s = RegistrationSerializer(
+            data=registration_data(email="test user@example.com")
+        )
         self.assertFalse(s.is_valid())
         self.assertIn("email", s.errors)

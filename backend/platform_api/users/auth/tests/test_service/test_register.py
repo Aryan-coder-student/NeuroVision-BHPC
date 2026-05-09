@@ -13,7 +13,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegisterCreatesUser(TestCase):
-
     def test_returns_user_instance(self):
         user = UserService.register(registration_data())
         self.assertIsInstance(user, User)
@@ -41,7 +40,6 @@ class TestRegisterCreatesUser(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegisterPasswordConfirmRemoval(TestCase):
-
     def test_password_confirm_stripped_before_create(self):
         """password_confirm is not a model field; register() must pop it."""
         user = UserService.register(registration_data())
@@ -50,7 +48,6 @@ class TestRegisterPasswordConfirmRemoval(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegisterOTPSecret(TestCase):
-
     def test_generates_otp_secret_when_missing(self):
         data = registration_data()
         data.pop("otp_secret", None)
@@ -72,7 +69,6 @@ class TestRegisterOTPSecret(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestRegisterPassword(TestCase):
-
     def test_password_hashed_correctly(self):
         user = UserService.register(registration_data())
         self.assertTrue(user.check_password(VALID_PASSWORD))

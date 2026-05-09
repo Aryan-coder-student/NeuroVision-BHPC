@@ -1,0 +1,38 @@
+services:
+  # --- Backend Service (Docker) ---
+  - type: web
+    name: neurovision-backend
+    env: docker
+    repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
+    branch: feat/neuro-analytics-core
+    rootDir: backend
+    plan: free
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Set your Neon URL manually in the Render dashboard
+      - key: TENANT_BASE_DOMAIN
+        value: "neurovision-backend-99o7.onrender.com"
+      - key: ENCRYPTION_KEY
+        sync: false # Set your Fernet key manually in the Render dashboard
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+
+  # --- Frontend Service (Static) ---
+  - type: web
+    name: neurovision-frontend
+    runtime: static
+    repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
+    branch: feat/neuro-analytics-core
+    rootDir: frontend
+    buildCommand: npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: neurovision-backend
+          type: web
+          property: host

@@ -11,7 +11,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPValid(TestCase):
-
     def setUp(self):
         self.user, self.raw_secret = create_user(
             username="verifygood", email="verifygood@example.com"
@@ -36,7 +35,6 @@ class TestVerifyOTPValid(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPInvalid(TestCase):
-
     def setUp(self):
         self.user, self.raw_secret = create_user(
             username="verifybad", email="verifybad@example.com"

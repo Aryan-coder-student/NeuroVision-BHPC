@@ -1,7 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     ENV: str = "development"
+    DEBUG: bool = True
 
     EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
     DEFAULT_FROM_EMAIL: str = "noreply@neurovision.com"
@@ -19,13 +21,14 @@ class Settings(BaseSettings):
     EMAIL_HOST_USER: str = ""
     EMAIL_HOST_PASSWORD: str = ""
 
-    ENCRYPTION_KEY: str
+    ENCRYPTION_KEY: str = "dummy-key-for-testing-only-1234567890="
+    SECRET_KEY: str = "django-insecure-default-change-me-in-production"
+    DATABASE_URL: str = "postgres://localhost/neurovision"
+    TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
-    
+
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
     @property

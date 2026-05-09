@@ -4,22 +4,34 @@
  */
 
 const getEnvConfig = () => {
-  const { protocol, host } = window.location;
-  const [hostname, port] = host.split(':');
+  const { protocol, host, hostname } = window.location;
+  const [hostBase, port] = host.split(':');
+  
+  // Robust environment detection
+  const isDev = hostname.includes('localhost') || hostname.includes('127.0.0.1') || hostname.includes('localtest.me') || hostname.includes('lvh.me');
+  const isProd = !isDev;
   
   // Base domain for the platform
-  // Use the environment variable if available, otherwise fallback to localtest.me
-  const isProd = hostname.includes('vercel.app') || hostname.includes('neurovision');
   const BASE_DOMAIN = isProd ? hostname : 'localtest.me';
   const FRONTEND_PORT = port || (isProd ? '' : '5174');
   
-  const MAIN_URL = `${protocol}//${BASE_DOMAIN}:${FRONTEND_PORT}`;
+  const MAIN_URL = `${protocol}//${BASE_DOMAIN}${FRONTEND_PORT ? `:${FRONTEND_PORT}` : ''}`;
   
+  // In production, we are always on the "Main Domain" (the central hub)
+  const isMainDomain = isProd || hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === 'lvh.me';
+
+  // API URL logic - Prioritize Environment Variables
+  const API_URL = import.meta.env.VITE_API_URL || (isProd 
+    ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
+    : `${protocol}//api.localtest.me:8000/api/v1`);
+
   return {
     BASE_DOMAIN,
     FRONTEND_PORT,
     MAIN_URL,
-    isMainDomain: hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'lvh.me'
+    API_URL,
+    isMainDomain,
+    protocol
   };
 };
 

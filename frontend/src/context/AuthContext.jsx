@@ -131,8 +131,9 @@ export function AuthProvider({ children }) {
     
     // Multi-Tenant Redirection Logic
     if (workspace.domain_url) {
-      // Use the FRONTEND_PORT from config to maintain environment consistency
-      const targetUrl = `http://${workspace.domain_url}${config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : ''}/dashboard`;
+      // Use the current protocol and FRONTEND_PORT from config
+      const portSuffix = config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : '';
+      const targetUrl = `${config.protocol}//${workspace.domain_url}${portSuffix}/dashboard`;
       
       if (window.location.origin + window.location.pathname !== targetUrl) {
         window.location.href = targetUrl;

@@ -1,8 +1,9 @@
-import axios from 'axios';
+import { config } from '../config';
 
 // --- Django Backend API Configuration ---
 export const djangoApi = axios.create({
   withCredentials: true,
+  baseURL: config.API_URL,
 });
 
 djangoApi.interceptors.request.use((config) => {
@@ -19,23 +20,7 @@ djangoApi.interceptors.request.use((config) => {
   return config;
 });
 
-// --- Dynamic Base URL logic for Multi-Tenancy ---
-const getBaseUrl = () => {
-  const { protocol, hostname } = window.location;
-  
-  // Use VITE_API_URL if provided (best for production)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
-  // Fallback: In development, we use port 8000
-  const isDev = hostname.includes('localhost') || hostname.includes('localtest.me') || hostname.includes('127.0.0.1');
-  const apiPort = isDev ? ':8000' : '';
-  
-  return `${protocol}//${hostname}${apiPort}/api/v1`;
-};
-
-const API_BASE = getBaseUrl();
+const API_BASE = config.API_URL;
 const AUTH_BASE = `${API_BASE}/auth`;
 const WORKSPACE_BASE = `${API_BASE}/workspaces`;
 

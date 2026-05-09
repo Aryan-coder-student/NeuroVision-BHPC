@@ -1,108 +1,32 @@
 #!/bin/bash
-# NeuroVision Project Setup Script
-# This script automates the setup of the backend, frontend, and database services.
 
-set -e # Exit on error
+# NeuroVision Platform Setup Script
+# Automates the initialization of Backend and Frontend
 
-echo "======================================"
-echo "   NeuroVision Project Setup          "
-echo "======================================"
+echo "🚀 Starting NeuroVision Platform Setup..."
 
-# 1. Start Database & Services
-echo ""
-echo "[1/4] Starting Database and Services (Postgres, MailHog)..."
-if command -v podman compose &> /dev/null; then
-    podman compose up -d
-elif command -v docker compose &> /dev/null; then
-    # Try docker compose, but fallback if it fails (e.g. permission denied)
-    docker compose up -d || podman compose up -d
-elif command -v docker-compose &> /dev/null; then
-    docker-compose up -d
-else
-    echo "Error: Docker Compose is not installed."
+# 1. Backend Setup
+echo "📦 Setting up Backend..."
+cd backend
+if [ ! -f .env ]; then
+    echo "⚠️  No .env file found in /backend. Please create it from .env.example"
     exit 1
 fi
 
-# 2. Setup Backend
-echo ""
-echo "[2/4] Setting up Backend (Django)..."
-if ! command -v uv &> /dev/null; then
-    echo "uv not found. Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    source $HOME/.cargo/env
-fi
-
-cd backend
-echo "Installing backend dependencies..."
 uv sync
-
-# 3. Initialize Database
-echo ""
-echo "[3/4] Initializing Database (Migrations & Public Tenant)..."
 cd platform_api
+uv run python manage.py migrate_schemas
+uv run python manage.py init_platform
 
-# Wait for DB to be ready
-echo "Waiting for PostgreSQL to be ready on port 5434..."
-until nc -z localhost 5434; do
-  sleep 1
-done
-
-echo "Running migrations..."
-uv run python manage.py migrate_schemas --shared
-
-echo "Initializing Public Tenant and Superuser..."
-uv run python -c "
-import os, django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'platform_api.settings')
-django.setup()
-from tenant.models import Institution, Domain
-from users.models import User
-from django.db import connection
-
-# Ensure we are on public schema for initialization
-connection.set_schema_to_public()
-
-tenant, created = Institution.objects.get_or_create(
-    schema_name='public', 
-    defaults={'name': 'NeuroVision Public', 'slug': 'public'}
-)
-Domain.objects.get_or_create(
-    domain='localtest.me', 
-    tenant=tenant, 
-    defaults={'is_primary': True}
-)
-Domain.objects.get_or_create(
-    domain='localhost', 
-    tenant=tenant, 
-    defaults={'is_primary': False}
-)
-
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
-    print('Superuser created: admin / admin123')
-else:
-    print('Superuser already exists.')
-
-print('Public tenant initialization complete.')
-"
-
-# 4. Setup Frontend
-echo ""
-echo "[4/4] Setting up Frontend (React)..."
+# 2. Frontend Setup
+echo "🎨 Setting up Frontend..."
 cd ../../frontend
-if command -v npm &> /dev/null; then
-    echo "Installing frontend dependencies..."
-    npm install
-else
-    echo "Warning: npm not found. Skipping frontend installation."
-fi
+npm install
 
-echo ""
-echo "======================================"
-echo "        Setup Complete!               "
-echo "======================================"
-echo "Backend is ready at:  http://localhost:8000"
-echo "Frontend is ready at: http://localhost:5174 (Run 'npm run dev' to start)"
-echo "Admin Panel:          http://localhost:8000/admin/"
-echo "Credentials:          admin / admin123"
-echo "======================================"
+echo "✅ Setup Complete!"
+echo "------------------------------------------------"
+echo "To start the platform:"
+echo "1. Backend: cd backend/platform_api && uv run python manage.py runserver"
+echo "2. Frontend: cd frontend && npm run dev"
+echo "3. Visit: http://localtest.me:5174"
+echo "------------------------------------------------"
