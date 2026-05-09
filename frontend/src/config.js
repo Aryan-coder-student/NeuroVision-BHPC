@@ -1,8 +1,4 @@
-/**
- * NeuroVision Central Configuration
- * Centralizes domain and port logic to avoid hardcoding across the app.
- */
-
+console.log("DEBUG: config.js loading...");
 const getEnvConfig = () => {
   const { protocol, host, hostname } = window.location;
   const [hostBase, port] = host.split(':');
