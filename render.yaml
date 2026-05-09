@@ -4,7 +4,7 @@ services:
     name: neurovision-backend
     env: docker
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
-    branch: deploy/render-orchestration
+    branch: feat/neuro-analytics-core
     rootDir: backend
     plan: free
     envVars:
@@ -26,7 +26,7 @@ services:
     name: neurovision-frontend
     runtime: static
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
-    branch: deploy/render-orchestration
+    branch: feat/neuro-analytics-core
     rootDir: frontend
     buildCommand: npm run build
     staticPublishPath: dist

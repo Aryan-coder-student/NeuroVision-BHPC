@@ -20,10 +20,16 @@ const getEnvConfig = () => {
   // In production, we are always on the "Main Domain" (the central hub)
   const isMainDomain = isProd || hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === 'lvh.me';
 
+  // API URL logic
+  const API_URL = isProd 
+    ? 'https://neurovision-backend-99o7.onrender.com' 
+    : `${protocol}//api.${BASE_DOMAIN}:8000`;
+
   return {
     BASE_DOMAIN,
     FRONTEND_PORT,
     MAIN_URL,
+    API_URL,
     isMainDomain,
     protocol
   };
