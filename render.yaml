@@ -22,14 +22,14 @@ services:
         value: ".onrender.com"
 
   # --- Frontend Service (Static) ---
-  - type: static_site
+  - type: web
     name: neurovision-frontend
-    env: static
+    runtime: static
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: deploy/render-orchestration
     rootDir: frontend
     buildCommand: npm run build
-    publishDir: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         fromService:
