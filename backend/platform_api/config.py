@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     EMAIL_HOST_PASSWORD: str = ""
 
     ENCRYPTION_KEY: str
+    DATABASE_URL: str
     JWT_ALGORITHM: str = ""
     
     model_config = SettingsConfigDict(

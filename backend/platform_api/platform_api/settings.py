@@ -114,15 +114,13 @@ SIMPLE_JWT = {
 
 
 
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.environ.get('DB_NAME', 'multitenant'),
-        'USER': os.environ.get('DB_USER', 'myuser'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'mypassword'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5434'),
-    }
+    'default': dj_database_url.parse(
+        settings.DATABASE_URL,
+        engine='django_tenants.postgresql_backend'
+    )
 }
 
 DATABASE_ROUTERS = (
