@@ -20,11 +20,19 @@ djangoApi.interceptors.request.use((config) => {
 });
 
 // --- Dynamic Base URL logic for Multi-Tenancy ---
-const getBaseUrl = (port = 8000) => {
+const getBaseUrl = () => {
   const { protocol, hostname } = window.location;
-  // If we are on a tenant subdomain like 'metro.localhost', 
-  // we want to call the backend at 'metro.localhost:8000'
-  return `${protocol}//${hostname}:${port}/api/v1`;
+  
+  // Use VITE_API_URL if provided (best for production)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Fallback: In development, we use port 8000
+  const isDev = hostname.includes('localhost') || hostname.includes('localtest.me') || hostname.includes('127.0.0.1');
+  const apiPort = isDev ? ':8000' : '';
+  
+  return `${protocol}//${hostname}${apiPort}/api/v1`;
 };
 
 const API_BASE = getBaseUrl();
