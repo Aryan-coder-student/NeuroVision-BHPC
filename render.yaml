@@ -22,7 +22,7 @@ services:
         value: ".onrender.com"
 
   # --- Frontend Service (Static) ---
-  - type: static
+  - type: static_site
     name: neurovision-frontend
     env: static
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
