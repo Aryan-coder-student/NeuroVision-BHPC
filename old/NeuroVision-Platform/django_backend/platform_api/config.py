@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
 class Settings(BaseSettings):
     ENV: str = "development"
@@ -21,6 +20,7 @@ class Settings(BaseSettings):
     EMAIL_HOST_PASSWORD: str = ""
 
     ENCRYPTION_KEY: str
+    JWT_ALGORITHM: str = ""
     
     model_config = SettingsConfigDict(
         env_file=".env",

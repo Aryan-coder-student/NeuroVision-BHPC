@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { initializeCsrf } from './services/api';
+import { useEffect } from 'react';
 import './index.css';
+import config from './config';
 
 /* Pages */
 import Landing     from './pages/Landing';
@@ -14,6 +17,8 @@ import Reports     from './pages/Reports';
 import DataContribution from './pages/DataContribution';
 import ModelFeedback    from './pages/ModelFeedback';
 import ModelRegistry    from './pages/ModelRegistry';
+import Register         from './pages/Register';
+import VerifyOTP        from './pages/VerifyOTP';
 import AppShell    from './components/AppShell';
 
 /* Global spin keyframe */
@@ -32,8 +37,17 @@ document.head.appendChild(style);
 /* Route guard: must be logged in */
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
+  
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  
+  if (!user) {
+    if (!config.isMainDomain) {
+      window.location.href = `${config.MAIN_URL}/login?redirect=${encodeURIComponent(window.location.href)}`;
+      return null;
+    }
+    return <Navigate to="/login" replace />;
+  }
+  
   return children;
 }
 
@@ -42,7 +56,25 @@ function RequireOrg({ children }) {
   const { user, org, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (!org)  return <Navigate to="/select-org" replace />;
+  
+  if (!org) {
+    if (!config.isMainDomain) {
+      // If we are on a subdomain but don't have an org (e.g. invalid subdomain),
+      // force redirect back to the central hub for organization selection.
+      window.location.href = `${config.MAIN_URL}/select-org`;
+      return null;
+    }
+    return <Navigate to="/select-org" replace />;
+  }
+  
+  return children;
+}
+
+function CentralOnly({ children }) {
+  if (!config.isMainDomain) {
+    window.location.href = `${config.MAIN_URL}${window.location.pathname}${window.location.search}`;
+    return null;
+  }
   return children;
 }
 
@@ -50,8 +82,10 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/"           element={<Landing />} />
-      <Route path="/login"      element={<Login />} />
-      <Route path="/select-org" element={<RequireAuth><OrgSelect /></RequireAuth>} />
+      <Route path="/login"      element={<CentralOnly><Login /></CentralOnly>} />
+      <Route path="/register"   element={<CentralOnly><Register /></CentralOnly>} />
+      <Route path="/verify-otp" element={<CentralOnly><VerifyOTP /></CentralOnly>} />
+      <Route path="/select-org" element={<RequireAuth><CentralOnly><OrgSelect /></CentralOnly></RequireAuth>} />
 
       {/* Protected app shell */}
       <Route element={<RequireOrg><AppShell /></RequireOrg>}>
@@ -72,6 +106,10 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    initializeCsrf();
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

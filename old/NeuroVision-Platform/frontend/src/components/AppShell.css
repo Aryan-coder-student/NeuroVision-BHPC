@@ -41,8 +41,10 @@
   transition: background 0.15s;
 }
 .sidebar-org:hover { background: var(--bg-card); }
+.sidebar-org:hover .switch-icon { transform: translateX(2px); opacity: 1 !important; color: var(--accent-primary); }
 .sidebar-org-label { font-size: 10px; color: var(--text-label); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
 .sidebar-org-name  { font-size: 12px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.switch-icon { transition: all 0.2s ease; }
 
 .sidebar-nav {
   flex: 1;

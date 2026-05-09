@@ -30,17 +30,16 @@ class EmailService:
         )
 
 class Cryptography:
-    def __init__(self):
-        self.key = settings.ENCRYPTION_KEY
-        self.fernet = Fernet(self.key)
+    @property
+    def fernet(self):
+        return Fernet(settings.ENCRYPTION_KEY)
 
     def encrypt(self, data: str) -> str:
-        enc_code = self.fernet.encrypt(data.encode()).decode()
-        return enc_code 
+        return self.fernet.encrypt(data.encode()).decode()
 
     def decrypt(self, data: str) -> str:
-        dec_code = self.fernet.decrypt(data.encode()).decode()
-        return dec_code 
+        return self.fernet.decrypt(data.encode()).decode()
+
 
 cryptography = Cryptography()
 email_service = EmailService()

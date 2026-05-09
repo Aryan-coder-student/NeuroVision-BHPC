@@ -8,3 +8,9 @@ db.sqlite3
 /static/
 .gemini/
 ai_test_script/
+django_backend/platform_api/ai_test_script
+django_backend/platform_api/.ruff_cache/
+django_backend/uv.lock
+django_backend/.python-version
+notes.md
+SKILL.md

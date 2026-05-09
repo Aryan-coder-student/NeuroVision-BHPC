@@ -148,6 +148,28 @@
   color: var(--text-label);
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-label);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: color 0.15s;
+}
+.password-toggle-btn:hover {
+  color: var(--text-bright);
+}
+
 .login-btn {
   width: 100%;
   background: var(--accent-primary);

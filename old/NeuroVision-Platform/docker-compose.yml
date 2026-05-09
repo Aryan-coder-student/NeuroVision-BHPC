@@ -8,3 +8,18 @@ services:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI port
     restart: always
+  db:
+    image: postgres:15-alpine
+    container_name: neurovision_db
+    environment:
+      - POSTGRES_DB=multitenant
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:

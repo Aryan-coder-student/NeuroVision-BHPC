@@ -5,6 +5,7 @@ import {
   History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server
 } from 'lucide-react';
 import './AppShell.css';
+import config from '../config';
 
 export default function AppShell() {
   const { user, org, logout } = useAuth();
@@ -12,6 +13,14 @@ export default function AppShell() {
 
   const initials = user?.name
     .split(' ').slice(0, 2).map(n => n[0]).join('') ?? '?';
+
+  const handleSwitchOrg = () => {
+    if (!config.isMainDomain) {
+      window.location.href = `${config.MAIN_URL}/select-org`;
+    } else {
+      navigate('/select-org');
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -26,9 +35,15 @@ export default function AppShell() {
         </div>
 
         {org && (
-          <div className="sidebar-org" onClick={() => navigate('/select-org')}>
-            <div className="sidebar-org-label">Organization</div>
+          <div className="sidebar-org" onClick={handleSwitchOrg}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <div className="sidebar-org-label">Organization</div>
+              <ChevronRight size={12} className="switch-icon" style={{ opacity: 0.5 }} />
+            </div>
             <div className="sidebar-org-name">{org.name}</div>
+            <div style={{ fontSize: 10, color: 'var(--accent-primary)', marginTop: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Switch Workspace
+            </div>
           </div>
         )}
 

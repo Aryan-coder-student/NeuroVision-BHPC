@@ -1,7 +1,10 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate
+
 from ..models import User
+from .service import UserService
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -76,6 +79,46 @@ class VerificationOTPSerializer(serializers.Serializer):
             if user.is_otp_verified:
                 raise serializers.ValidationError("This email is already verified.")
         
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email not found.")
+        
+        return value
+
+
+class LoginSerilizer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        
+        user_obj = User.objects.filter(email=email).first()
+        user = None
+        if user_obj:
+            user = authenticate(request=self.context.get('request'), username=user_obj.username, password=password)
+        
+        if not user:
+            raise serializers.ValidationError("Invalid email or password.", code='authorization')
+        
+        if not user.is_active:
+             raise serializers.ValidationError("User account is disabled.", code='authorization')
+             
+        if not user.is_otp_verified:
+            UserService.send_otp(user)
+            raise serializers.ValidationError({"error": "OTP_NOT_VERIFIED", "email": email})
+            
+        attrs['user'] = user
+        return attrs
+
+class ResendOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        try:
+            user = User.objects.get(email=value)
+            if user.is_otp_verified:
+                raise serializers.ValidationError("This email is already verified.")
         except User.DoesNotExist:
             raise serializers.ValidationError("User with this email not found.")
         

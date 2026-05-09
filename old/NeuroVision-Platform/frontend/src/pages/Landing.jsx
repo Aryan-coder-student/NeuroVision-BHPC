@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { Brain, ArrowRight, ScanLine, MessageSquare, Database, ChevronRight, Activity, Cpu } from 'lucide-react';
+import config from '../config';
 
 const CountUp = ({ to }) => {
   const [count, setCount] = useState(0);
@@ -32,7 +34,9 @@ const CountUp = ({ to }) => {
   return <span ref={ref}>{Number.isInteger(parseFloat(to)) ? Math.floor(count) : count.toFixed(1)}</span>;
 };
 
+
 export default function Landing() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -41,10 +45,16 @@ export default function Landing() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // If on a tenant subdomain, redirect to dashboard immediately
+    if (!config.isMainDomain) {
+      navigate('/dashboard');
+      return;
+    }
+
     // Simulate premium loader
     const to = setTimeout(() => setLoading(false), 1200);
     return () => clearTimeout(to);
-  }, []);
+  }, [navigate]);
 
   const carouselRef = useRef(null);
   const carouselContentRef = useRef(null);
@@ -91,10 +101,10 @@ export default function Landing() {
         <motion.button 
           whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/login')}
+          onClick={() => navigate(user ? '/select-org' : '/login')}
           style={{ background: '#fff', color: '#000', border: 'none', padding: '10px 24px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
         >
-          Sign In
+          {user ? 'Go to Workspace' : 'Sign In'}
         </motion.button>
       </motion.header>
 

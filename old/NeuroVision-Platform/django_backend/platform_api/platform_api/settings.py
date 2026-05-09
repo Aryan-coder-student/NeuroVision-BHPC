@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 from datetime import timedelta
 from config import settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,10 +27,18 @@ SECRET_KEY = 'django-insecure-xwitk*z(pgil_3b$9o0z7wrjdk!^==f27ecf@)fb8ej)*j8r%v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['.localtest.me', '.lvh.me', '.localhost', '127.0.0.1']
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:517[34]$",
+    r"^http://127\.0\.0\.1:517[34]$",
+    r"^http://.*\.localtest\.me:517[34]$",
+    r"^http://localtest\.me:517[34]$",
+]
 
 TENANT_MODEL = "tenant.Institution"
 TENANT_DOMAIN_MODEL = "tenant.Domain"
+TENANT_BASE_DOMAIN = 'localtest.me'
 AUTH_USER_MODEL = 'users.User'
 # Application definition
 
@@ -44,7 +53,8 @@ SHARED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
 ]
 TENANT_APPS = [
     'django.contrib.contenttypes',
@@ -53,6 +63,7 @@ TENANT_APPS = [
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 MIDDLEWARE = [
     'django_tenants.middleware.main.TenantMainMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -85,6 +96,7 @@ WSGI_APPLICATION = 'platform_api.wsgi.application'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.auth.authentication.CookieJWTAuthentication'
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated', # Or your existing choice
@@ -101,14 +113,15 @@ SIMPLE_JWT = {
 
 
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': 'multitenant',
-        'USER': 'myuser',
-        'PASSWORD': 'mypassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'multitenant'),
+        'USER': os.environ.get('DB_USER', 'myuser'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'mypassword'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5434'),
     }
 }
 
@@ -150,6 +163,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# CORS 
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://*.localhost:5173',
+    'http://*.localhost:5174',
+    'http://localtest.me:5173',
+    'http://localtest.me:5174',
+    'http://*.localtest.me:5173',
+    'http://*.localtest.me:5174',
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
+
+# Cookie domains for Multi-Tenancy (Localhost)
+SESSION_COOKIE_DOMAIN = '.localtest.me'
+CSRF_COOKIE_DOMAIN = '.localtest.me'
+
+
+
 
 # Email Settings
 EMAIL_BACKEND = settings.EMAIL_BACKEND
