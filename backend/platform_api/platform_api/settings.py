@@ -183,6 +183,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://*.localtest.me:5174",
     "https://neurovision-backend-99o7.onrender.com",
     "https://neuro-vision-bhpc.vercel.app",
+    "https://neuro-vision-bhpc-git-deploy-rend-8c8b2f-aryan-paharis-projects.vercel.app",
 ]
 CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 CSRF_COOKIE_SAMESITE = "Lax"
