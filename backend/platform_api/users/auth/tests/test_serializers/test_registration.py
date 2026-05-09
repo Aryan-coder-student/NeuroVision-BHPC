@@ -25,7 +25,9 @@ class TestRegistrationUsername(TestCase):
         valid_list = ["johndoe", "john.doe", "john_doe", "john123", "J0hn.D_oe"]
         for uname in valid_list:
             s = RegistrationSerializer(data=registration_data(username=uname))
-            self.assertTrue(s.is_valid(), f"Username '{uname}' should be valid but got {s.errors}")
+            self.assertTrue(
+                s.is_valid(), f"Username '{uname}' should be valid but got {s.errors}"
+            )
 
     def test_must_start_with_letter(self):
         s = RegistrationSerializer(data=registration_data(username="1badname"))
@@ -53,7 +55,9 @@ class TestRegistrationUsername(TestCase):
         self.assertFalse(s.is_valid())
 
     def test_duplicate_username_rejected(self):
-        User.objects.create_user(username="johndoe", email="other@example.com", password=VALID_PASSWORD)
+        User.objects.create_user(
+            username="johndoe", email="other@example.com", password=VALID_PASSWORD
+        )
         s = RegistrationSerializer(data=registration_data(username="johndoe"))
         self.assertFalse(s.is_valid())
         self.assertIn("username", s.errors)
@@ -64,7 +68,9 @@ class TestRegistrationNames(TestCase):
     """Validation for first_name and last_name."""
 
     def test_valid_names(self):
-        s = RegistrationSerializer(data=registration_data(first_name="Mary Jane", last_name="Van Der Berg"))
+        s = RegistrationSerializer(
+            data=registration_data(first_name="Mary Jane", last_name="Van Der Berg")
+        )
         self.assertTrue(s.is_valid(), s.errors)
 
     def test_name_with_numbers_rejected(self):

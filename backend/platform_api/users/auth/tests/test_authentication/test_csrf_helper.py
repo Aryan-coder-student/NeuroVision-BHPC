@@ -3,8 +3,8 @@ from django.test import TestCase, RequestFactory
 from rest_framework import exceptions
 from users.auth.authentication import enforce_csrf
 
-class TestEnforceCSRF(TestCase):
 
+class TestEnforceCSRF(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 

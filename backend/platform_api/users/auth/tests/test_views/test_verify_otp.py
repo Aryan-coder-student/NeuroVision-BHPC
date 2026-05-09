@@ -15,7 +15,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPViewSuccess(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("verify-otp-list")
@@ -62,7 +61,6 @@ class TestVerifyOTPViewSuccess(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPViewInvalid(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("verify-otp-list")

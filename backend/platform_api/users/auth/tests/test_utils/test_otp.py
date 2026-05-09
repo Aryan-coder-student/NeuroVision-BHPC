@@ -3,8 +3,8 @@ from unittest.mock import patch
 from django.test import TestCase
 from users.auth.utils import OTP
 
-class TestOTPGenerate(TestCase):
 
+class TestOTPGenerate(TestCase):
     def setUp(self):
         self.secret = pyotp.random_base32()
         self.otp = OTP(self.secret)
@@ -25,7 +25,6 @@ class TestOTPGenerate(TestCase):
 
 
 class TestOTPVerify(TestCase):
-
     def setUp(self):
         self.secret = pyotp.random_base32()
         self.otp = OTP(self.secret)

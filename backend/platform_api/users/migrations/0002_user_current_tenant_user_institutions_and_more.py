@@ -5,26 +5,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tenant', '0002_institution_address_institution_contact_email_and_more'),
-        ('users', '0001_initial'),
+        ("tenant", "0002_institution_address_institution_contact_email_and_more"),
+        ("users", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='current_tenant',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='current_members', to='tenant.institution'),
+            model_name="user",
+            name="current_tenant",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="current_members",
+                to="tenant.institution",
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='institutions',
-            field=models.ManyToManyField(related_name='users', through='users.InstitutionMembership', to='tenant.institution'),
+            model_name="user",
+            name="institutions",
+            field=models.ManyToManyField(
+                related_name="users",
+                through="users.InstitutionMembership",
+                to="tenant.institution",
+            ),
         ),
         migrations.AlterField(
-            model_name='institutionmembership',
-            name='institution',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='institution_memberships', to='tenant.institution'),
+            model_name="institutionmembership",
+            name="institution",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="institution_memberships",
+                to="tenant.institution",
+            ),
         ),
     ]

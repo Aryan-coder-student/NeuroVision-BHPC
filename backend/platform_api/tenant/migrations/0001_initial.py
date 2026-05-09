@@ -7,38 +7,84 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Institution',
+            name="Institution",
             fields=[
-                ('schema_name', models.CharField(db_index=True, max_length=63, unique=True, validators=[django_tenants.postgresql_backend.base._check_schema_name])),
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=150)),
-                ('slug', models.SlugField(max_length=100, unique=True)),
-                ('inst_type', models.CharField(choices=[('HOSPITAL', 'General Hospital'), ('CLINIC', 'Specialized Clinic'), ('RESEARCH', 'Research Laboratory'), ('UNIVERSITY', 'University Department')], default='CLINIC', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "schema_name",
+                    models.CharField(
+                        db_index=True,
+                        max_length=63,
+                        unique=True,
+                        validators=[
+                            django_tenants.postgresql_backend.base._check_schema_name
+                        ],
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=150)),
+                ("slug", models.SlugField(max_length=100, unique=True)),
+                (
+                    "inst_type",
+                    models.CharField(
+                        choices=[
+                            ("HOSPITAL", "General Hospital"),
+                            ("CLINIC", "Specialized Clinic"),
+                            ("RESEARCH", "Research Laboratory"),
+                            ("UNIVERSITY", "University Department"),
+                        ],
+                        default="CLINIC",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='Domain',
+            name="Domain",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('domain', models.CharField(db_index=True, max_length=253, unique=True)),
-                ('is_primary', models.BooleanField(db_index=True, default=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='domains', to='tenant.institution')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "domain",
+                    models.CharField(db_index=True, max_length=253, unique=True),
+                ),
+                ("is_primary", models.BooleanField(db_index=True, default=True)),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="domains",
+                        to="tenant.institution",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

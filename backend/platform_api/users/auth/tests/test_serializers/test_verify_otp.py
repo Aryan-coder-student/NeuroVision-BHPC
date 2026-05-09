@@ -11,7 +11,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPValid(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="otpvalid",
@@ -26,7 +25,6 @@ class TestVerifyOTPValid(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPInvalidEmail(TestCase):
-
     def test_nonexistent_email_rejected(self):
         s = VerificationOTPSerializer(data=otp_data(email=NONEXISTENT_EMAIL))
         self.assertFalse(s.is_valid())
@@ -35,7 +33,6 @@ class TestVerifyOTPInvalidEmail(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPAlreadyVerified(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="alreadyverified",
@@ -52,7 +49,6 @@ class TestVerifyOTPAlreadyVerified(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestVerifyOTPMissingFields(TestCase):
-
     def setUp(self):
         create_user(
             username="missingfield",

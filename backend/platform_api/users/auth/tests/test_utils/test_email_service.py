@@ -1,8 +1,9 @@
 from unittest.mock import patch
 from django.test import TestCase, override_settings
 from users.auth.utils import EmailService
-class TestEmailServiceSend(TestCase):
 
+
+class TestEmailServiceSend(TestCase):
     @patch("users.auth.utils.send_mail")
     def test_calls_django_send_mail(self, mock_send):
         svc = EmailService()

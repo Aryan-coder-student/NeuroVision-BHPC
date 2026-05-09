@@ -3,6 +3,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from cryptography.fernet import Fernet
 
+
 class OTP:
     def __init__(self, secret: str):
         self.secret = secret
@@ -28,6 +29,7 @@ class EmailService:
             recipient_list=[to_mail_id],
             fail_silently=False,
         )
+
 
 class Cryptography:
     @property

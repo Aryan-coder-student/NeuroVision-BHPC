@@ -9,7 +9,6 @@ from users.auth.tests.common import TEST_FERNET_KEY, create_user
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestSendOTPEmail(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(username="sendotp", email="sendotp@example.com")
 
@@ -33,7 +32,6 @@ class TestSendOTPEmail(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestSendOTPTimestamp(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(username="sendts", email="sendts@example.com")
 
@@ -55,7 +53,6 @@ class TestSendOTPTimestamp(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestSendOTPBody(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(username="sendbody", email="sendbody@example.com")
 

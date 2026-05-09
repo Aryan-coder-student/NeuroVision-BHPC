@@ -13,7 +13,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestProfileViewAuthenticated(TenantTestCase):
-
     def setUp(self):
         self.url = reverse("profile-list")
         self.user, _ = create_user(
@@ -48,14 +47,16 @@ class TestProfileViewAuthenticated(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestProfileViewAnonymous(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("profile-list")
 
     def test_anonymous_user_rejected(self):
         resp = self.client.get(self.url)
-        self.assertIn(resp.status_code, [
-            http_status.HTTP_401_UNAUTHORIZED,
-            http_status.HTTP_403_FORBIDDEN,
-        ])
+        self.assertIn(
+            resp.status_code,
+            [
+                http_status.HTTP_401_UNAUTHORIZED,
+                http_status.HTTP_403_FORBIDDEN,
+            ],
+        )

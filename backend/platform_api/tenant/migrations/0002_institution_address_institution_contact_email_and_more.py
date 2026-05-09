@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tenant', '0001_initial'),
+        ("tenant", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='institution',
-            name='address',
+            model_name="institution",
+            name="address",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='institution',
-            name='contact_email',
+            model_name="institution",
+            name="contact_email",
             field=models.EmailField(blank=True, max_length=254),
         ),
         migrations.AddField(
-            model_name='institution',
-            name='contact_phone',
+            model_name="institution",
+            name="contact_phone",
             field=models.CharField(blank=True, max_length=20),
         ),
         migrations.AddField(
-            model_name='institution',
-            name='country',
-            field=models.CharField(default='India', max_length=100),
+            model_name="institution",
+            name="country",
+            field=models.CharField(default="India", max_length=100),
         ),
     ]

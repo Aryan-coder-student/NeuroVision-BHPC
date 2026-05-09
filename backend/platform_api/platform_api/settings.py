@@ -11,9 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-import os
 from datetime import timedelta
+import dj_database_url
 from config import settings
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xwitk*z(pgil_3b$9o0z7wrjdk!^==f27ecf@)fb8ej)*j8r%v'
+SECRET_KEY = "django-insecure-xwitk*z(pgil_3b$9o0z7wrjdk!^==f27ecf@)fb8ej)*j8r%v"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.localtest.me', '.lvh.me', '.localhost', '127.0.0.1']
+ALLOWED_HOSTS = [".localtest.me", ".lvh.me", ".localhost", "127.0.0.1"]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:517[34]$",
@@ -38,109 +39,103 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 TENANT_MODEL = "tenant.Institution"
 TENANT_DOMAIN_MODEL = "tenant.Domain"
-TENANT_BASE_DOMAIN = 'localtest.me'
-AUTH_USER_MODEL = 'users.User'
+TENANT_BASE_DOMAIN = "localtest.me"
+AUTH_USER_MODEL = "users.User"
 # Application definition
 
 SHARED_APPS = [
-    'django_tenants',  # Mandatory: must be first
-    'tenant',          # Managing Institutions (Tenants)
-    'users',           # Handing Identity and Memberships
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
+    "django_tenants",  # Mandatory: must be first
+    "tenant",  # Managing Institutions (Tenants)
+    "users",  # Handing Identity and Memberships
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
 ]
 TENANT_APPS = [
-    'django.contrib.contenttypes',
+    "django.contrib.contenttypes",
     # Add your clinical/research apps here later
 ]
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+INSTALLED_APPS = list(SHARED_APPS) + [
+    app for app in TENANT_APPS if app not in SHARED_APPS
+]
 MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django_tenants.middleware.main.TenantMainMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'platform_api.urls'
+ROOT_URLCONF = "platform_api.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'platform_api.wsgi.application'
+WSGI_APPLICATION = "platform_api.wsgi.application"
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'users.auth.authentication.CookieJWTAuthentication'
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "users.auth.authentication.CookieJWTAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', # Or your existing choice
-    ]
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",  # Or your existing choice
+    ],
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,        # Session security
-    'BLACKLIST_AFTER_ROTATION': True,      # Invalidates old sessions
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,  # Session security
+    "BLACKLIST_AFTER_ROTATION": True,  # Invalidates old sessions
 }
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 
-
-
-import dj_database_url
-
 DATABASES = {
-    'default': dj_database_url.parse(
-        settings.DATABASE_URL,
-        engine='django_tenants.postgresql_backend'
+    "default": dj_database_url.parse(
+        settings.DATABASE_URL, engine="django_tenants.postgresql_backend"
     )
 }
 
-DATABASE_ROUTERS = (
-    'django_tenants.routers.TenantSyncRouter',
-)
+DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -148,9 +143,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -160,28 +155,26 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
-# CORS 
+# CORS
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://*.localhost:5173',
-    'http://*.localhost:5174',
-    'http://localtest.me:5173',
-    'http://localtest.me:5174',
-    'http://*.localtest.me:5173',
-    'http://*.localtest.me:5174',
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://*.localhost:5173",
+    "http://*.localhost:5174",
+    "http://localtest.me:5173",
+    "http://localtest.me:5174",
+    "http://*.localtest.me:5173",
+    "http://*.localtest.me:5174",
 ]
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 
 # Cookie domains for Multi-Tenancy (Localhost)
-SESSION_COOKIE_DOMAIN = '.localtest.me'
-CSRF_COOKIE_DOMAIN = '.localtest.me'
-
-
+SESSION_COOKIE_DOMAIN = ".localtest.me"
+CSRF_COOKIE_DOMAIN = ".localtest.me"
 
 
 # Email Settings

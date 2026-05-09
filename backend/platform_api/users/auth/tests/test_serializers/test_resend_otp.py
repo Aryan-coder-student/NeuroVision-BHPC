@@ -10,7 +10,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPValid(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="resendvalid",
@@ -25,7 +24,6 @@ class TestResendOTPValid(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPInvalidEmail(TestCase):
-
     def test_nonexistent_email_rejected(self):
         s = ResendOTPSerializer(data={"email": NONEXISTENT_EMAIL})
         self.assertFalse(s.is_valid())
@@ -34,7 +32,6 @@ class TestResendOTPInvalidEmail(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPAlreadyVerified(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="resendverified",
@@ -51,7 +48,6 @@ class TestResendOTPAlreadyVerified(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPMissingFields(TestCase):
-
     def test_missing_email_rejected(self):
         s = ResendOTPSerializer(data={})
         self.assertFalse(s.is_valid())

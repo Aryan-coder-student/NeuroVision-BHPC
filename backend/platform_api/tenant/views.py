@@ -11,7 +11,6 @@ from users.models import InstitutionMembership
 
 
 class InstitutionViewSet(ModelViewSet):
-
     serializer_class = InstitutionSerializer
     permission_classes = [IsAuthenticated]
 
@@ -19,7 +18,7 @@ class InstitutionViewSet(ModelViewSet):
 
         return self.request.user.institutions.all()
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def current(self, request):
         """
         Returns the metadata for the current tenant based on the subdomain.
@@ -29,19 +28,15 @@ class InstitutionViewSet(ModelViewSet):
 
     @transaction.atomic
     def perform_create(self, serializer):
-        name = serializer.validated_data.get('name')
+        name = serializer.validated_data.get("name")
         slug, schema_name = create_slug(name)
 
-        institution = serializer.save(
-            slug=slug,
-            schema_name=schema_name
-        )
-    
+        institution = serializer.save(slug=slug, schema_name=schema_name)
+
         create_domain_routing(institution)
 
         InstitutionMembership.objects.create(
             user=self.request.user,
             institution=institution,
-            role=InstitutionMembership.Role.ADMIN
+            role=InstitutionMembership.Role.ADMIN,
         )
-

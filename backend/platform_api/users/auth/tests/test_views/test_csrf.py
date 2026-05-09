@@ -8,7 +8,6 @@ from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestCSRFTokenViewReturnsToken(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("csrf-list")

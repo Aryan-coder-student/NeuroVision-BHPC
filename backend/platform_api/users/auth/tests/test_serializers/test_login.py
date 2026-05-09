@@ -23,7 +23,6 @@ def _serialize(data):
 # ---------------------------------------------------------------------------
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginSuccess(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="loginuser",
@@ -46,7 +45,6 @@ class TestLoginSuccess(TestCase):
 # ---------------------------------------------------------------------------
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginInvalidCredentials(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="loginuser2",
@@ -69,7 +67,6 @@ class TestLoginInvalidCredentials(TestCase):
 # ---------------------------------------------------------------------------
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginAccountState(TestCase):
-
     def setUp(self):
         self.user, _ = create_user(
             username="stateuser",

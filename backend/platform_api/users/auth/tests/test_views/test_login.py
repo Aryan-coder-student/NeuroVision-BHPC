@@ -15,7 +15,6 @@ from users.auth.tests.common import (
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginViewSuccess(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("login-list")
@@ -56,7 +55,6 @@ class TestLoginViewSuccess(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginViewResponseBody(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("login-list")
@@ -95,12 +93,13 @@ class TestLoginViewResponseBody(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestLoginViewInvalid(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("login-list")
         self.user, _ = create_user(
-            username="logininvalid", email="logininvalid@example.com", is_otp_verified=True
+            username="logininvalid",
+            email="logininvalid@example.com",
+            is_otp_verified=True,
         )
 
     def test_wrong_password_returns_400(self):
@@ -118,10 +117,13 @@ class TestLoginViewInvalid(TenantTestCase):
             login_data(email=NONEXISTENT_EMAIL),
             format="json",
         )
-        self.assertIn(resp.status_code, [
-            http_status.HTTP_400_BAD_REQUEST,
-            http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-        ])
+        self.assertIn(
+            resp.status_code,
+            [
+                http_status.HTTP_400_BAD_REQUEST,
+                http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            ],
+        )
 
     def test_no_cookies_on_failure(self):
         resp = self.client.post(

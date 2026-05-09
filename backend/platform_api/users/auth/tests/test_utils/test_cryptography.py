@@ -1,9 +1,10 @@
 from django.test import TestCase, override_settings
 from users.auth.utils import Cryptography
 from users.auth.tests.common import TEST_FERNET_KEY
+
+
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestCryptographyEncrypt(TestCase):
-
     def setUp(self):
         self.crypto = Cryptography()
 
@@ -23,7 +24,6 @@ class TestCryptographyEncrypt(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestCryptographyDecrypt(TestCase):
-
     def setUp(self):
         self.crypto = Cryptography()
 

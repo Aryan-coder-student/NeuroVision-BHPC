@@ -12,11 +12,12 @@ from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase, create_user
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPViewSuccess(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("resend-otp-list")
-        self.user, _ = create_user(username="resendview", email="resendview@example.com")
+        self.user, _ = create_user(
+            username="resendview", email="resendview@example.com"
+        )
 
     @patch("users.auth.service.email_service")
     def test_returns_200(self, mock_email):
@@ -27,9 +28,7 @@ class TestResendOTPViewSuccess(TenantTestCase):
 
     @patch("users.auth.service.email_service")
     def test_sends_email(self, mock_email):
-        self.client.post(
-            self.url, {"email": "resendview@example.com"}, format="json"
-        )
+        self.client.post(self.url, {"email": "resendview@example.com"}, format="json")
         mock_email.send.assert_called_once()
 
     @patch("users.auth.service.email_service")
@@ -42,7 +41,6 @@ class TestResendOTPViewSuccess(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPViewRateLimit(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("resend-otp-list")
@@ -88,7 +86,6 @@ class TestResendOTPViewRateLimit(TenantTestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestResendOTPViewAlreadyVerified(TenantTestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("resend-otp-list")

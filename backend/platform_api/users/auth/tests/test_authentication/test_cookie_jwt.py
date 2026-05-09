@@ -5,9 +5,9 @@ from users.models import User
 from users.auth.authentication import CookieJWTAuthentication
 from users.auth.tests.common import TEST_FERNET_KEY
 
+
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestCookieAuthTokenResolution(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
         self.auth = CookieJWTAuthentication()
@@ -43,7 +43,6 @@ class TestCookieAuthTokenResolution(TestCase):
 
 @override_settings(ENCRYPTION_KEY=TEST_FERNET_KEY)
 class TestCookieAuthCSRF(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
         self.auth = CookieJWTAuthentication()

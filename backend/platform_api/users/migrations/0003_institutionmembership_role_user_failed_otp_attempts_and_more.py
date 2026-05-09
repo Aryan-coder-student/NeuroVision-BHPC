@@ -4,54 +4,59 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tenant', '0002_institution_address_institution_contact_email_and_more'),
-        ('users', '0002_user_current_tenant_user_institutions_and_more'),
+        ("tenant", "0002_institution_address_institution_contact_email_and_more"),
+        ("users", "0002_user_current_tenant_user_institutions_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='institutionmembership',
-            name='role',
-            field=models.CharField(choices=[('ADMIN', 'Admin'), ('MEMBER', 'Member')], default='MEMBER', max_length=10),
+            model_name="institutionmembership",
+            name="role",
+            field=models.CharField(
+                choices=[("ADMIN", "Admin"), ("MEMBER", "Member")],
+                default="MEMBER",
+                max_length=10,
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='failed_otp_attempts',
+            model_name="user",
+            name="failed_otp_attempts",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='user',
-            name='is_online',
+            model_name="user",
+            name="is_online",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='user',
-            name='is_otp_verified',
+            model_name="user",
+            name="is_otp_verified",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='user',
-            name='last_otp_sent_at',
+            model_name="user",
+            name="last_otp_sent_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='user',
-            name='otp_secret',
+            model_name="user",
+            name="otp_secret",
             field=models.CharField(blank=True, max_length=255),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='email',
+            model_name="user",
+            name="email",
             field=models.EmailField(max_length=254, unique=True),
         ),
         migrations.AddIndex(
-            model_name='institutionmembership',
-            index=models.Index(fields=['user'], name='users_insti_user_id_7f010f_idx'),
+            model_name="institutionmembership",
+            index=models.Index(fields=["user"], name="users_insti_user_id_7f010f_idx"),
         ),
         migrations.AddIndex(
-            model_name='institutionmembership',
-            index=models.Index(fields=['institution'], name='users_insti_institu_2fe90f_idx'),
+            model_name="institutionmembership",
+            index=models.Index(
+                fields=["institution"], name="users_insti_institu_2fe90f_idx"
+            ),
         ),
     ]

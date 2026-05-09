@@ -14,6 +14,7 @@ from users.auth.utils import Cryptography
 # Tenant-aware base class for view / integration tests
 # ---------------------------------------------------------------------------
 
+
 class TenantTestCase(TestCase):
     """
     TestCase subclass that creates the ``public`` schema tenant + domain
@@ -28,13 +29,10 @@ class TenantTestCase(TestCase):
         # Create the public tenant record if it doesn't exist
         # schema_name='public' is the default for shared apps
         cls._tenant, _ = Institution.objects.get_or_create(
-            schema_name="public",
-            defaults={"name": "Public", "slug": "public"}
+            schema_name="public", defaults={"name": "Public", "slug": "public"}
         )
         Domain.objects.get_or_create(
-            domain="testserver",
-            tenant=cls._tenant,
-            defaults={"is_primary": True}
+            domain="testserver", tenant=cls._tenant, defaults={"is_primary": True}
         )
 
     @classmethod
@@ -70,6 +68,7 @@ INVALID_OTP = "000000"
 # Crypto helper (always uses TEST_FERNET_KEY)
 # ---------------------------------------------------------------------------
 
+
 def get_test_crypto():
     """Return a Cryptography instance backed by TEST_FERNET_KEY."""
     return Cryptography()
@@ -78,6 +77,7 @@ def get_test_crypto():
 # ---------------------------------------------------------------------------
 # Data factories
 # ---------------------------------------------------------------------------
+
 
 def registration_data(**overrides) -> dict:
     """Return a valid registration payload; merge *overrides* on top."""
@@ -104,6 +104,7 @@ def otp_data(email=VALID_EMAIL, otp="123456") -> dict:
 # ---------------------------------------------------------------------------
 # User factory
 # ---------------------------------------------------------------------------
+
 
 def create_user(
     username="testuser",
@@ -145,6 +146,7 @@ def generate_valid_otp(raw_secret: str) -> str:
 # ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
+
 
 def get_authenticated_client(user) -> APIClient:
     """Return an APIClient with access_token cookie set for *user*."""
