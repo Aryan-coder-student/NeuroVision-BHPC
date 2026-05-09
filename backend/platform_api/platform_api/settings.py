@@ -40,7 +40,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 TENANT_MODEL = "tenant.Institution"
 TENANT_DOMAIN_MODEL = "tenant.Domain"
 PUBLIC_SCHEMA_NAME = "public"
-TENANT_BASE_DOMAIN = "localtest.me"
+TENANT_BASE_DOMAIN = settings.TENANT_BASE_DOMAIN
 AUTH_USER_MODEL = "users.User"
 # Application definition
 

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     ENCRYPTION_KEY: str
     DATABASE_URL: str
+    TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
 
     model_config = SettingsConfigDict(

@@ -29,13 +29,18 @@ class Command(BaseCommand):
             domain=domain_url, tenant=tenant
         )
 
-        if created:
+        # Force this domain to be the primary one for the public tenant
+        if not domain.is_primary:
             domain.is_primary = True
             domain.save()
+
+        if created:
             self.stdout.write(
                 self.style.SUCCESS(f"Created domain for public tenant: {domain.domain}")
             )
         else:
-            self.stdout.write(f"Domain already exists: {domain.domain}")
+            self.stdout.write(
+                self.style.SUCCESS(f"Verified domain for public tenant: {domain.domain}")
+            )
 
         self.stdout.write(self.style.SUCCESS("Platform initialization complete."))
