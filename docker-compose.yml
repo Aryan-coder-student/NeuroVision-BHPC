@@ -1,25 +1,25 @@
 version: '3.8'
 
 services:
-  mailhog:
-    image: mailhog/mailhog
-    container_name: neurovision_mailhog
+  backend:
+    build:
+      context: ./backend/platform_api
+      dockerfile: Dockerfile
     ports:
-      - "1025:1025" # SMTP port
-      - "8025:8025" # Web UI port
-    restart: always
-  db:
-    image: postgres:15-alpine
-    container_name: neurovision_db
+      - "8000:8000"
+    env_file:
+      - ./backend/platform_api/.env
     environment:
-      - POSTGRES_DB=multitenant
-      - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - DEBUG=False
     restart: always
 
-volumes:
-  postgres_data:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile # We'll need to create this if testing prod frontend locally
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_API_URL=http://localtest.me:8000/api/v1
+    depends_on:
+      - backend
