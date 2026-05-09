@@ -9,12 +9,17 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Set up Python 3.13
         run: uv python install 3.13
+      - name: Install dependencies
+        run: uv sync
       - name: Run Ruff
         run: uv run ruff check .
 
@@ -53,10 +58,10 @@ jobs:
         run: uv python install 3.13
       - name: Install dependencies
         run: uv sync
-        working-directory: django_backend
+        working-directory: backend
       
       - name: Run Tests
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run python manage.py test users.auth.tests --noinput
-        working-directory: django_backend/platform_api
+        working-directory: backend/platform_api

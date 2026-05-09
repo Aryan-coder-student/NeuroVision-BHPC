@@ -1,61 +1,25 @@
 version: '3.8'
 
 services:
+  mailhog:
+    image: mailhog/mailhog
+    container_name: neurovision_mailhog
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    restart: always
   db:
     image: postgres:15-alpine
-    container_name: neurovision-db
+    container_name: neurovision_db
     environment:
       - POSTGRES_DB=multitenant
       - POSTGRES_USER=myuser
       - POSTGRES_PASSWORD=mypassword
     ports:
-      - "5435:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser -d multitenant"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: neurovision-backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/platform_api:/app/platform_api
-    environment:
-      - DEBUG=True
-      - ALLOWED_HOSTS=localhost,127.0.0.1
-      - POSTGRES_DB=multitenant
-      - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
-      - DB_HOST=db
-      - DB_PORT=5432
-    depends_on:
-      db:
-        condition: service_healthy
-    command: python manage.py runserver 0.0.0.0:8000
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: neurovision-frontend
-    ports:
-      - "5174:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=http://localhost:8000
-    depends_on:
-      - backend
-    command: npm run dev -- --host 0.0.0.0
+    restart: always
 
 volumes:
   postgres_data:

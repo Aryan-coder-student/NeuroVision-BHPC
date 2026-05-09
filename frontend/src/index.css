@@ -1,19 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import "tailwindcss";
-
-/* Responsive Utilities */
-@layer utilities {
-  .hidden-mobile {
-    @media (max-width: 768px) {
-      display: none !important;
-    }
-  }
-  .show-mobile {
-    @media (min-width: 769px) {
-      display: none !important;
-    }
-  }
-}
 
 *, *::before, *::after {
   box-sizing: border-box;

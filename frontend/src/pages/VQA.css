@@ -6,19 +6,6 @@
   height: calc(100vh - 108px);
 }
 
-@media (max-width: 1024px) {
-  .vqa-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-  }
-  .vqa-scan-canvas {
-    height: 300px;
-    flex: none;
-  }
-}
-
 /* Left: MRI scan panel */
 .vqa-scan-panel {
   background: var(--bg-card);

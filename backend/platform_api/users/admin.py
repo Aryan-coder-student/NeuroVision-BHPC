@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, InstitutionMembership
+from users.models import User, InstitutionMembership
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
