@@ -2,9 +2,9 @@ name: Backend CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, deploy/render-orchestration, feat/neuro-analytics-core ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, deploy/render-orchestration, feat/neuro-analytics-core ]
 
 jobs:
   lint:
@@ -43,12 +43,9 @@ jobs:
 
     env:
       ENV: development
-      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-      DB_NAME: multitenant
-      DB_USER: myuser
-      DB_PASSWORD: mypassword
-      DB_HOST: localhost
-      DB_PORT: 5432
+      ENCRYPTION_KEY: "dummy-key-for-testing-only-1234567890="
+      DATABASE_URL: "postgres://myuser:mypassword@localhost:5432/multitenant"
+      SECRET_KEY: "ci-test-secret-key"
 
     steps:
       - uses: actions/checkout@v4
