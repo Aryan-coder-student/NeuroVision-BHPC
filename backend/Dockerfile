@@ -38,5 +38,8 @@ EXPOSE 8000
 # Switch to non-root user
 USER python
 
-# Start command (Gunicorn)
-CMD ["gunicorn", "--chdir", "platform_api", "--bind", "0.0.0.0:8000", "--workers", "3", "platform_api.wsgi:application"]
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
+# Entrypoint handles migrations and starting gunicorn
+ENTRYPOINT ["./entrypoint.sh"]
