@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     EMAIL_HOST_USER: str = ""
     EMAIL_HOST_PASSWORD: str = ""
 
-    ENCRYPTION_KEY: str
+    ENCRYPTION_KEY: str = "dummy-key-for-testing-only-1234567890="
     SECRET_KEY: str = "django-insecure-default-change-me-in-production"
-    DATABASE_URL: str
+    DATABASE_URL: str = ""
     TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
 
