@@ -15,7 +15,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t neurovision-backend:latest ./backend/platform_api
+          docker build -t neurovision-backend:latest ./backend
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master

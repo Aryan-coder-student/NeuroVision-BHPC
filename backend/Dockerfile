@@ -39,4 +39,4 @@ EXPOSE 8000
 USER python
 
 # Start command (Gunicorn)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "platform_api.wsgi:application"]
+CMD ["gunicorn", "--chdir", "platform_api", "--bind", "0.0.0.0:8000", "--workers", "3", "platform_api.wsgi:application"]

@@ -5,7 +5,7 @@ services:
     env: docker
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: deploy/render-orchestration
-    rootDir: backend/platform_api
+    rootDir: backend
     plan: free
     envVars:
       - key: DEBUG
