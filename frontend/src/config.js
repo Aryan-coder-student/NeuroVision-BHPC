@@ -17,9 +17,15 @@ const getEnvConfig = () => {
   const isMainDomain = isProd || hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === 'lvh.me';
 
   // API URL logic - Prioritize Environment Variables
-  const API_URL = import.meta.env.VITE_API_URL || (isProd 
+  let rawApiUrl = import.meta.env.VITE_API_URL || (isProd 
     ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
     : `${protocol}//api.localtest.me:8000/api/v1`);
+  
+  // Safety: Ensure it always ends with /api/v1 if not already there
+  if (!rawApiUrl.includes('/api/v1')) {
+    rawApiUrl = rawApiUrl.replace(/\/$/, '') + '/api/v1';
+  }
+  const API_URL = rawApiUrl;
 
   return {
     BASE_DOMAIN,
