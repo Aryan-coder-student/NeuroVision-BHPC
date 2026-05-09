@@ -22,8 +22,8 @@ const getEnvConfig = () => {
 
   // API URL logic
   const API_URL = isProd 
-    ? 'https://neurovision-backend-99o7.onrender.com' 
-    : `${protocol}//api.${BASE_DOMAIN}:8000`;
+    ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
+    : `${protocol}//api.${BASE_DOMAIN}:8000/api/v1`;
 
   return {
     BASE_DOMAIN,
