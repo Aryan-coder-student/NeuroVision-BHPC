@@ -17,9 +17,15 @@ const getEnvConfig = () => {
   const isMainDomain = isProd || hostname === BASE_DOMAIN;
 
   // API URL logic - Prioritize Environment Variables
-  let rawApiUrl = import.meta.env.VITE_API_URL || (isProd 
-    ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
-    : `${protocol}//localtest.me:8000/api/v1`);
+  let rawApiUrl = import.meta.env.VITE_API_URL || '';
+  
+  // Fallback if VITE_API_URL is missing or is an internal Render host (no dots)
+  const isInternalHost = rawApiUrl && !rawApiUrl.includes('.');
+  if (!rawApiUrl || isInternalHost) {
+    rawApiUrl = isProd 
+      ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
+      : `${protocol}//localtest.me:8000/api/v1`;
+  }
   
   // Safety: Ensure it always starts with http:// or https://
   if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {

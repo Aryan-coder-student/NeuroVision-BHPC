@@ -34,7 +34,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: neurovision-backend
-          type: web
-          property: host
+        value: https://neurovision-backend-99o7.onrender.com/api/v1
