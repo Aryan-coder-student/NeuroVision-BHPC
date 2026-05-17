@@ -34,6 +34,7 @@ ALLOWED_HOSTS = [".localtest.me", "127.0.0.1", ".onrender.com"]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://.*\.localtest\.me:517[34]$",
     r"^http://localtest\.me:517[34]$",
+    r"^https://.*\.onrender\.com$",
 ]
 
 TENANT_MODEL = "tenant.Institution"
@@ -177,6 +178,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://*.localtest.me:5173",
     "http://*.localtest.me:5174",
     "https://neurovision-backend-99o7.onrender.com",
+    "https://neurovision-frontend.onrender.com",
+    "https://*.onrender.com",
     "https://neuro-vision-bhpc.vercel.app",
     "https://neuro-vision-bhpc-git-deploy-rend-8c8b2f-aryan-paharis-projects.vercel.app",
 ]
