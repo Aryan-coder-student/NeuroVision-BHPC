@@ -181,18 +181,37 @@ CSRF_TRUSTED_ORIGINS = [
     "https://neuro-vision-bhpc-git-deploy-rend-8c8b2f-aryan-paharis-projects.vercel.app",
 ]
 CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
-CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 
-# Cookie domains for Multi-Tenancy (Sync with current domain)
-# Standardize on .localtest.me strictly in development.
-# In production on Render/Vercel (.onrender.com is a public suffix, so browsers block wildcards. Must be None).
+# Determine if we are running in production on default cloud domains (cross-site)
+is_cloud_default = "onrender.com" in TENANT_BASE_DOMAIN or "vercel.app" in TENANT_BASE_DOMAIN
+
+# Cookie secure and samesite settings
 if settings.is_dev:
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    
     SESSION_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
     CSRF_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
 else:
-    SESSION_COOKIE_DOMAIN = None
-    CSRF_COOKIE_DOMAIN = None
+    # Production
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    
+    if is_cloud_default:
+        # Separate cross-site cloud domains require SameSite=None
+        CSRF_COOKIE_SAMESITE = "None"
+        SESSION_COOKIE_SAMESITE = "None"
+        SESSION_COOKIE_DOMAIN = None
+        CSRF_COOKIE_DOMAIN = None
+    else:
+        # Same-site custom domain (e.g. .neurovision.com)
+        CSRF_COOKIE_SAMESITE = "Lax"
+        SESSION_COOKIE_SAMESITE = "Lax"
+        SESSION_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
+        CSRF_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
 
 
 # Email Settings

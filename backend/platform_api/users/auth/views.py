@@ -60,16 +60,16 @@ class LoginView(ModelViewSet):
             "access_token",
             str(refresh.access_token),
             httponly=True,
-            secure=not settings.DEBUG,
-            samesite="Lax",
+            secure=settings.SESSION_COOKIE_SECURE,
+            samesite=settings.SESSION_COOKIE_SAMESITE,
             domain=settings.SESSION_COOKIE_DOMAIN,
         )
         response.set_cookie(
             "refresh_token",
             str(refresh),
             httponly=True,
-            secure=not settings.DEBUG,
-            samesite="Lax",
+            secure=settings.SESSION_COOKIE_SECURE,
+            samesite=settings.SESSION_COOKIE_SAMESITE,
             domain=settings.SESSION_COOKIE_DOMAIN,
         )
 
@@ -98,16 +98,16 @@ class VerifyOTPView(ModelViewSet):
                 "access_token",
                 str(refresh.access_token),
                 httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
                 domain=settings.SESSION_COOKIE_DOMAIN,
             )
             response.set_cookie(
                 "refresh_token",
                 str(refresh),
                 httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
                 domain=settings.SESSION_COOKIE_DOMAIN,
             )
 
@@ -172,13 +172,29 @@ class LogoutView(ModelViewSet):
                 {"message": "Logout successful."}, status=status.HTTP_200_OK
             )
             response.delete_cookie(
-                "access_token", domain=settings.SESSION_COOKIE_DOMAIN
+                "access_token",
+                domain=settings.SESSION_COOKIE_DOMAIN,
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
-                "refresh_token", domain=settings.SESSION_COOKIE_DOMAIN
+                "refresh_token",
+                domain=settings.SESSION_COOKIE_DOMAIN,
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
             )
-            response.delete_cookie("csrftoken", domain=settings.SESSION_COOKIE_DOMAIN)
-            response.delete_cookie("sessionid", domain=settings.SESSION_COOKIE_DOMAIN)
+            response.delete_cookie(
+                "csrftoken",
+                domain=settings.SESSION_COOKIE_DOMAIN,
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
+            )
+            response.delete_cookie(
+                "sessionid",
+                domain=settings.SESSION_COOKIE_DOMAIN,
+                secure=settings.SESSION_COOKIE_SECURE,
+                samesite=settings.SESSION_COOKIE_SAMESITE,
+            )
             return response
         except Exception:
             return Response(

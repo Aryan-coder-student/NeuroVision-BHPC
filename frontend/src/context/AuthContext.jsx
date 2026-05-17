@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, logoutUser, fetchWorkspaces, fetchUserProfile, fetchCurrentWorkspace, createWorkspace as apiCreateWorkspace } from '../services/api';
+import { loginUser, logoutUser, fetchWorkspaces, fetchUserProfile, fetchCurrentWorkspace, createWorkspace as apiCreateWorkspace, setTenantDomain } from '../services/api';
 import config from '../config';
 
 const AuthContext = createContext(null);
@@ -125,11 +125,22 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem('nv_session', JSON.stringify({ user, org: workspace }));
     
     if (workspace.domain_url) {
-      const portSuffix = config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : '';
-      const targetUrl = `${config.protocol}//${workspace.domain_url}${portSuffix}/dashboard`;
+      setTenantDomain(workspace.domain_url);
       
-      if (window.location.origin + window.location.pathname !== targetUrl) {
-        window.location.href = targetUrl;
+      const isCloudDefault = workspace.domain_url.includes('onrender.com') || workspace.domain_url.includes('vercel.app');
+      
+      if (isCloudDefault) {
+        const targetUrl = `${window.location.origin}/dashboard`;
+        if (window.location.href !== targetUrl) {
+          window.location.href = targetUrl;
+        }
+      } else {
+        const portSuffix = config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : '';
+        const targetUrl = `${config.protocol}//${workspace.domain_url}${portSuffix}/dashboard`;
+        
+        if (window.location.origin + window.location.pathname !== targetUrl) {
+          window.location.href = targetUrl;
+        }
       }
     }
   };

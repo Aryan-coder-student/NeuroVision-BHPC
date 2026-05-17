@@ -127,3 +127,24 @@ export async function fetchAvailableModels(type) {
   }
   return [];
 }
+
+export function setTenantDomain(domainUrl) {
+  if (domainUrl) {
+    djangoApi.defaults.baseURL = `${config.protocol}//${domainUrl}/api/v1`;
+  } else {
+    djangoApi.defaults.baseURL = config.API_URL;
+  }
+}
+
+// Auto-restore tenant from session storage on initial boot
+try {
+  const saved = sessionStorage.getItem('nv_session');
+  if (saved) {
+    const { org } = JSON.parse(saved);
+    if (org && org.domain_url) {
+      djangoApi.defaults.baseURL = `${config.protocol}//${org.domain_url}/api/v1`;
+    }
+  }
+} catch (e) {
+  console.error("Failed to restore tenant from session storage", e);
+}
