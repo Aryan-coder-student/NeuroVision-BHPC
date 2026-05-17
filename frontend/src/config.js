@@ -4,7 +4,7 @@ const getEnvConfig = () => {
   const [hostBase, port] = host.split(':');
   
   // Robust environment detection
-  const isDev = hostname.includes('localhost') || hostname.includes('127.0.0.1') || hostname.includes('localtest.me') || hostname.includes('lvh.me');
+  const isDev = hostname.includes('localtest.me') || hostname.includes('127.0.0.1');
   const isProd = !isDev;
   
   // Base domain for the platform
@@ -14,12 +14,17 @@ const getEnvConfig = () => {
   const MAIN_URL = `${protocol}//${BASE_DOMAIN}${FRONTEND_PORT ? `:${FRONTEND_PORT}` : ''}`;
   
   // In production, we are always on the "Main Domain" (the central hub)
-  const isMainDomain = isProd || hostname === BASE_DOMAIN || hostname === 'localhost' || hostname === 'lvh.me';
+  const isMainDomain = isProd || hostname === BASE_DOMAIN;
 
   // API URL logic - Prioritize Environment Variables
   let rawApiUrl = import.meta.env.VITE_API_URL || (isProd 
     ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
-    : `${protocol}//api.localtest.me:8000/api/v1`);
+    : `${protocol}//localtest.me:8000/api/v1`);
+  
+  // Dynamically adapt localtest.me API URL to target the correct tenant subdomain
+  if (isDev && rawApiUrl.includes('localtest.me')) {
+    rawApiUrl = rawApiUrl.replace('localtest.me', hostname);
+  }
   
   // Safety: Ensure it always ends with /api/v1 if not already there
   if (!rawApiUrl.includes('/api/v1')) {

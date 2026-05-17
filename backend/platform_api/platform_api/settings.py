@@ -28,11 +28,9 @@ SECRET_KEY = settings.SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = settings.DEBUG
 
-ALLOWED_HOSTS = [".localtest.me", ".lvh.me", ".localhost", "127.0.0.1", ".onrender.com"]
+ALLOWED_HOSTS = [".localtest.me", "127.0.0.1", ".onrender.com"]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://localhost:517[34]$",
-    r"^http://127\.0\.0\.1:517[34]$",
     r"^http://.*\.localtest\.me:517[34]$",
     r"^http://localtest\.me:517[34]$",
 ]
@@ -173,10 +171,6 @@ STORAGES = {
 # CORS
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://*.localhost:5173",
-    "http://*.localhost:5174",
     "http://localtest.me:5173",
     "http://localtest.me:5174",
     "http://*.localtest.me:5173",
