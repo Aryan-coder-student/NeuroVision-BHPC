@@ -21,6 +21,11 @@ const getEnvConfig = () => {
     ? 'https://neurovision-backend-99o7.onrender.com/api/v1' 
     : `${protocol}//localtest.me:8000/api/v1`);
   
+  // Safety: Ensure it always starts with http:// or https://
+  if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
+    rawApiUrl = `https://${rawApiUrl}`;
+  }
+  
   // Dynamically adapt localtest.me API URL to target the correct tenant subdomain
   if (isDev && rawApiUrl.includes('localtest.me')) {
     rawApiUrl = rawApiUrl.replace('localtest.me', hostname);

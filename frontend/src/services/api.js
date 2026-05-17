@@ -140,7 +140,8 @@ export async function fetchAvailableModels(type) {
 
 export function setTenantDomain(domainUrl) {
   if (domainUrl) {
-    djangoApi.defaults.baseURL = `${config.protocol}//${domainUrl}/api/v1`;
+    const cleanDomain = domainUrl.startsWith('http') ? domainUrl : `https://${domainUrl}`;
+    djangoApi.defaults.baseURL = cleanDomain.endsWith('/api/v1') ? cleanDomain : `${cleanDomain}/api/v1`;
   } else {
     djangoApi.defaults.baseURL = config.API_URL;
   }
@@ -152,7 +153,7 @@ try {
   if (saved) {
     const { org } = JSON.parse(saved);
     if (org && org.domain_url) {
-      djangoApi.defaults.baseURL = `${config.protocol}//${org.domain_url}/api/v1`;
+      setTenantDomain(org.domain_url);
     }
   }
 } catch (e) {
