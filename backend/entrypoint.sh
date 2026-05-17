@@ -18,4 +18,4 @@ echo "🔑 Initializing platform..."
 python manage.py init_platform
 
 echo "🚀 Starting Gunicorn..."
-exec gunicorn --bind 0.0.0.0:8000 --workers 3 platform_api.wsgi:application
+exec gunicorn --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile - platform_api.wsgi:application
