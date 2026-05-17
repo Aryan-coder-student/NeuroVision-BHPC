@@ -25,9 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = settings.SECRET_KEY
 
-DEBUG = True
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = settings.DEBUG
 
 
 ALLOWED_HOSTS = [".localtest.me", "127.0.0.1", ".onrender.com"]
