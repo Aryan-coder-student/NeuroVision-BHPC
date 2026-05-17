@@ -184,8 +184,14 @@ CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False
 
 # Cookie domains for Multi-Tenancy (Sync with current domain)
-SESSION_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
-CSRF_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
+# Standardize on .localtest.me strictly in development.
+# In production on Render/Vercel (.onrender.com is a public suffix, so browsers block wildcards. Must be None).
+if settings.is_dev:
+    SESSION_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
+    CSRF_COOKIE_DOMAIN = f".{TENANT_BASE_DOMAIN}" if "." in TENANT_BASE_DOMAIN else None
+else:
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
 
 
 # Email Settings
