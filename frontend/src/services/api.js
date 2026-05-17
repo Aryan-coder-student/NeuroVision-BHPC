@@ -10,10 +10,17 @@ export const djangoApi = axios.create({
 djangoApi.interceptors.request.use((config) => {
   const unsafeMethods = ['post', 'put', 'patch', 'delete'];
   if (unsafeMethods.includes(config.method)) {
-    const csrfToken = document.cookie
+    // 1. Try to read from cookie
+    let csrfToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('csrftoken='))
       ?.split('=')[1];
+      
+    // 2. Fall back to sessionStorage if blocked by cross-origin Same-Origin Policy
+    if (!csrfToken) {
+      csrfToken = sessionStorage.getItem('nv_csrf_token');
+    }
+    
     if (csrfToken) {
       config.headers['X-CSRFToken'] = csrfToken;
     }
@@ -27,7 +34,10 @@ const WORKSPACE_BASE = `${API_BASE}/workspaces`;
 
 export async function initializeCsrf() {
   try {
-    await djangoApi.get(`${AUTH_BASE}/csrf/`);
+    const res = await djangoApi.get(`${AUTH_BASE}/csrf/`);
+    if (res.data && res.data.csrf_token) {
+      sessionStorage.setItem('nv_csrf_token', res.data.csrf_token);
+    }
   } catch (error) {
     console.error("Failed to fetch CSRF token", error);
   }
