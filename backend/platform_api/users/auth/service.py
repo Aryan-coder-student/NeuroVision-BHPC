@@ -23,7 +23,11 @@ class UserService:
         user.last_otp_sent_at = timezone.now()
         user.save()
 
-        email_service.send(user.email, "Verify Your Email", f"Your OTP is: {otp}")
+        sent = email_service.send(user.email, "Verify Your Email", f"Your OTP is: {otp}")
+        if not sent:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"⚠️ [EMAIL FALLBACK] Failed to send email to {user.email}. The generated OTP is: {otp}")
 
     @staticmethod
     def verify_otp(user: User, otp: str):
