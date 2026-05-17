@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Prod Settings (MailMug defaults)
     EMAIL_HOST_PROD: str = "smtp.mailmug.net"
     EMAIL_PORT_PROD: int = 2525
-    EMAIL_USE_TLS_PROD: bool = True
+    EMAIL_USE_TLS_PROD: bool = False
     EMAIL_USE_SSL_PROD: bool = False
 
     # Dev Overrides (optional in .env)
