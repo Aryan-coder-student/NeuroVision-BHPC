@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
     DEFAULT_FROM_EMAIL: str = "noreply@neurovision.com"
 
-    # Prod Settings
-    EMAIL_HOST_PROD: str = "smtp.sendgrid.net"
-    EMAIL_PORT_PROD: int = 587
+    # Prod Settings (MailMug defaults)
+    EMAIL_HOST_PROD: str = "smtp.mailmug.net"
+    EMAIL_PORT_PROD: int = 2525
     EMAIL_USE_TLS_PROD: bool = True
     EMAIL_USE_SSL_PROD: bool = False
 
