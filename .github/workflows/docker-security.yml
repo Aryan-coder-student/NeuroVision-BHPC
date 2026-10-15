@@ -26,3 +26,10 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      - name: Explain failed security scan
+        if: failure()
+        run: |
+          echo 'Trivy found HIGH or CRITICAL vulnerabilities, or its scan failed.'
+          echo 'Review the Run Trivy Vulnerability Scanner step for exact package IDs and remediation.'
+          echo 'The security gate is intentionally not disabled.'
