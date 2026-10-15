@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny
@@ -197,6 +199,7 @@ class LogoutView(ModelViewSet):
             )
             return response
         except Exception:
+            logging.getLogger(__name__).exception("Logout token revocation failed")
             return Response(
                 {"error": "Logout failed."}, status=status.HTTP_400_BAD_REQUEST
             )
