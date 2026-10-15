@@ -176,25 +176,21 @@ class LogoutView(ModelViewSet):
             response.delete_cookie(
                 "access_token",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "refresh_token",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "csrftoken",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "sessionid",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             return response
