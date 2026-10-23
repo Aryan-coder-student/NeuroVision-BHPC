@@ -66,7 +66,7 @@ INSTALLED_APPS = list(SHARED_APPS) + [
     app for app in TENANT_APPS if app not in SHARED_APPS
 ]
 MIDDLEWARE = [
-    "django_tenants.middleware.main.TenantMainMiddleware",
+    "tenant.middleware.WorkspaceTenantMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
