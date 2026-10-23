@@ -82,8 +82,10 @@ export async function fetchWorkspaces() {
   return res.data;
 }
 
-export async function fetchCurrentWorkspace() {
-  const res = await djangoApi.get(`${WORKSPACE_BASE}/current/`);
+export async function fetchCurrentWorkspace(workspaceId) {
+  const res = await djangoApi.get(`${WORKSPACE_BASE}/current/`, {
+    headers: workspaceId ? { 'X-Workspace-ID': workspaceId } : {}
+  });
   return res.data;
 }
 
@@ -138,13 +140,9 @@ export async function fetchAvailableModels(type) {
   return [];
 }
 
-export function setTenantDomain(domainUrl) {
-  if (domainUrl) {
-    const cleanDomain = domainUrl.startsWith('http') ? domainUrl : `https://${domainUrl}`;
-    djangoApi.defaults.baseURL = cleanDomain.endsWith('/api/v1') ? cleanDomain : `${cleanDomain}/api/v1`;
-  } else {
-    djangoApi.defaults.baseURL = config.API_URL;
-  }
+export function setTenantDomain() {
+  // Render uses a shared backend URL; never switch to unprovisioned subdomains.
+  djangoApi.defaults.baseURL = config.API_URL;
 }
 
 // Start every page load on the platform API. AuthContext validates the HttpOnly

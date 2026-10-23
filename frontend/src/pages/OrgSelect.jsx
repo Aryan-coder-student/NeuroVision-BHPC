@@ -19,11 +19,13 @@ export default function OrgSelect() {
     country: 'India'
   });
 
-  const handleSelect = (ws) => {
-    selectOrg(ws);
-    // Note: selectOrg will handle the window.location redirect if domain_url exists
-    if (!ws.domain_url) {
+  const handleSelect = async (ws) => {
+    try {
+      await selectOrg(ws);
       navigate('/dashboard');
+    } catch (err) {
+      console.error('Workspace access denied', err);
+      alert('Could not access this workspace. Please check your membership.');
     }
   };
 
@@ -161,7 +163,7 @@ export default function OrgSelect() {
               </button>
               
               <p className="modal-note">
-                Provisioning includes setting up an isolated database schema and a dedicated subdomain.
+                Provisioning creates an isolated PostgreSQL schema, accessible through the shared dashboard.
               </p>
             </form>
           </div>
