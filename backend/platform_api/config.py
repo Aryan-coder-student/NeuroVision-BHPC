@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
     DEFAULT_FROM_EMAIL: str = "noreply@neurovision.com"
 
-    # Prod Settings (MailMug defaults)
-    EMAIL_HOST_PROD: str = "smtp.mailmug.net"
+    # Production: Brevo SMTP over port 2525 (works with Render Free SMTP restrictions)
+    EMAIL_HOST_PROD: str = "smtp-relay.brevo.com"
     EMAIL_PORT_PROD: int = 2525
-    EMAIL_USE_TLS_PROD: bool = False
+    EMAIL_USE_TLS_PROD: bool = True
     EMAIL_USE_SSL_PROD: bool = False
 
     # Dev Overrides (optional in .env)
