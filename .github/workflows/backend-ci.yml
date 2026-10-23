@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Run Ruff
-        run: uv run ruff check .
+        run: uvx ruff==0.15.12 check .
 
   test:
     runs-on: ubuntu-latest
@@ -43,9 +43,10 @@ jobs:
 
     env:
       ENV: development
-      ENCRYPTION_KEY: "dummy-key-for-testing-only-1234567890="
+      ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
       DATABASE_URL: "postgres://myuser:mypassword@localhost:5432/multitenant"
       SECRET_KEY: "ci-test-secret-key"
+      EMAIL_BACKEND: "django.core.mail.backends.locmem.EmailBackend"
 
     steps:
       - uses: actions/checkout@v4
@@ -60,5 +61,5 @@ jobs:
       - name: Run Tests
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          uv run python manage.py test users.auth.tests --noinput
+          uv run python manage.py test users.auth.tests --noinput --verbosity 2
         working-directory: backend/platform_api

@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny
@@ -174,29 +176,26 @@ class LogoutView(ModelViewSet):
             response.delete_cookie(
                 "access_token",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "refresh_token",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "csrftoken",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             response.delete_cookie(
                 "sessionid",
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                secure=settings.SESSION_COOKIE_SECURE,
                 samesite=settings.SESSION_COOKIE_SAMESITE,
             )
             return response
         except Exception:
+            logging.getLogger(__name__).exception("Logout token revocation failed")
             return Response(
                 {"error": "Logout failed."}, status=status.HTTP_400_BAD_REQUEST
             )

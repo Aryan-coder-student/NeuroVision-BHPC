@@ -25,7 +25,10 @@ RUN groupadd -g 1001 python && \
     useradd -m -u 1001 -g python python
 
 # Copy the virtual environment and source code from builder
-COPY --from=builder --chown=python:python /app /app
+# Copy only runtime artifacts; exclude builder caches and dependency lock metadata.
+COPY --from=builder --chown=python:python /app/.venv /app/.venv
+COPY --from=builder --chown=python:python /app/platform_api /app/platform_api
+COPY --from=builder --chown=python:python /app/entrypoint.sh /app/entrypoint.sh
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
