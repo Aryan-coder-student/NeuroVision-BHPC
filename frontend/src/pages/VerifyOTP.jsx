@@ -31,8 +31,14 @@ export default function VerifyOTP() {
     try {
       await verifyOTP(email, otp);
       // Verification sets auth cookies; continue directly to workspace selection.
-      await restoreSession();
-      navigate('/select-org', { replace: true });
+      try {
+        await restoreSession();
+        navigate('/select-org', { replace: true });
+      } catch {
+        // OTP was accepted, but browser may block cross-site cookies.
+        // Never ask for the already-used OTP again.
+        navigate('/login', { replace: true, state: { message: 'Email verified. Please sign in.' } });
+      }
     } catch (err) {
       const msg = err.response?.data?.error || 'Verification failed. Please check your code.';
       setError(msg);
