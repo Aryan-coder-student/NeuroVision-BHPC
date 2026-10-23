@@ -32,6 +32,12 @@ services:
     rootDir: frontend
     buildCommand: npm run build
     staticPublishPath: dist
+    # React Router handles dashboard/workspace paths in the browser.
+    # Without this, direct links and reloads such as /dashboard return 404.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         value: https://neurovision-backend-99o7.onrender.com/api/v1
