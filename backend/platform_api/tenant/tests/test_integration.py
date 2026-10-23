@@ -121,3 +121,52 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
+
+    def test_switching_between_two_authorized_tenants_uses_correct_schema(self):
+        second = Institution.objects.create(
+            name="Second Hospital",
+            slug="second-hospital",
+            schema_name="second_hospital",
+        )
+        InstitutionMembership.objects.create(
+            user=self.user, institution=second, is_active=True,
+        )
+        self.authenticate(self.user)
+        for institution in (self.institution, second, self.institution):
+            response = self.client.get(
+                "/api/v1/tenant/context/",
+                HTTP_X_WORKSPACE_ID=str(institution.id),
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data["id"], str(institution.id))
+            self.assertEqual(response.data["schema_name"], institution.schema_name)
+
+    def test_member_of_first_tenant_cannot_switch_to_second_without_membership(self):
+        second = Institution.objects.create(
+            name="Second Hospital",
+            slug="second-hospital",
+            schema_name="second_hospital",
+        )
+        self.authenticate(self.user)
+        response = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(second.id),
+        )
+        self.assertEqual(response.status_code, 404)
+        authorized = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(authorized.status_code, 200)
+        self.assertEqual(authorized.data["schema_name"], self.institution.schema_name)
+
+    def test_unauthorized_tenant_request_does_not_change_subsequent_public_api(self):
+        self.authenticate(self.other_user)
+        response = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(response.status_code, 404)
+        listing = self.client.get("/api/v1/workspaces/")
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(len(listing.data), 0)

@@ -36,7 +36,7 @@ export default function OrgSelect() {
       const newWs = await createWorkspace(formData);
       setShowCreateModal(false);
       // Automatically select the newly created workspace
-      handleSelect(newWs);
+      await handleSelect(newWs);
     } catch {
       alert("Failed to create workspace. Please try again.");
     } finally {
@@ -71,7 +71,7 @@ export default function OrgSelect() {
             </div>
             <div className="org-card-stats">
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {ws.domain_url || 'Provisioning...'}
+                Shared NeuroVision workspace
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', color: 'var(--accent-primary)' }}>
                 <span style={{ fontSize: 12, marginRight: 4 }}>Enter</span>

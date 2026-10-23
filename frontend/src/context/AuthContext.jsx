@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loginUser, logoutUser, fetchWorkspaces, fetchUserProfile, fetchCurrentWorkspace, createWorkspace as apiCreateWorkspace, setTenantDomain } from '../services/api';
+import { loginUser, logoutUser, fetchWorkspaces, fetchUserProfile, fetchCurrentWorkspace, fetchTenantContext, createWorkspace as apiCreateWorkspace, setTenantDomain } from '../services/api';
 import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }) {
@@ -29,7 +29,11 @@ export function AuthProvider({ children }) {
             const { org: savedOrg } = JSON.parse(stored);
             if (savedOrg) {
               const verified = await fetchCurrentWorkspace(savedOrg.id);
-              if (!cancelled) setOrg(verified);
+              const context = await fetchTenantContext(savedOrg.id);
+              if (String(context.id) !== String(verified.id)) {
+                throw new Error('Workspace context mismatch');
+              }
+              if (!cancelled) setOrg({ ...verified, role: context.role });
             }
           } catch {
             setOrg(null);
@@ -139,10 +143,15 @@ export function AuthProvider({ children }) {
   const selectOrg = async (workspace) => {
     // Authenticate membership against the public schema before selecting a tenant.
     const verified = await fetchCurrentWorkspace(workspace.id);
-    setOrg(verified);
-    sessionStorage.setItem('nv_session', JSON.stringify({ org: verified }));
+    const context = await fetchTenantContext(workspace.id);
+    if (String(verified.id) !== String(context.id)) {
+      throw new Error('Workspace context mismatch');
+    }
+    const selected = { ...verified, role: context.role };
+    setOrg(selected);
+    sessionStorage.setItem('nv_session', JSON.stringify({ org: { id: selected.id } }));
     setTenantDomain(null);
-    return verified;
+    return selected;
   };
 
   const logout = async () => {

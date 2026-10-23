@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from '../config';
+import { buildTenantApiUrl } from './tenant-api-url';
 
 // --- Django Backend API Configuration ---
 export const djangoApi = axios.create({
@@ -89,6 +90,27 @@ export async function fetchCurrentWorkspace(workspaceId) {
   return res.data;
 }
 
+/** The verified tenant context comes from backend middleware, not sessionStorage.
+ *  Keep tenant headers limited to this explicitly scoped API helper.
+ */
+export async function fetchTenantContext(workspaceId) {
+  if (!workspaceId) throw new Error('A workspace ID is required');
+  const res = await djangoApi.get(`${API_BASE}/tenant/context/`, {
+    headers: { 'X-Workspace-ID': workspaceId }
+  });
+  if (String(res.data.id) !== String(workspaceId)) {
+    throw new Error('Tenant context did not match selected workspace');
+  }
+  return res.data;
+}
+
+export async function tenantRequest(workspaceId, requestConfig) {
+  if (!workspaceId) throw new Error('Select a workspace before using tenant APIs');
+  const url = buildTenantApiUrl(API_BASE, requestConfig.url);
+  const headers = { ...requestConfig.headers, 'X-Workspace-ID': workspaceId };
+  return djangoApi.request({ ...requestConfig, url, headers });
+}
+
 export async function createWorkspace(data) {
   const res = await djangoApi.post(`${WORKSPACE_BASE}/`, data);
   return res.data;
@@ -145,6 +167,4 @@ export function setTenantDomain() {
   djangoApi.defaults.baseURL = config.API_URL;
 }
 
-// Start every page load on the platform API. AuthContext validates the HttpOnly
-// session cookie first; only after authentication and workspace selection should
-// a tenant-specific API URL be used.
+// All API requests stay on the single configured backend origin.

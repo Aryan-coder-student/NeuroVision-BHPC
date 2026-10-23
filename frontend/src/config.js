@@ -32,10 +32,8 @@ const getEnvConfig = () => {
     rawApiUrl = `https://${rawApiUrl}`;
   }
   
-  // Dynamically adapt localtest.me API URL to target the correct tenant subdomain
-  if (isDev && rawApiUrl.includes('localtest.me')) {
-    rawApiUrl = rawApiUrl.replace('localtest.me', hostname);
-  }
+  // Keep one public-schema API origin for auth and tenant-scoped requests.
+  // Tenant selection is explicit and verified by Django, never by a hostname swap.
   
   // Safety: Ensure it always ends with /api/v1 if not already there
   if (!rawApiUrl.includes('/api/v1')) {
