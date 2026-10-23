@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from '../config';
+import { buildTenantApiUrl } from './tenant-api-url';
 
 // --- Django Backend API Configuration ---
 export const djangoApi = axios.create({
@@ -105,12 +106,9 @@ export async function fetchTenantContext(workspaceId) {
 
 export async function tenantRequest(workspaceId, requestConfig) {
   if (!workspaceId) throw new Error('Select a workspace before using tenant APIs');
-  const path = requestConfig.url || '';
-  if (!/^\/tenant\//.test(path)) {
-    throw new Error('tenantRequest accepts only /tenant/ endpoints');
-  }
+  const url = buildTenantApiUrl(API_BASE, requestConfig.url);
   const headers = { ...requestConfig.headers, 'X-Workspace-ID': workspaceId };
-  return djangoApi.request({ ...requestConfig, url: `${API_BASE}${path}`, headers });
+  return djangoApi.request({ ...requestConfig, url, headers });
 }
 
 export async function createWorkspace(data) {
