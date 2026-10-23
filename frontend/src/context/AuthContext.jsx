@@ -107,6 +107,22 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const restoreSession = async () => {
+    const profile = await fetchUserProfile();
+    if (!profile.user) throw new Error('Could not restore verified session');
+    const verifiedUser = {
+      ...profile.user,
+      name: profile.user.first_name || profile.user.email.split('@')[0],
+      role: 'Professional'
+    };
+    setUser(verifiedUser);
+    setOrg(null);
+    sessionStorage.removeItem('nv_session');
+    setTenantDomain(null);
+    await refreshWorkspaces();
+    return verifiedUser;
+  };
+
   const createWorkspace = async (data) => {
     try {
       const newWs = await apiCreateWorkspace(data);
@@ -179,7 +195,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ 
       user, org, workspaces, loading, authError, 
-      login, selectOrg, logout, refreshWorkspaces, createWorkspace 
+      login, selectOrg, logout, refreshWorkspaces, createWorkspace, restoreSession 
     }}>
       {children}
     </AuthContext.Provider>
