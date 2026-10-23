@@ -1,4 +1,5 @@
 """Exercise the actual Django request path, not only a mocked middleware."""
+from django.db import connection
 from django.test import override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,6 +12,8 @@ from users.auth.tests.common import TenantTestCase, create_user
 @override_settings(ALLOWED_HOSTS=["testserver"])
 class SharedWorkspaceIntegrationTests(TenantTestCase):
     def setUp(self):
+        # Django TestCase reuses the connection; undo prior test's schema switch.
+        connection.set_schema_to_public()
         self.client = APIClient()
         self.user, _ = create_user(
             username="workspaceuser", email="workspaceuser@example.com",
@@ -29,6 +32,10 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
             user=self.user, institution=self.institution, is_active=True,
         )
         self.url = "/api/v1/workspaces/current/"
+
+    def tearDown(self):
+        connection.set_schema_to_public()
+        super().tearDown()
 
     def authenticate(self, user):
         self.client.cookies["access_token"] = str(
