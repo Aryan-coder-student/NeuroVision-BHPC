@@ -1,6 +1,7 @@
 """Actual API + PostgreSQL-schema isolation tests using the project tenant middleware."""
 from django.db import connection
 from django.test import override_settings
+from django_tenants.utils import schema_context
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -81,7 +82,7 @@ class PatientTenantIsolationTests(TenantTestCase):
             self.request("get", self.aiims, path=f"{self.url}{left.data['id']}/").status_code,
             404,
         )
-        with connection.schema_context(self.apollo.schema_name):
+        with schema_context(self.apollo.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
         with connection.schema_context(self.aiims.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
