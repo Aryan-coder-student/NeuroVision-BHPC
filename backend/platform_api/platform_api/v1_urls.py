@@ -5,4 +5,5 @@ urlpatterns = [
     path("auth/", include("users.auth.urls")),
     path("workspaces/", include("tenant.urls")),
     path("tenant/context/", TenantContextView.as_view(), name="tenant-context"),
+    path("tenant/", include("clinical.urls")),
 ]
