@@ -32,6 +32,7 @@ jobs:
         shell: bash
         run: |
           jq -r '.Results[]? | select((.Vulnerabilities // []) | length > 0) | "TARGET: \(.Target) | TYPE: \(.Type)\n" + ((.Vulnerabilities // []) | map("  \(.PkgName) \(.InstalledVersion) -> \(.FixedVersion // "unfixed") [\(.Severity)] \(.VulnerabilityID)") | join("\n"))' trivy-results.json
+          jq -c '.Results[]? | select(.Target == "Python") | {Target, Packages: [.Packages[]? | select(.Name == "msgpack" or .Name == "setuptools" or .Name == "urllib3")], Vulnerabilities: [.Vulnerabilities[]? | {PkgName, InstalledVersion, PkgID, PkgPath, Layer}]}' trivy-results.json
           findings=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' trivy-results.json)
           echo "HIGH/CRITICAL findings: $findings"
           if [ "$findings" -gt 0 ]; then
