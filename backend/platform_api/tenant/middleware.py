@@ -9,6 +9,7 @@ from django.db import connection
 from django.http import JsonResponse
 from django_tenants.middleware.main import TenantMainMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from users.models import InstitutionMembership
@@ -26,7 +27,9 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
 
         workspace_id = request.headers.get("X-Workspace-ID")
         if not workspace_id:
-            return None  # Legacy domain-scoped tenant routing.
+            if request.tenant.schema_name == "public":
+                return JsonResponse({"detail": "Workspace ID required."}, status=400)
+            return None  # Existing custom-domain routing.
 
         try:
             workspace_id = UUID(workspace_id)
@@ -41,7 +44,7 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
 
         try:
             user = jwt.get_user(jwt.get_validated_token(raw_token))
-        except (InvalidToken, TokenError):
+        except (AuthenticationFailed, InvalidToken, TokenError):
             return JsonResponse({"detail": "Invalid or expired session."}, status=401)
 
         # Membership is checked in the public schema before switching search_path.
