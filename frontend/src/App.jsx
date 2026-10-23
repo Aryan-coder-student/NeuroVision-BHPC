@@ -15,6 +15,7 @@ import Segmentation from './pages/Segmentation';
 import VQA         from './pages/VQA';
 import History     from './pages/History';
 import Reports     from './pages/Reports';
+import Patients    from './pages/Patients';
 import DataContribution from './pages/DataContribution';
 import ModelFeedback    from './pages/ModelFeedback';
 import ModelRegistry    from './pages/ModelRegistry';
@@ -107,6 +108,7 @@ function AppRoutes() {
         <Route path="/vqa"          element={<VQA />} />
         <Route path="/history"      element={<History />} />
         <Route path="/reports"      element={<Reports />} />
+        <Route path="/patients"     element={<Patients />} />
         <Route path="/contribute"   element={<DataContribution />} />
         <Route path="/feedback"     element={<ModelFeedback />} />
         <Route path="/models"       element={<ModelRegistry />} />

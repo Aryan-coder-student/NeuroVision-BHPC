@@ -111,6 +111,24 @@ export async function tenantRequest(workspaceId, requestConfig) {
   return djangoApi.request({ ...requestConfig, url, headers });
 }
 
+export async function fetchPatients(workspaceId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: '/tenant/patients/',
+    signal,
+  });
+  return Array.isArray(res.data) ? res.data : res.data.results || [];
+}
+
+export async function createPatient(workspaceId, patient) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: '/tenant/patients/',
+    data: patient,
+  });
+  return res.data;
+}
+
 export async function createWorkspace(data) {
   const res = await djangoApi.post(`${WORKSPACE_BASE}/`, data);
   return res.data;

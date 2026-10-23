@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+from corsheaders.defaults import default_headers
 from config import settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -173,6 +174,7 @@ STORAGES = {
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = (*default_headers, "x-workspace-id")
 CSRF_TRUSTED_ORIGINS = [
     "http://localtest.me:5173",
     "http://localtest.me:5174",

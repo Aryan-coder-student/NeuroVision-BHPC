@@ -2,7 +2,7 @@ import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 import {
   Brain, LayoutDashboard, MessageSquare, ScanLine,
-  History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server
+  History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server, Users
 } from 'lucide-react';
 import './AppShell.css';
 import config from '../config';
@@ -35,22 +35,25 @@ export default function AppShell() {
         </div>
 
         {org && (
-          <div className="sidebar-org" onClick={handleSwitchOrg}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <div className="sidebar-org-label">Organization</div>
+          <button type="button" className="sidebar-org" onClick={handleSwitchOrg}>
+            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span className="sidebar-org-label">Organization</span>
               <ChevronRight size={12} className="switch-icon" style={{ opacity: 0.5 }} />
-            </div>
-            <div className="sidebar-org-name">{org.name}</div>
-            <div style={{ fontSize: 10, color: 'var(--accent-primary)', marginTop: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            </span>
+            <span className="sidebar-org-name">{org.name}</span>
+            <span style={{ display: 'block', fontSize: 10, color: 'var(--accent-primary)', marginTop: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Switch Workspace
-            </div>
-          </div>
+            </span>
+          </button>
         )}
 
         <nav className="sidebar-nav">
           <div className="nav-section-label">Workspace</div>
           <NavLink to="/dashboard"     className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <LayoutDashboard size={15} /> Dashboard
+          </NavLink>
+          <NavLink to="/patients"      className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Users size={15} /> Patients
           </NavLink>
           <NavLink to="/segmentation"  className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <ScanLine size={15} /> 3D Segmentation

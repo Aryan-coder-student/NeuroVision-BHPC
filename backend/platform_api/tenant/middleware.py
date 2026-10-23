@@ -26,6 +26,12 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
         # Resolve hostname normally first (including existing custom tenant domains).
         super().process_request(request)
 
+        # Browser CORS preflight carries the requested header name, not the
+        # credential value. CorsMiddleware will answer it without reaching a view;
+        # the subsequent real request still performs every check below.
+        if request.method == "OPTIONS":
+            return None
+
         if not self.is_tenant_path(request.path):
             return None
 
