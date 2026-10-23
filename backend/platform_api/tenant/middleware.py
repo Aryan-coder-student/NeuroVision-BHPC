@@ -64,4 +64,5 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
             return JsonResponse({"detail": "Workspace does not match hostname."}, status=403)
         connection.set_tenant(tenant)
         request.tenant = tenant
+        request.tenant_membership = membership
         return None
