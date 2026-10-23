@@ -17,19 +17,23 @@ from users.models import InstitutionMembership
 
 class WorkspaceTenantMiddleware(TenantMainMiddleware):
     TENANT_PATHS = ("/api/v1/workspaces/current/",)
+    TENANT_PREFIX = "/api/v1/tenant/"
+
+    def is_tenant_path(self, path):
+        return path in self.TENANT_PATHS or path.startswith(self.TENANT_PREFIX)
 
     def process_request(self, request):
         # Resolve hostname normally first (including existing custom tenant domains).
         super().process_request(request)
 
-        if request.path not in self.TENANT_PATHS:
+        if not self.is_tenant_path(request.path):
             return None
 
         workspace_id = request.headers.get("X-Workspace-ID")
         if not workspace_id:
-            if request.tenant.schema_name == "public":
-                return JsonResponse({"detail": "Workspace ID required."}, status=400)
-            return None  # Existing custom-domain routing.
+            # Even custom tenant domains must establish membership; relying
+            # on hostname + IsAuthenticated alone is not sufficient.
+            return JsonResponse({"detail": "Workspace ID required."}, status=400)
 
         try:
             workspace_id = UUID(workspace_id)
@@ -55,6 +59,10 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
             return JsonResponse({"detail": "Workspace not found."}, status=404)
 
         tenant = membership.institution
+        # Never let a client-provided header override a host-resolved tenant.
+        if request.tenant.schema_name not in ("public", tenant.schema_name):
+            return JsonResponse({"detail": "Workspace does not match hostname."}, status=403)
         connection.set_tenant(tenant)
         request.tenant = tenant
+        request.tenant_membership = membership
         return None

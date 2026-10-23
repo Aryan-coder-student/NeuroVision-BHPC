@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { Building2, MapPin, LogOut, ChevronRight, Plus, Loader, X, Globe, Mail, Phone } from 'lucide-react';
 import './OrgSelect.css';
 
@@ -37,7 +37,7 @@ export default function OrgSelect() {
       setShowCreateModal(false);
       // Automatically select the newly created workspace
       handleSelect(newWs);
-    } catch (err) {
+    } catch {
       alert("Failed to create workspace. Please try again.");
     } finally {
       setCreating(false);

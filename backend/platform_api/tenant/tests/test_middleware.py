@@ -85,6 +85,7 @@ class WorkspaceTenantMiddlewareTests(SimpleTestCase):
             HTTP_X_WORKSPACE_ID=str(self.workspace_id),
             HTTP_AUTHORIZATION="Bearer token",
         )
+        request.tenant = MagicMock(schema_name="public")
         self.assertIsNone(self.middleware.process_request(request))
         memberships.filter.assert_called_once_with(
             user=user, institution_id=self.workspace_id, is_active=True

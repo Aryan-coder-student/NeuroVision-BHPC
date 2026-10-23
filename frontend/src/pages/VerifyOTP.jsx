@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Brain, ShieldCheck, ArrowRight, Loader, Mail } from 'lucide-react';
 import { verifyOTP } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import './Login.css';
 
 export default function VerifyOTP() {

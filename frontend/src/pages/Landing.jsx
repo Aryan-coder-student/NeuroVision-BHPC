@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/auth-context';
+import { motion as Motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { Brain, ArrowRight, ScanLine, MessageSquare, Database, ChevronRight, Activity, Cpu } from 'lucide-react';
 import config from '../config';
 
@@ -41,7 +41,7 @@ export default function Landing() {
   const { scrollYProgress } = useScroll();
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const yHero = useTransform(scrollYProgress, [0, 0.2], [0, -100]);
-  
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,21 +71,21 @@ export default function Landing() {
 
   return (
     <div style={{ background: '#000000', color: '#fff', minHeight: '100vh', overflowX: 'hidden', position: 'relative' }}>
-      
+
       {/* ── Global Preloader ── */}
       <AnimatePresence>
         {loading && (
-          <motion.div 
+          <Motion.div
             initial={{ opacity: 1 }} exit={{ opacity: 0, filter: 'blur(10px)' }} transition={{ duration: 0.6 }}
             style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <div className="network-spinner" />
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 
       {/* ── Header ── */}
-      <motion.header 
+      <Motion.header
         initial={{ y: -100 }} animate={{ y: 0 }} transition={{ delay: 1.2, duration: 0.8, type: 'spring' }}
         style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
@@ -98,15 +98,15 @@ export default function Landing() {
           <Brain size={24} style={{ color: 'var(--text-bright)' }} />
           <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.1em' }}>NEUROVISION</span>
         </div>
-        <motion.button 
+        <Motion.button
           whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate(user ? '/select-org' : '/login')}
           style={{ background: '#fff', color: '#000', border: 'none', padding: '10px 24px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
         >
           {user ? 'Go to Workspace' : 'Sign In'}
-        </motion.button>
-      </motion.header>
+        </Motion.button>
+      </Motion.header>
 
       {/* ── Background Parallax Layer ── */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -124,28 +124,28 @@ export default function Landing() {
 
       {/* ── Main Content ── */}
       <main style={{ position: 'relative', zIndex: 10, paddingTop: 160 }}>
-        
+
         {/* HERO SECTION */}
-        <motion.section 
+        <Motion.section
           style={{ opacity: opacityHero, y: yHero, minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 24px' }}
         >
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4, duration: 0.8 }}
+          <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4, duration: 0.8 }}
             style={{ fontSize: 12, fontWeight: 800, color: 'var(--neon-cyan)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24, border: '1px solid rgba(6,182,212,0.3)', padding: '6px 16px', background: 'rgba(6,182,212,0.05)' }}>
             Clinical Platform 2.0
-          </motion.div>
-          <motion.h1 
+          </Motion.div>
+          <Motion.h1
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.6, duration: 1, type: 'spring' }}
             className="title-glow" style={{ fontSize: 'clamp(48px, 8vw, 96px)', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', letterSpacing: '-0.04em', marginBottom: 32 }}
           >
             NEUROVISION<br/>PRECISION
-          </motion.h1>
-          <motion.p 
+          </Motion.h1>
+          <Motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8, duration: 0.8 }}
             style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 640, textAlign: 'center', lineHeight: 1.6, marginBottom: 56 }}
           >
             A high-fidelity framework for neural analytics. Seamlessly integrate multi-modal AI segmentations and VQA directly into your surgical workflow.
-          </motion.p>
-          <motion.button 
+          </Motion.p>
+          <Motion.button
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.0, duration: 0.8 }}
             whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(255,255,255,0.2)' }}
             whileTap={{ scale: 0.95 }}
@@ -153,26 +153,26 @@ export default function Landing() {
             style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
           >
             Deploy Workflow <ArrowRight size={18} />
-          </motion.button>
-        </motion.section>
+          </Motion.button>
+        </Motion.section>
 
         {/* CAROUSEL SECTION */}
         <section style={{ padding: '100px 0', overflow: 'hidden' }}>
           <div style={{ padding: '0 48px', marginBottom: 48 }}>
             <h2 className="text-gradient" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.02em' }}>Platform Subsystems</h2>
           </div>
-          
+
           {/* Framer Motion Draggable Carousel */}
           <div ref={carouselRef} style={{ width: '100%', overflow: 'visible' }}>
-            <motion.div 
+            <Motion.div
               ref={carouselContentRef}
-              drag="x" 
+              drag="x"
               dragConstraints={dragConstraints}
               dragElastic={0.05}
-              style={{ 
-                display: 'flex', 
-                gap: 64, 
-                padding: '0 0 0 0', 
+              style={{
+                display: 'flex',
+                gap: 64,
+                padding: '0 0 0 0',
                 cursor: 'grab',
                 width: 'max-content'
               }}
@@ -184,12 +184,12 @@ export default function Landing() {
                 { icon: <Database size={32}/>, title: 'Federated Registry', desc: 'Secure PHI-scrubbed contribution endpoints with immutable trails for decentralized training.', metric: 'HIPAA', color: 'var(--neon-purple)' },
                 { icon: <Activity size={32}/>, title: 'Pathology Reports', desc: 'Automated synthesis of clinical metrics into standardized narrative reporting for EHR ingestion.', metric: 'HL7 / FHIR', color: '#ffffff' },
               ].map((card, i) => (
-                <motion.div key={i} className="glass-panel" 
-                  style={{ 
-                    width: 400, 
-                    aspectRatio: '1/1', 
-                    padding: 40, 
-                    display: 'flex', 
+                <Motion.div key={i} className="glass-panel"
+                  style={{
+                    width: 400,
+                    aspectRatio: '1/1',
+                    padding: 40,
+                    display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between'
                   }}
@@ -205,9 +205,9 @@ export default function Landing() {
                     <span>METRIC</span>
                     <span style={{ color: card.color }}>{card.metric}</span>
                   </div>
-                </motion.div>
+                </Motion.div>
               ))}
-            </motion.div>
+            </Motion.div>
           </div>
         </section>
 
@@ -231,12 +231,12 @@ export default function Landing() {
 
         {/* TESTIMONIALS */}
         <section style={{ padding: '100px 48px', display: 'flex', justifyContent: 'center' }}>
-          <div className="glass-panel" 
-            style={{ 
-              width: 400, 
-              aspectRatio: '1/1', 
-              padding: 40, 
-              position: 'relative', 
+          <div className="glass-panel"
+            style={{
+              width: 400,
+              aspectRatio: '1/1',
+              padding: 40,
+              position: 'relative',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -263,13 +263,13 @@ export default function Landing() {
         {/* FOOTER CTA */}
         <section style={{ padding: '120px 48px', textAlign: 'center' }}>
           <h2 style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 32 }}>Ready for the next iteration?</h2>
-          <motion.button 
+          <Motion.button
             whileHover={{ scale: 1.05 }}
             onClick={() => navigate('/login')}
             style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '16px 40px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
           >
             Initialize Workspace
-          </motion.button>
+          </Motion.button>
         </section>
 
       </main>
