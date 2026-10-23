@@ -61,5 +61,5 @@ jobs:
       - name: Run Tests
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          uv run python manage.py test users.auth.tests --noinput --verbosity 2
+          uv run python manage.py test users.auth.tests tenant.tests --noinput --verbosity 2
         working-directory: backend/platform_api
