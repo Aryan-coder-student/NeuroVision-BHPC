@@ -29,8 +29,12 @@ export function AuthProvider({ children }) {
         if (stored) {
           try {
             const { org: savedOrg } = JSON.parse(stored);
-            if (savedOrg) setOrg(savedOrg);
+            if (savedOrg) {
+              const verified = await fetchCurrentWorkspace(savedOrg.id);
+              if (!cancelled) setOrg(verified);
+            }
           } catch {
+            setOrg(null);
             sessionStorage.removeItem('nv_session');
           }
         }
