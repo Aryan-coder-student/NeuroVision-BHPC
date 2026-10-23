@@ -16,9 +16,17 @@ const StatusBadge = ({ status }) => {
   return <span style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}><Clock size={12} /> In-Training</span>;
 };
 
+const deterministicFraction = (value) => {
+  const result = Math.sin(value) * 10000;
+  return result - Math.floor(result);
+};
+
 // Mini sparkline component for loss simulation
 const Sparkline = ({ seed }) => {
-  const points = Array.from({ length: 10 }, (_, i) => `${i * 8},${15 - Math.random() * seed}`).join(' ');
+  const points = Array.from(
+    { length: 10 },
+    (_, i) => `${i * 8},${15 - deterministicFraction(seed * 1000 + i) * seed}`,
+  ).join(' ');
   return (
     <svg width="80" height="20" viewBox="0 0 80 20">
       <polyline points={points} fill="none" stroke="var(--primary)" strokeWidth="1.5" />

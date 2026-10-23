@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import { ScanLine, MessageSquare, Users, Activity, ChevronRight, Zap } from 'lucide-react';
 import './Dashboard.css';
 
@@ -21,7 +21,7 @@ const ALERTS = [
 const PRIORITY_COLORS = { critical: 'var(--error)', warning: 'var(--warning)', info: 'var(--accent-primary)' };
 
 export default function Dashboard() {
-  const { org, user } = useAuth();
+  const { org } = useAuth();
   const navigate = useNavigate();
 
   return (

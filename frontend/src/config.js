@@ -1,7 +1,7 @@
 console.log("DEBUG: config.js loading...");
 const getEnvConfig = () => {
   const { protocol, host, hostname } = window.location;
-  const [hostBase, port] = host.split(':');
+  const [, port] = host.split(':');
   
   // Robust environment detection
   const isDev = hostname.includes('localtest.me') || hostname.includes('127.0.0.1');

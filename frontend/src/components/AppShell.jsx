@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth-context';
 import {
   Brain, LayoutDashboard, MessageSquare, ScanLine,
   History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server

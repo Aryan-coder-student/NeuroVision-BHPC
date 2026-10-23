@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/auth-context';
 import { initializeCsrf } from './services/api';
 import { useEffect } from 'react';
 import './index.css';
@@ -34,6 +35,14 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+function ExternalRedirect({ to }) {
+  useEffect(() => {
+    window.location.assign(to);
+  }, [to]);
+
+  return null;
+}
+
 /* Route guard: must be logged in */
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -42,8 +51,7 @@ function RequireAuth({ children }) {
   
   if (!user) {
     if (!config.isMainDomain) {
-      window.location.href = `${config.MAIN_URL}/login?redirect=${encodeURIComponent(window.location.href)}`;
-      return null;
+      return <ExternalRedirect to={`${config.MAIN_URL}/login?redirect=${encodeURIComponent(window.location.href)}`} />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -61,8 +69,7 @@ function RequireOrg({ children }) {
     if (!config.isMainDomain) {
       // If we are on a subdomain but don't have an org (e.g. invalid subdomain),
       // force redirect back to the central hub for organization selection.
-      window.location.href = `${config.MAIN_URL}/select-org`;
-      return null;
+      return <ExternalRedirect to={`${config.MAIN_URL}/select-org`} />;
     }
     return <Navigate to="/select-org" replace />;
   }
@@ -72,8 +79,7 @@ function RequireOrg({ children }) {
 
 function CentralOnly({ children }) {
   if (!config.isMainDomain) {
-    window.location.href = `${config.MAIN_URL}${window.location.pathname}${window.location.search}`;
-    return null;
+    return <ExternalRedirect to={`${config.MAIN_URL}${window.location.pathname}${window.location.search}`} />;
   }
   return children;
 }
