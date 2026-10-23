@@ -21,15 +21,20 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'neurovision-backend:latest'
-          format: 'table'
-          exit-code: '1' # Fail the build if vulnerabilities are found
+          format: 'json'
+          output: 'trivy-results.json'
+          exit-code: '0' # Policy gate below preserves failing behavior with target-level diagnostics
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Explain failed security scan
-        if: failure()
+      - name: Report targets and enforce security policy
+        shell: bash
         run: |
-          echo 'Trivy found HIGH or CRITICAL vulnerabilities, or its scan failed.'
-          echo 'Review the Run Trivy Vulnerability Scanner step for exact package IDs and remediation.'
-          echo 'The security gate is intentionally not disabled.'
+          jq -r '.Results[]? | select((.Vulnerabilities // []) | length > 0) | "TARGET: \(.Target) | TYPE: \(.Type)\n" + ((.Vulnerabilities // []) | map("  \(.PkgName) \(.InstalledVersion) -> \(.FixedVersion // "unfixed") [\(.Severity)] \(.VulnerabilityID)") | join("\n"))' trivy-results.json
+          findings=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' trivy-results.json)
+          echo "HIGH/CRITICAL findings: $findings"
+          if [ "$findings" -gt 0 ]; then
+            echo '::error::Trivy security gate failed. See affected targets above.'
+            exit 1
+          fi
