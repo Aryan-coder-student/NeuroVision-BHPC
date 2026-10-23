@@ -149,7 +149,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.0, duration: 0.8 }}
             whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(255,255,255,0.2)' }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/login')}
+            onClick={() => navigate(user ? '/select-org' : '/login')}
             style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
           >
             Deploy Workflow <ArrowRight size={18} />

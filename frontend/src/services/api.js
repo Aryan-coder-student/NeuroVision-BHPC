@@ -147,15 +147,6 @@ export function setTenantDomain(domainUrl) {
   }
 }
 
-// Auto-restore tenant from session storage on initial boot
-try {
-  const saved = sessionStorage.getItem('nv_session');
-  if (saved) {
-    const { org } = JSON.parse(saved);
-    if (org && org.domain_url) {
-      setTenantDomain(org.domain_url);
-    }
-  }
-} catch (e) {
-  console.error("Failed to restore tenant from session storage", e);
-}
+// Start every page load on the platform API. AuthContext validates the HttpOnly
+// session cookie first; only after authentication and workspace selection should
+// a tenant-specific API URL be used.

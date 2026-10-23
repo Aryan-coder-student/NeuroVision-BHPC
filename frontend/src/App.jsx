@@ -78,13 +78,20 @@ function CentralOnly({ children }) {
   return children;
 }
 
+function GuestOnly({ children }) {
+  const { user, org, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Navigate to={org ? '/dashboard' : '/select-org'} replace />;
+  return children;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/"           element={<Landing />} />
-      <Route path="/login"      element={<CentralOnly><Login /></CentralOnly>} />
-      <Route path="/register"   element={<CentralOnly><Register /></CentralOnly>} />
-      <Route path="/verify-otp" element={<CentralOnly><VerifyOTP /></CentralOnly>} />
+      <Route path="/login"      element={<CentralOnly><GuestOnly><Login /></GuestOnly></CentralOnly>} />
+      <Route path="/register"   element={<CentralOnly><GuestOnly><Register /></GuestOnly></CentralOnly>} />
+      <Route path="/verify-otp" element={<CentralOnly><GuestOnly><VerifyOTP /></GuestOnly></CentralOnly>} />
       <Route path="/select-org" element={<RequireAuth><CentralOnly><OrgSelect /></CentralOnly></RequireAuth>} />
 
       {/* Protected app shell */}

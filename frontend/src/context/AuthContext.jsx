@@ -11,63 +11,59 @@ export function AuthProvider({ children }) {
   const [loading, setLoading]   = useState(true);
   const [authError, setAuthError] = useState('');
 
-  // 1. Initial Load: Check session and recover from subdomain cookies
+  // Trust the backend, not a saved user object, to establish a session.
   useEffect(() => {
+    let cancelled = false;
     const initializeAuth = async () => {
-      // Safety timeout: don't block the app for more than 5 seconds
-      const timeout = setTimeout(() => {
-        setLoading(false);
-      }, 5000);
+      try {
+        const profile = await fetchUserProfile();
+        if (cancelled || !profile.user) return;
+        const verifiedUser = {
+          ...profile.user,
+          name: profile.user.first_name || profile.user.email.split('@')[0],
+          role: 'Professional'
+        };
+        setUser(verifiedUser);
 
-      const saved = sessionStorage.getItem('nv_session');
-      
-      const host = window.location.hostname;
-      // Determine if we are on a tenant subdomain (e.g. sub.localtest.me)
-      const isSubdomain = !config.isMainDomain;
-
-      if (saved) {
-        try {
-          const { user, org } = JSON.parse(saved);
-          setUser(user);
-          setOrg(org);
-          await refreshWorkspaces();
-        } catch (e) {
-          console.error("Failed to parse saved session", e);
+        const stored = sessionStorage.getItem('nv_session');
+        if (stored) {
+          try {
+            const { org: savedOrg } = JSON.parse(stored);
+            if (savedOrg) setOrg(savedOrg);
+          } catch {
+            sessionStorage.removeItem('nv_session');
+          }
         }
-      } else {
-        // Try to recover session from HttpOnly cookies via Profile API
         try {
-          const profileData = await fetchUserProfile();
-          if (profileData.user) {
-            const userProfile = {
-              ...profileData.user,
-              name: profileData.user.first_name || profileData.user.email.split('@')[0],
-              role: 'Professional'
-            };
-            setUser(userProfile);
-            
-            // If on a subdomain, fetch the specific workspace details
-            if (isSubdomain) {
-              try {
-                const currentWs = await fetchCurrentWorkspace();
-                setOrg(currentWs);
-              } catch (wsErr) {
-                console.error("Failed to fetch current workspace details", wsErr);
+          const list = await fetchWorkspaces();
+          if (!cancelled) {
+            setWorkspaces(Array.isArray(list) ? list : list.results || []);
+            // Don't trust a workspace from storage if the backend no longer grants access.
+            if (stored) {
+              const saved = JSON.parse(stored);
+              if (saved.org && !(Array.isArray(list) ? list : list.results || []).some(ws => ws.id === saved.org.id)) {
+                setOrg(null);
+                sessionStorage.removeItem('nv_session');
               }
-            } else {
-              await refreshWorkspaces();
             }
           }
         } catch (err) {
-          console.log("No active session found");
+          console.error('Workspace lookup failed', err);
         }
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+          setOrg(null);
+          setWorkspaces([]);
+          sessionStorage.removeItem('nv_session');
+          setTenantDomain(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      
-      clearTimeout(timeout);
-      setLoading(false);
     };
-    
     initializeAuth();
+    return () => { cancelled = true; };
   }, []);
 
   const refreshWorkspaces = async () => {
@@ -82,15 +78,17 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setAuthError('');
     try {
-      await loginUser({ email, password });
+      const response = await loginUser({ email, password });
       
-      const userProfile = { 
-        id: 'user_backend', 
-        name: email.split('@')[0], 
-        role: 'Professional',
-        email: email
+      const userProfile = {
+        ...response.user,
+        name: response.user.first_name || email.split('@')[0],
+        role: 'Professional'
       };
       
+      setTenantDomain(null);
+      sessionStorage.removeItem('nv_session');
+      setOrg(null);
       setUser(userProfile);
       await refreshWorkspaces();
       return { success: true };
@@ -104,9 +102,25 @@ export function AuthProvider({ children }) {
         return { success: false, reason: 'OTP_NOT_VERIFIED', email: errorEmail || email };
       }
       
-      setAuthError('Invalid credentials. Please try again.');
+      setAuthError(err.response?.status === 403 ? 'Session or CSRF check failed. Refresh and try again.' : (err.response?.status === 400 ? 'Invalid email or password.' : 'Unable to sign in. Please try again.'));
       return { success: false };
     }
+  };
+
+  const restoreSession = async () => {
+    const profile = await fetchUserProfile();
+    if (!profile.user) throw new Error('Could not restore verified session');
+    const verifiedUser = {
+      ...profile.user,
+      name: profile.user.first_name || profile.user.email.split('@')[0],
+      role: 'Professional'
+    };
+    setUser(verifiedUser);
+    setOrg(null);
+    sessionStorage.removeItem('nv_session');
+    setTenantDomain(null);
+    await refreshWorkspaces();
+    return verifiedUser;
   };
 
   const createWorkspace = async (data) => {
@@ -155,6 +169,7 @@ export function AuthProvider({ children }) {
     setOrg(null);
     setWorkspaces([]);
     sessionStorage.removeItem('nv_session');
+    setTenantDomain(null);
   };
 
   if (loading) {
@@ -180,7 +195,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ 
       user, org, workspaces, loading, authError, 
-      login, selectOrg, logout, refreshWorkspaces, createWorkspace 
+      login, selectOrg, logout, refreshWorkspaces, createWorkspace, restoreSession 
     }}>
       {children}
     </AuthContext.Provider>

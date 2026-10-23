@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Brain, ShieldCheck, ArrowRight, Loader, Mail } from 'lucide-react';
 import { verifyOTP } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 export default function VerifyOTP() {
   const navigate = useNavigate();
+  const { restoreSession } = useAuth();
   const location = useLocation();
   const emailFromState = location.state?.email || '';
 
@@ -28,8 +30,15 @@ export default function VerifyOTP() {
 
     try {
       await verifyOTP(email, otp);
-      // Success! Redirect to login
-      navigate('/login', { state: { message: 'Email verified successfully. You can now log in.' } });
+      // Verification sets auth cookies; continue directly to workspace selection.
+      try {
+        await restoreSession();
+        navigate('/select-org', { replace: true });
+      } catch {
+        // OTP was accepted, but browser may block cross-site cookies.
+        // Never ask for the already-used OTP again.
+        navigate('/login', { replace: true, state: { message: 'Email verified. Please sign in.' } });
+      }
     } catch (err) {
       const msg = err.response?.data?.error || 'Verification failed. Please check your code.';
       setError(msg);
