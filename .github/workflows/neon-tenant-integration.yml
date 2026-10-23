@@ -1,0 +1,51 @@
+name: Neon Tenant Integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tenant-integration:
+    runs-on: ubuntu-latest
+    environment: neon-test
+    env:
+      ENV: development
+      SECRET_KEY: ci-neon-test-only
+      ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+      DATABASE_URL: ${{ secrets.NEON_TEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require isolated Neon test database
+        env:
+          REQUIRED_MARKER: neon_test
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Set NEON_TEST_DATABASE_URL in GitHub environment neon-test."
+            exit 1
+          fi
+          python - <<'PY'
+          import os, urllib.parse
+          url = urllib.parse.urlsplit(os.environ["DATABASE_URL"])
+          host = (url.hostname or "").lower()
+          database = url.path.lstrip("/").lower()
+          if not host.endswith(".neon.tech") or "-pooler" in host:
+              raise SystemExit("NEON_TEST_DATABASE_URL must be a direct Neon endpoint, not a pooler")
+          if "neon_test" not in database:
+              raise SystemExit("Use a dedicated Neon TEST database whose name includes neon_test")
+          print("Validated direct Neon test endpoint and test database name")
+          PY
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Set up Python
+        run: uv python install 3.13
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+      - name: Run tenant integration tests on Neon
+        working-directory: backend/platform_api
+        run: |
+          export PYTHONPATH="$PYTHONPATH:$(pwd)"
+          uv run python manage.py test tenant.tests --noinput --verbosity 2
