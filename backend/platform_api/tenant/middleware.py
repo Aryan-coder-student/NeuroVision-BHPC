@@ -31,9 +31,9 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
 
         workspace_id = request.headers.get("X-Workspace-ID")
         if not workspace_id:
-            if request.tenant.schema_name == "public":
-                return JsonResponse({"detail": "Workspace ID required."}, status=400)
-            return None  # Existing custom-domain routing.
+            # Even custom tenant domains must establish membership; relying
+            # on hostname + IsAuthenticated alone is not sufficient.
+            return JsonResponse({"detail": "Workspace ID required."}, status=400)
 
         try:
             workspace_id = UUID(workspace_id)
