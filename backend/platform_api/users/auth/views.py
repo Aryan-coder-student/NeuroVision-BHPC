@@ -30,7 +30,11 @@ class RegistrationView(ModelViewSet):
         serializer = self.get_serializer(data=user_data)
         serializer.is_valid(raise_exception=True)
         user = UserService.register(serializer.validated_data)
-        UserService.send_otp(user)
+        if not UserService.send_otp(user):
+            return Response(
+                {"error": "Verification email could not be sent. Please try again later."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -143,7 +147,11 @@ class ResendOTPView(ModelViewSet):
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
 
-        UserService.send_otp(user)
+        if not UserService.send_otp(user):
+            return Response(
+                {"error": "Verification email could not be sent. Please try again later."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         return Response(
             {"message": "A new OTP has been sent to your email."},
             status=status.HTTP_200_OK,
