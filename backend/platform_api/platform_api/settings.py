@@ -60,6 +60,7 @@ SHARED_APPS = [
 ]
 TENANT_APPS = [
     "django.contrib.contenttypes",
+    "clinical",
     # Add your clinical/research apps here later
 ]
 INSTALLED_APPS = list(SHARED_APPS) + [
