@@ -5,7 +5,7 @@ import { Brain, Lock, Mail, ArrowRight, Loader, Eye, EyeOff } from 'lucide-react
 import './Login.css';
 
 export default function Login() {
-  const { user, loading: authLoading, login, authError } = useAuth();
+  const { user, org, loading: authLoading, login, authError } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail]     = useState('');
@@ -15,9 +15,9 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/select-org');
+      navigate(org ? '/dashboard' : '/select-org', { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, org, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
