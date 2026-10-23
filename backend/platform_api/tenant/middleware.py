@@ -11,7 +11,6 @@ from django_tenants.middleware.main import TenantMainMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from tenant.models import Institution
 from users.models import InstitutionMembership
 
 
