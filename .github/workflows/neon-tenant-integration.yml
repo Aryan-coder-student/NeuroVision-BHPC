@@ -58,4 +58,4 @@ jobs:
         working-directory: backend/platform_api
         run: |
           export PYTHONPATH="$PYTHONPATH:$(pwd)"
-          uv run python manage.py test tenant.tests --noinput --verbosity 2
+          uv run python manage.py test tenant.tests clinical.tests --noinput --verbosity 2
