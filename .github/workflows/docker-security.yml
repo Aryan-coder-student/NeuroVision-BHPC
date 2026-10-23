@@ -35,21 +35,7 @@ jobs:
           # well as the actual, updated site-packages installed in the image.
           # Only disregard an SBOM-only duplicate if an explicitly patched
           # version is independently detected at an installed METADATA path.
-          jq -r '
-            [.Results[]?.Packages[]? | select(.FilePath != null and .AnalyzedBy == "python-pkg")] as $installed
-            | [.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] as $vulns
-            | def patched($v):
-                (if $v.PkgName == "msgpack" and $v.InstalledVersion == "1.1.2" then "1.2.3"
-                 elif $v.PkgName == "setuptools" and $v.InstalledVersion == "70.3.0" then "84.0.0"
-                 elif $v.PkgName == "urllib3" and $v.InstalledVersion == "2.7.0" then "2.8.0"
-                 else null end) as $version
-                | ($version != null
-                   and ($v.PkgPath == null)
-                   and (any($installed[]; .Name == $v.PkgName and .Version == $version
-                          and (.FilePath | startswith("app/.venv/lib/python3.13/site-packages/")))));
-            | $vulns[] | if patched(.) then "STALE SBOM DUPLICATE: \(.PkgName) \(.InstalledVersion) (patched installed copy verified)"
-                         else "BLOCKING: \(.PkgName) \(.InstalledVersion) \(.VulnerabilityID) \(.Severity)" end
-          ' trivy-results.json
+          echo "Checking Trivy findings against independently detected runtime packages."
           findings=$(jq '
             [.Results[]?.Packages[]? | select(.FilePath != null and .AnalyzedBy == "python-pkg")] as $installed
             | [.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")]
