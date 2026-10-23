@@ -21,6 +21,8 @@ from ..models import User
 
 
 class RegistrationView(ModelViewSet):
+    # Public endpoint: ignore existing JWT cookies and skip cookie-auth CSRF enforcement.
+    authentication_classes = []
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
     http_method_names = ["post"]
@@ -39,6 +41,8 @@ class RegistrationView(ModelViewSet):
 
 
 class LoginView(ModelViewSet):
+    # Public endpoint: ignore existing JWT cookies and skip cookie-auth CSRF enforcement.
+    authentication_classes = []
     serializer_class = LoginSerilizer
     permission_classes = [AllowAny]
     http_method_names = ["post"]
@@ -83,6 +87,8 @@ class LoginView(ModelViewSet):
 
 
 class VerifyOTPView(ModelViewSet):
+    # Public endpoint: ignore existing JWT cookies and skip cookie-auth CSRF enforcement.
+    authentication_classes = []
     serializer_class = VerificationOTPSerializer
     permission_classes = [AllowAny]
     http_method_names = ["post"]
@@ -125,6 +131,8 @@ class VerifyOTPView(ModelViewSet):
 
 
 class ResendOTPView(ModelViewSet):
+    # Public endpoint: ignore existing JWT cookies and skip cookie-auth CSRF enforcement.
+    authentication_classes = []
     serializer_class = ResendOTPSerializer
     permission_classes = [AllowAny]
     http_method_names = ["post"]
@@ -159,6 +167,8 @@ class ResendOTPView(ModelViewSet):
 
 
 class CSRFTokenView(ModelViewSet):
+    # Public endpoint: ignore existing JWT cookies and skip cookie-auth CSRF enforcement.
+    authentication_classes = []
     permission_classes = [AllowAny]
     http_method_names = ["get"]
 
