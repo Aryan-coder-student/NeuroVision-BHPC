@@ -94,3 +94,30 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
             HTTP_X_WORKSPACE_ID=str(self.institution.id),
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_inactive_member_cannot_read_tenant_context(self):
+        InstitutionMembership.objects.filter(
+            user=self.user, institution=self.institution
+        ).update(is_active=False)
+        self.authenticate(self.user)
+        response = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_unauthenticated_tenant_context_returns_401(self):
+        response = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_untrusted_workspace_header_cannot_change_public_list_scope(self):
+        self.authenticate(self.other_user)
+        response = self.client.get(
+            "/api/v1/workspaces/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)
