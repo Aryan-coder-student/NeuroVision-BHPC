@@ -134,29 +134,13 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const selectOrg = (workspace) => {
-    setOrg(workspace);
-    sessionStorage.setItem('nv_session', JSON.stringify({ user, org: workspace }));
-    
-    if (workspace.domain_url) {
-      setTenantDomain(workspace.domain_url);
-      
-      const isCloudDefault = workspace.domain_url.includes('onrender.com') || workspace.domain_url.includes('vercel.app');
-      
-      if (isCloudDefault) {
-        const targetUrl = `${window.location.origin}/dashboard`;
-        if (window.location.href !== targetUrl) {
-          window.location.href = targetUrl;
-        }
-      } else {
-        const portSuffix = config.FRONTEND_PORT ? `:${config.FRONTEND_PORT}` : '';
-        const targetUrl = `${config.protocol}//${workspace.domain_url}${portSuffix}/dashboard`;
-        
-        if (window.location.origin + window.location.pathname !== targetUrl) {
-          window.location.href = targetUrl;
-        }
-      }
-    }
+  const selectOrg = async (workspace) => {
+    // Authenticate membership against the public schema before selecting a tenant.
+    const verified = await fetchCurrentWorkspace(workspace.id);
+    setOrg(verified);
+    sessionStorage.setItem('nv_session', JSON.stringify({ org: verified }));
+    setTenantDomain(null);
+    return verified;
   };
 
   const logout = async () => {
