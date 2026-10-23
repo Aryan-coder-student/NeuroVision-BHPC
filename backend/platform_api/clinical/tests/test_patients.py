@@ -84,7 +84,7 @@ class PatientTenantIsolationTests(TenantTestCase):
         )
         with schema_context(self.apollo.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
-        with connection.schema_context(self.aiims.schema_name):
+        with schema_context(self.aiims.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
 
     def test_member_can_read_but_cannot_write(self):
