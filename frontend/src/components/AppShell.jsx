@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 import {
   Brain, LayoutDashboard,
@@ -11,10 +11,8 @@ import config from '../config';
 export default function AppShell() {
   const { user, org, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;
