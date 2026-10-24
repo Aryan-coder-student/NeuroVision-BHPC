@@ -4,7 +4,6 @@ import { useAuth } from './context/auth-context';
 import { initializeCsrf } from './services/api';
 import { useEffect } from 'react';
 import './index.css';
-import './responsive.css';
 import config from './config';
 
 /* Pages */
@@ -26,6 +25,8 @@ import AppShell    from './components/AppShell';
 import PatientWorkspace from './components/PatientWorkspace';
 import PatientDashboard from './pages/PatientDashboard';
 import MyPatients from './pages/MyPatients';
+// Load adaptive layout rules after component styles so mobile overrides win.
+import './responsive.css';
 
 /* Global spin keyframe */
 const style = document.createElement('style');
