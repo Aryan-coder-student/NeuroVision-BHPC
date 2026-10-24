@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { createElement, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Building2, FileText, ScanLine, Shield, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
@@ -138,10 +138,10 @@ export default function Landing() {
               <p>Designed around patient context and practical research tasks, rather than dashboards for their own sake.</p>
             </div>
             <div className="landing-feature-grid">
-              {capabilities.map(({ number, icon: Icon, title, description, status }) => (
+              {capabilities.map(({ number, icon, title, description, status }) => (
                 <article className="landing-feature" key={number}>
                   <span className="landing-feature-number">{number} / 03</span>
-                  <span className="landing-feature-icon"><Icon size={25} strokeWidth={1.5} aria-hidden="true" /></span>
+                  <span className="landing-feature-icon">{createElement(icon, { size: 25, strokeWidth: 1.5, "aria-hidden": true })}</span>
                   <h3>{title}</h3>
                   <p>{description}</p>
                   <div className="landing-feature-status">{status}</div>
