@@ -10,6 +10,7 @@ from django_tenants.utils import tenant_context
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from clinical.dates import patient_calendar_date
 from clinical.models import Patient
 from patient_identity.models import PatientAccessGrant, PatientGrantChallenge, PatientIdentity
 from tenant.models import Institution
@@ -69,8 +70,9 @@ class PatientRegistrationTests(TenantTestCase):
         self.assertRegex(response.data["patient_code"], r"^NV-[A-F0-9]{20}$")
         self.assertIsNotNone(response.data["id"])
         self.assertEqual(response.data["date_of_birth"], "2000-02-29")
+        self.assertTrue(response.data["created_at"].endswith("Z"))
         dob = date(2000, 2, 29)
-        today = timezone.localdate()
+        today = patient_calendar_date()
         expected_age = today.year - dob.year - (
             (today.month, today.day) < (dob.month, dob.day)
         )
@@ -86,6 +88,7 @@ class PatientRegistrationTests(TenantTestCase):
             self.assertEqual(saved.patient_code, response.data["patient_code"])
             self.assertIsNone(saved.global_identity_id)
             self.assertEqual(saved.date_of_birth, dob)
+            self.assertEqual(saved.created_at.utcoffset(), timedelta(0))
 
     def test_rejects_client_supplied_patient_code(self):
         response = self.register(patient_code="P-MANUAL")
@@ -162,19 +165,24 @@ class PatientRegistrationTests(TenantTestCase):
         )
         self.assertEqual(replay.status_code, 400)
 
-    def test_cannot_patch_email_or_generated_code(self):
+    def test_cannot_patch_server_managed_fields(self):
         response = self.register()
         detail = f"{self.url}{response.data['id']}/"
-        for payload, invalid_field in (
-            ({"email": "other@example.com"}, "email"),
-            ({"patient_code": "P-REPLACED"}, "patient_code"),
-        ):
+        immutable_values = {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "patient_code": "FORGED-CODE",
+            "global_identity_id": "22222222-2222-2222-2222-222222222222",
+            "email": "replacement@example.com",
+            "created_at": "2020-01-01T00:00:00Z",
+            "updated_at": "2020-01-01T00:00:00Z",
+        }
+        for field, value in immutable_values.items():
             result = self.client.patch(
-                detail, payload, format="json",
+                detail, {field: value}, format="json",
                 HTTP_X_WORKSPACE_ID=str(self.workspace.id),
             )
             self.assertEqual(result.status_code, 400, result.data)
-            self.assertIn(invalid_field, result.data)
+            self.assertIn(field, result.data)
 
     def test_old_code_cannot_verify_a_replaced_pending_email(self):
         response = self.register(email="first@example.com")
@@ -246,6 +254,9 @@ class PatientRegistrationTests(TenantTestCase):
         self.assertEqual(updated.status_code, 200, updated.data)
         self.assertEqual(updated.data["display_name"], "Corrected Patient")
         self.assertEqual(updated.data["date_of_birth"], "1990-12-05")
+        self.assertEqual(updated.data["patient_code"], initial_code)
+        self.assertEqual(str(updated.data["id"]), str(patient_id))
+        self.assertIn("age", updated.data)
         detail = self.client.get(
             f"{self.url}{patient_id}/",
             HTTP_X_WORKSPACE_ID=str(self.workspace.id),

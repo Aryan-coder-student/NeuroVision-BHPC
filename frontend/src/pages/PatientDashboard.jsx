@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { CheckCircle2, Loader2, MessageSquare, Pencil, ScanLine, ShieldCheck } from 'lucide-react';
 import PatientEmailVerification from '../components/PatientEmailVerification';
 import { useAuth } from '../context/auth-context';
 import { fetchPatientGrant, updatePatientDetails } from '../services/api';
-import { localDateInputValue, validatePatientDetails } from './patient-form';
+import { indiaCalendarDate } from '../utils/date-time';
+import { validatePatientDetails } from './patient-form';
 import './PatientDashboard.css';
 
 export default function PatientDashboard() {
-  const { patient, refreshPatient } = useOutletContext();
+  const { patient, refreshPatient, replacePatient } = useOutletContext();
   const { org } = useAuth();
   const [grant, setGrant] = useState(null);
   const [error, setError] = useState('');
@@ -18,6 +19,8 @@ export default function PatientDashboard() {
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const nameInputRef = useRef(null);
+  const dobInputRef = useRef(null);
   const isAdmin = org.role === 'ADMIN';
 
   useEffect(() => {
@@ -52,11 +55,18 @@ export default function PatientDashboard() {
     const { values, errors } = validatePatientDetails(editForm);
     setEditErrors(errors);
     setEditError('');
-    if (Object.keys(errors).length) return;
+    if (Object.keys(errors).length) {
+      if (errors.display_name) nameInputRef.current?.focus();
+      else dobInputRef.current?.focus();
+      return;
+    }
 
     setIsSaving(true);
     try {
-      await updatePatientDetails(org.id, patient.id, values);
+      const updatedPatient = await updatePatientDetails(org.id, patient.id, values);
+      replacePatient(updatedPatient);
+      setIsEditing(false);
+      setEditSuccess('Patient details updated.');
     } catch (requestError) {
       const data = requestError.response?.data;
       const serverErrors = {
@@ -65,21 +75,11 @@ export default function PatientDashboard() {
       };
       if (Object.values(serverErrors).some(Boolean)) {
         setEditErrors(serverErrors);
+        if (serverErrors.display_name) nameInputRef.current?.focus();
+        else dobInputRef.current?.focus();
       } else {
         setEditError(data?.detail || 'Could not save patient details. Try again.');
       }
-      setIsSaving(false);
-      return;
-    }
-
-    // A successful PATCH must not be presented as a failed save if the
-    // subsequent read fails (for example due to a transient network error).
-    setIsEditing(false);
-    setEditSuccess('Patient details updated.');
-    try {
-      await refreshPatient();
-    } catch {
-      setEditSuccess('Changes saved, but the updated record could not be loaded. Refresh this page to see them.');
     } finally {
       setIsSaving(false);
     }
@@ -108,6 +108,7 @@ export default function PatientDashboard() {
                 <label htmlFor="patient-edit-name">Patient name</label>
                 <input
                   id="patient-edit-name"
+                  ref={nameInputRef}
                   type="text"
                   value={editForm.display_name}
                   maxLength={160}
@@ -115,6 +116,7 @@ export default function PatientDashboard() {
                   onChange={event => {
                     setEditForm(current => ({ ...current, display_name: event.target.value }));
                     setEditErrors(current => ({ ...current, display_name: '' }));
+                    setEditError('');
                   }}
                   aria-invalid={Boolean(editErrors.display_name)}
                   aria-describedby={editErrors.display_name ? 'patient-edit-name-error' : undefined}
@@ -127,11 +129,13 @@ export default function PatientDashboard() {
                 <input
                   id="patient-edit-dob"
                   type="date"
-                  max={localDateInputValue()}
+                  ref={dobInputRef}
+                  max={indiaCalendarDate()}
                   value={editForm.date_of_birth}
                   onChange={event => {
                     setEditForm(current => ({ ...current, date_of_birth: event.target.value }));
                     setEditErrors(current => ({ ...current, date_of_birth: '' }));
+                    setEditError('');
                   }}
                   aria-invalid={Boolean(editErrors.date_of_birth)}
                   aria-describedby={editErrors.date_of_birth ? 'patient-edit-dob-error' : undefined}
@@ -151,7 +155,7 @@ export default function PatientDashboard() {
             </form>
           ) : (
             <dl className="patient-demographics">
-            <div><dt>Age</dt><dd>{patient.age == null ? 'Not recorded' : patient.age + ' years'}</dd></div>
+              <div><dt>Age</dt><dd>{patient.age == null ? 'Not recorded' : patient.age + ' years'}</dd></div>
               <div><dt>Date of birth</dt><dd>{patient.date_of_birth || 'Not recorded'}</dd></div>
             </dl>
           )}

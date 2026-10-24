@@ -4,20 +4,14 @@ import { ArrowRight, Loader2, Mail, RefreshCw, ShieldCheck, UserPlus, Users } fr
 import PatientEmailVerification from '../components/PatientEmailVerification';
 import { useAuth } from '../context/auth-context';
 import { createPatient, fetchPatients } from '../services/api';
-import { localDateInputValue, validatePatientRegistration } from './patient-form';
+import { formatIndiaDateTime, indiaCalendarDate } from '../utils/date-time';
+import { validatePatientRegistration } from './patient-form';
 import './Patients.css';
 
 const EMPTY_FORM = { display_name: '', date_of_birth: '', email: '' };
 
 function firstMessage(value) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function formatCreatedAt(value) {
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
 }
 
 export default function Patients() {
@@ -219,7 +213,7 @@ export default function Patients() {
                           {patient.global_identity_id ? 'Email verified' : 'Contact not verified'}
                         </span>
                       </td>
-                      <td>{formatCreatedAt(patient.created_at)}</td>
+                      <td>{formatIndiaDateTime(patient.created_at)}</td>
                       <td><Link className="patients-open-link" to={`/patients/${patient.id}/dashboard`}>Open <ArrowRight size={12} /></Link></td>
                     </tr>
                   ))}
@@ -294,7 +288,7 @@ export default function Patients() {
                     id="patient-date-of-birth"
                     name="date_of_birth"
                     type="date"
-                    max={localDateInputValue()}
+                    max={indiaCalendarDate()}
                     value={form.date_of_birth}
                     onChange={updateField}
                     aria-invalid={Boolean(fieldErrors.date_of_birth)}

@@ -1,3 +1,5 @@
+import { indiaCalendarDate } from '../utils/date-time.js';
+
 const DISPLAY_NAME_MAX_LENGTH = 160;
 const EMAIL_MAX_LENGTH = 254;
 
@@ -17,7 +19,7 @@ function validDateOfBirth(value, today) {
   return value >= oldest && value <= today;
 }
 
-export function validatePatientDetails(input, today = localDateInputValue()) {
+export function validatePatientDetails(input, today = indiaCalendarDate()) {
   const values = {
     display_name: (input.display_name ?? '').trim(),
     date_of_birth: (input.date_of_birth ?? '').trim(),
@@ -39,7 +41,7 @@ export function validatePatientDetails(input, today = localDateInputValue()) {
   return { values, errors };
 }
 
-export function validatePatientRegistration(input, today = localDateInputValue()) {
+export function validatePatientRegistration(input, today = indiaCalendarDate()) {
   const { values, errors } = validatePatientDetails(input, today);
   values.email = (input.email ?? '').trim();
 
@@ -50,13 +52,6 @@ export function validatePatientRegistration(input, today = localDateInputValue()
   }
 
   return { values, errors };
-}
-
-export function localDateInputValue(value = new Date()) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 export function validPatientOtp(value) {

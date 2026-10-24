@@ -14,13 +14,10 @@ import {
 
 import { useAuth } from '../context/auth-context';
 import { fetchMyPatients } from '../services/api';
+import { formatIndiaDate } from '../utils/date-time';
 import './MyPatients.css';
 
 const PAGE_SIZE = 25;
-
-function formatCreatedAt(value) {
-  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(value));
-}
 
 function positivePage(value) {
   const page = Number.parseInt(value || '1', 10);
@@ -252,7 +249,7 @@ export default function MyPatients() {
                         <span className="my-patients-workspace-name">{patient.workspace.name}</span>
                         <span className="my-patients-workspace-type">{patient.workspace.inst_type}</span>
                       </td>
-                      <td>{formatCreatedAt(patient.created_at)}</td>
+                      <td>{formatIndiaDate(patient.created_at)}</td>
                       <td>
                         <button
                           type="button"

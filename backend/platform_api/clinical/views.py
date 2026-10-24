@@ -81,6 +81,19 @@ class PatientViewSet(viewsets.ModelViewSet):
         }
         return Response(data, status=status.HTTP_201_CREATED)
 
+    def update(self, request, *args, **kwargs):
+        """Persist editable fields and return the canonical patient read model."""
+        partial = kwargs.pop("partial", False)
+        patient = self.get_object()
+        serializer = self.get_serializer(patient, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        data = PatientReadSerializer(
+            patient,
+            context=self.get_serializer_context(),
+        ).data
+        return Response(data)
+
     def perform_destroy(self, instance):
         delete_patient(patient=instance, institution=self.request.tenant)
 
