@@ -1,278 +1,171 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight, Building2, ClipboardList, Layers3, ScanLine, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
-import { motion as Motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
-import { Brain, ArrowRight, ScanLine, MessageSquare, Database, ChevronRight, Activity, Cpu } from 'lucide-react';
-import config from '../config';
+import './Landing.css';
 
-const CountUp = ({ to }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!isInView) return;
-    let start = 0;
-    const end = parseFloat(to);
-    const duration = 2000;
-    const incrementTime = 30;
-    const steps = duration / incrementTime;
-    const stepValue = end / steps;
-
-    const timer = setInterval(() => {
-      start += stepValue;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(start);
-      }
-    }, incrementTime);
-    return () => clearInterval(timer);
-  }, [to, isInView]);
-
-  return <span ref={ref}>{Number.isInteger(parseFloat(to)) ? Math.floor(count) : count.toFixed(1)}</span>;
-};
-
+const capabilities = [
+  {
+    number: '01',
+    icon: <Building2 size={23} strokeWidth={1.6} aria-hidden="true" />,
+    title: 'Institution workspaces',
+    description: 'Keep institutional context and team access connected as you move between projects.',
+    label: 'Platform foundation',
+  },
+  {
+    number: '02',
+    icon: <Users size={23} strokeWidth={1.6} aria-hidden="true" />,
+    title: 'Patient records',
+    description: 'Manage patient records within your institution, with role-aware access to the workspace.',
+    label: 'Patient management',
+  },
+  {
+    number: '03',
+    icon: <ScanLine size={23} strokeWidth={1.6} aria-hidden="true" />,
+    title: 'Imaging workspace',
+    description: 'Explore MRI visualization and experimental segmentation tools in a patient-centered workflow.',
+    label: 'Research tools',
+  },
+  {
+    number: '04',
+    icon: <ClipboardList size={23} strokeWidth={1.6} aria-hidden="true" />,
+    title: 'Research workflow',
+    description: 'Bring model exploration, feedback, and reporting concepts into one evolving platform.',
+    label: 'In development',
+  },
+];
 
 export default function Landing() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { scrollYProgress } = useScroll();
-  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const yHero = useTransform(scrollYProgress, [0, 0.2], [0, -100]);
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // If on a tenant subdomain, redirect to dashboard immediately
-    if (!config.isMainDomain) {
-      navigate('/dashboard');
-      return;
-    }
-
-    // Simulate premium loader
-    const to = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(to);
-  }, [navigate]);
-
-  const carouselRef = useRef(null);
-  const carouselContentRef = useRef(null);
-  const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0 });
-
-  useLayoutEffect(() => {
-    if (carouselRef.current && carouselContentRef.current) {
-      const containerWidth = carouselRef.current.offsetWidth;
-      const contentWidth = carouselContentRef.current.scrollWidth;
-      const constraint = containerWidth - contentWidth;
-      setDragConstraints({ left: Math.min(0, constraint), right: 0 });
-    }
-  }, [loading]); // Re-calculate after loading finishes and cards render
+  const entryPath = user ? '/select-org' : '/login';
 
   return (
-    <div style={{ background: '#000000', color: '#fff', minHeight: '100vh', overflowX: 'hidden', position: 'relative' }}>
+    <div className="nv-landing">
+      <a className="nv-skip-link" href="#main-content">Skip to content</a>
 
-      {/* ── Global Preloader ── */}
-      <AnimatePresence>
-        {loading && (
-          <Motion.div
-            initial={{ opacity: 1 }} exit={{ opacity: 0, filter: 'blur(10px)' }} transition={{ duration: 0.6 }}
-            style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <div className="network-spinner" />
-          </Motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Header ── */}
-      <Motion.header
-        initial={{ y: -100 }} animate={{ y: 0 }} transition={{ delay: 1.2, duration: 0.8, type: 'spring' }}
-        style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-          padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)',
-          background: 'rgba(0,0,0,0.5)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Brain size={24} style={{ color: 'var(--text-bright)' }} />
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.1em' }}>NEUROVISION</span>
+      <header className="nv-header">
+        <div className="nv-header-inner">
+          <Link className="nv-wordmark" to="/" aria-label="NeuroVision home">
+            <span className="nv-mark"><Layers3 size={19} strokeWidth={1.9} aria-hidden="true" /></span>
+            <span>NeuroVision<span className="nv-wordmark-dot">.</span></span>
+          </Link>
+          <nav className="nv-navigation" aria-label="Main navigation">
+            <a href="#capabilities">Platform</a>
+            <a href="#workflow">How it works</a>
+            <a href="#about">About</a>
+          </nav>
+          <Link className="nv-header-cta" to={entryPath}>
+            <span>{user ? 'My workspace' : 'Sign in'}</span>
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
-        <Motion.button
-          whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate(user ? '/select-org' : '/login')}
-          style={{ background: '#fff', color: '#000', border: 'none', padding: '10px 24px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
-        >
-          {user ? 'Go to Workspace' : 'Sign In'}
-        </Motion.button>
-      </Motion.header>
+      </header>
 
-      {/* ── Background Parallax Layer ── */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
-          backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(6,182,212,0.1) 0%, rgba(147,51,234,0.05) 30%, #000000 60%)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-          backgroundSize: '80px 80px', opacity: 0.5,
-          maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 80%)'
-        }} />
-      </div>
-
-      {/* ── Main Content ── */}
-      <main style={{ position: 'relative', zIndex: 10, paddingTop: 160 }}>
-
-        {/* HERO SECTION */}
-        <Motion.section
-          style={{ opacity: opacityHero, y: yHero, minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 24px' }}
-        >
-          <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4, duration: 0.8 }}
-            style={{ fontSize: 12, fontWeight: 800, color: 'var(--neon-cyan)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24, border: '1px solid rgba(6,182,212,0.3)', padding: '6px 16px', background: 'rgba(6,182,212,0.05)' }}>
-            Clinical Platform 2.0
-          </Motion.div>
-          <Motion.h1
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.6, duration: 1, type: 'spring' }}
-            className="title-glow" style={{ fontSize: 'clamp(48px, 8vw, 96px)', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', letterSpacing: '-0.04em', marginBottom: 32 }}
-          >
-            NEUROVISION<br/>PRECISION
-          </Motion.h1>
-          <Motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8, duration: 0.8 }}
-            style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 640, textAlign: 'center', lineHeight: 1.6, marginBottom: 56 }}
-          >
-            A high-fidelity framework for neural analytics. Seamlessly integrate multi-modal AI segmentations and VQA directly into your surgical workflow.
-          </Motion.p>
-          <Motion.button
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.0, duration: 0.8 }}
-            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(255,255,255,0.2)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(user ? '/select-org' : '/login')}
-            style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-          >
-            Deploy Workflow <ArrowRight size={18} />
-          </Motion.button>
-        </Motion.section>
-
-        {/* CAROUSEL SECTION */}
-        <section style={{ padding: '100px 0', overflow: 'hidden' }}>
-          <div style={{ padding: '0 48px', marginBottom: 48 }}>
-            <h2 className="text-gradient" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.02em' }}>Platform Subsystems</h2>
-          </div>
-
-          {/* Framer Motion Draggable Carousel */}
-          <div ref={carouselRef} style={{ width: '100%', overflow: 'visible' }}>
-            <Motion.div
-              ref={carouselContentRef}
-              drag="x"
-              dragConstraints={dragConstraints}
-              dragElastic={0.05}
-              style={{
-                display: 'flex',
-                gap: 64,
-                padding: '0 0 0 0',
-                cursor: 'grab',
-                width: 'max-content'
-              }}
-              whileTap={{ cursor: 'grabbing' }}
-            >
-              {[
-                { icon: <ScanLine size={32}/>, title: '3D Segmentation', desc: 'Real-time WebGL NIfTI rendering powered by optimized U-Net models for precise volumetric extraction.', metric: '0.94 DICE', color: 'var(--neon-blue)' },
-                { icon: <MessageSquare size={32}/>, title: 'Diagnostic VQA', desc: 'Multimodal transformer querying against MRI slices backed by proprietary literature weights.', metric: '91.5% F1', color: 'var(--neon-cyan)' },
-                { icon: <Database size={32}/>, title: 'Federated Registry', desc: 'Secure PHI-scrubbed contribution endpoints with immutable trails for decentralized training.', metric: 'HIPAA', color: 'var(--neon-purple)' },
-                { icon: <Activity size={32}/>, title: 'Pathology Reports', desc: 'Automated synthesis of clinical metrics into standardized narrative reporting for EHR ingestion.', metric: 'HL7 / FHIR', color: '#ffffff' },
-              ].map((card, i) => (
-                <Motion.div key={i} className="glass-panel"
-                  style={{
-                    width: 400,
-                    aspectRatio: '1/1',
-                    padding: 40,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                  whileHover={{ y: -10, backgroundColor: 'rgba(255,255,255,0.05)', borderColor: card.color }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <div>
-                    <div style={{ color: card.color, marginBottom: 24 }}>{card.icon}</div>
-                    <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{card.title}</h3>
-                    <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>{card.desc}</p>
-                  </div>
-                  <div style={{ marginTop: 24, fontSize: 11, fontWeight: 800, color: 'var(--text-bright)', letterSpacing: '0.05em', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>METRIC</span>
-                    <span style={{ color: card.color }}>{card.metric}</span>
-                  </div>
-                </Motion.div>
-              ))}
-            </Motion.div>
-          </div>
-        </section>
-
-        {/* STATISTICS SECTION */}
-        <section style={{ padding: '100px 48px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48 }}>
-          {[
-            { label: 'Volumetric Accuracy', val: '99', suffix: '.8%' },
-            { label: 'Global Models Deployed', val: '14', suffix: '+' },
-            { label: 'Inference Latency', val: '400', suffix: 'ms' },
-            { label: 'Federated Datasets', val: '1.2', suffix: 'M' }
-          ].map((stat, i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 64, fontWeight: 800, color: 'var(--text-bright)', letterSpacing: '-0.03em', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CountUp to={stat.val} />
-                <span className="text-gradient" style={{ fontSize: 32, marginLeft: 4 }}>{stat.suffix}</span>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-label)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{stat.label}</div>
-            </div>
-          ))}
-        </section>
-
-        {/* TESTIMONIALS */}
-        <section style={{ padding: '100px 48px', display: 'flex', justifyContent: 'center' }}>
-          <div className="glass-panel"
-            style={{
-              width: 400,
-              aspectRatio: '1/1',
-              padding: 40,
-              position: 'relative',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, background: 'linear-gradient(90deg, var(--neon-blue), var(--neon-cyan), var(--neon-purple))' }} />
-            <div>
-              <Cpu size={32} style={{ color: 'var(--neon-cyan)', marginBottom: 24, opacity: 0.8 }} />
-              <p style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.6, color: 'var(--text-primary)' }}>
-                "The 3D-UNet pipeline delivers boundary estimates with a precision that borders on clairvoyance."
+      <main id="main-content">
+        <section className="nv-hero" aria-labelledby="nv-hero-title">
+          <div className="nv-container nv-hero-grid">
+            <div className="nv-hero-copy">
+              <div className="nv-eyebrow"><span className="nv-eyebrow-line" /> Clinical research software</div>
+              <h1 id="nv-hero-title">A clearer home for <em>clinical imaging</em> work.</h1>
+              <p className="nv-hero-description">
+                Patient records, institutional workspaces, and experimental imaging tools—
+                organized in one place for research teams.
               </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-container)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>SC</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Dr. Sarah Chen</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Chief of Neurosurgery</div>
+              <div className="nv-hero-actions">
+                <Link className="nv-button nv-button-primary" to={entryPath}>
+                  {user ? 'Open your workspace' : 'Explore the platform'} <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <a className="nv-text-link" href="#capabilities">See what is inside <ArrowUpRight size={16} aria-hidden="true" /></a>
               </div>
+              <p className="nv-hero-note"><ShieldCheck size={15} aria-hidden="true" /> Research software in active development. Not for clinical diagnosis.</p>
+            </div>
+
+            <div className="nv-preview" aria-label="Illustrative layout of a NeuroVision patient workspace">
+              <div className="nv-preview-top">
+                <span className="nv-preview-logo"><Layers3 size={17} aria-hidden="true" /> NV / Workspace</span>
+                <span className="nv-preview-example">INTERFACE PREVIEW</span>
+              </div>
+              <div className="nv-preview-body">
+                <div className="nv-preview-aside" aria-hidden="true">
+                  <span className="nv-preview-aside-active"><span>01</span> Overview</span>
+                  <span><span>02</span> Patients</span>
+                  <span><span>03</span> Imaging</span>
+                  <span><span>04</span> Reports</span>
+                </div>
+                <div className="nv-preview-main">
+                  <div className="nv-preview-overline">PATIENT WORKSPACE / EXAMPLE</div>
+                  <h2>Keep the important work together.</h2>
+                  <p>One place to find your patient context and move between tools.</p>
+                  <div className="nv-preview-document">
+                    <div className="nv-preview-document-head">
+                      <span><span className="nv-preview-square" /> Workspace overview</span>
+                      <span className="nv-preview-pill">Illustrative</span>
+                    </div>
+                    <div className="nv-preview-document-row"><span>01</span><strong>Patient information</strong><span>Organize</span></div>
+                    <div className="nv-preview-document-row"><span>02</span><strong>Imaging workspace</strong><span>Explore</span></div>
+                    <div className="nv-preview-document-row"><span>03</span><strong>Research notes</strong><span>Review</span></div>
+                  </div>
+                </div>
+              </div>
+              <div className="nv-preview-bottom"><span>BUILT AROUND A CONTINUOUS WORKFLOW</span><span>NEUROVISION / 2026</span></div>
+            </div>
+          </div>
+          <div className="nv-hero-index nv-container"><span>01 / INTRODUCTION</span><span>SCROLL TO EXPLORE ↓</span></div>
+        </section>
+
+        <section id="capabilities" className="nv-section nv-capabilities">
+          <div className="nv-container">
+            <div className="nv-section-heading">
+              <span className="nv-section-kicker">WHAT'S INSIDE</span>
+              <div><h2>Purposeful tools.<br /><em>One connected space.</em></h2><p>Start with the essentials. Move between institution, patient, and research context without losing your place.</p></div>
+            </div>
+            <div className="nv-feature-grid">
+              {capabilities.map((item) => (
+                <article className="nv-feature" key={item.number}>
+                  <div className="nv-feature-top"><span>{item.number}</span>{item.icon}</div>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                  <div className="nv-feature-footer">{item.label}<ArrowUpRight size={17} aria-hidden="true" /></div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* FOOTER CTA */}
-        <section style={{ padding: '120px 48px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 32 }}>Ready for the next iteration?</h2>
-          <Motion.button
-            whileHover={{ scale: 1.05 }}
-            onClick={() => navigate('/login')}
-            style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '16px 40px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
-          >
-            Initialize Workspace
-          </Motion.button>
+        <section id="workflow" className="nv-section nv-workflow">
+          <div className="nv-container nv-workflow-grid">
+            <div className="nv-workflow-copy">
+              <span className="nv-section-kicker">A SIMPLER WORKFLOW</span>
+              <h2>Designed around the work, <em>not the buzzwords.</em></h2>
+              <p>NeuroVision is being built as a practical workspace for institutions managing patient context alongside imaging research.</p>
+              <Link className="nv-text-link" to={entryPath}>Go to your workspace <ArrowRight size={17} aria-hidden="true" /></Link>
+            </div>
+            <div className="nv-steps">
+              <div className="nv-step"><span>01</span><div><h3>Choose your institution</h3><p>Open the workspace you are authorized to use.</p></div><Building2 size={20} aria-hidden="true" /></div>
+              <div className="nv-step"><span>02</span><div><h3>Find your patient record</h3><p>Keep record details and related tools in the same context.</p></div><Users size={20} aria-hidden="true" /></div>
+              <div className="nv-step"><span>03</span><div><h3>Explore research tools</h3><p>Review experimental visualization and analysis workflows as they develop.</p></div><ScanLine size={20} aria-hidden="true" /></div>
+            </div>
+          </div>
         </section>
 
+        <section id="about" className="nv-about">
+          <div className="nv-container nv-about-grid">
+            <span className="nv-section-kicker">ABOUT THIS PROJECT</span>
+            <div>
+              <h2>Built for clarity.<br />Evolving with research.</h2>
+              <p>NeuroVision is an evolving clinical-imaging research project. Features are being developed incrementally; model outputs and demonstrations should not be used for medical decisions.</p>
+            </div>
+            <Link className="nv-button nv-button-light" to={entryPath}>Enter the workspace <ArrowRight size={18} aria-hidden="true" /></Link>
+          </div>
+        </section>
       </main>
+
+      <footer className="nv-footer">
+        <div className="nv-container nv-footer-inner">
+          <span className="nv-wordmark"><span className="nv-mark"><Layers3 size={16} aria-hidden="true" /></span>NeuroVision.</span>
+          <span>Clinical imaging research platform · Not for diagnostic use</span>
+          <a href="#main-content">Back to top ↑</a>
+        </div>
+      </footer>
     </div>
   );
 }
