@@ -282,3 +282,8 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+
+/* Prevent 300px workspace tiles overflowing narrow phones. */
+@media(max-width:720px){.org-select-page{padding:32px 16px;justify-content:flex-start;}.org-select-header{margin-bottom:28px;}.org-select-grid{grid-template-columns:minmax(0,1fr);}.org-card{padding:20px;}.modal-overlay{padding:12px;align-items:flex-start;overflow-y:auto;}.modal-content{padding:22px;margin-block:auto;max-height:calc(100dvh - 24px);overflow-y:auto;}.org-select-heading-row{flex-wrap:wrap;}}
+@media(max-width:420px){.org-select-name{font-size:24px;}.org-card-stats{flex-wrap:wrap;gap:13px;}.form-grid{grid-template-columns:1fr;}}
