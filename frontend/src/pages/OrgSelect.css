@@ -13,6 +13,34 @@
   width: 100%;
   max-width: 960px;
 }
+.org-select-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.org-select-patients-link {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--outline-dim);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.org-select-patients-link:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-high);
+  color: var(--text-bright);
+}
+.org-select-patients-link:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 3px;
+}
 .back-to-ws-btn {
   background: var(--accent-container);
   color: var(--accent-primary);
@@ -66,11 +94,17 @@
   transition: border-color 0.15s, background 0.15s;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 .org-card:hover {
   border-color: var(--accent-primary);
   background: var(--bg-card-high);
 }
+.org-card:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 3px; }
+.create-card { text-align: center; }
 .org-card-badge {
   position: absolute;
   top: 16px; right: 16px;
@@ -211,6 +245,7 @@
 }
 @media (max-width: 480px) {
   .form-grid { grid-template-columns: 1fr; }
+  .org-select-heading-row { flex-direction: column; }
 }
 
 .create-submit-btn {
@@ -237,6 +272,8 @@
   text-align: center;
   line-height: 1.5;
 }
+
+.org-select-error { grid-column: 1 / -1; padding: 10px 12px; border: 1px solid rgba(238,125,119,.4); background: rgba(238,125,119,.08); color: var(--error); font-size: 12px; text-align: left; }
 
 .spin {
   animation: spin 1s linear infinite;

@@ -1,8 +1,8 @@
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 import {
-  Brain, LayoutDashboard, MessageSquare, ScanLine,
-  History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server
+  Brain, LayoutDashboard,
+  LogOut, ChevronRight, Database, MessageSquarePlus, Server, Users
 } from 'lucide-react';
 import './AppShell.css';
 import config from '../config';
@@ -35,16 +35,16 @@ export default function AppShell() {
         </div>
 
         {org && (
-          <div className="sidebar-org" onClick={handleSwitchOrg}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <div className="sidebar-org-label">Organization</div>
+          <button type="button" className="sidebar-org" onClick={handleSwitchOrg}>
+            <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span className="sidebar-org-label">Organization</span>
               <ChevronRight size={12} className="switch-icon" style={{ opacity: 0.5 }} />
-            </div>
-            <div className="sidebar-org-name">{org.name}</div>
-            <div style={{ fontSize: 10, color: 'var(--accent-primary)', marginTop: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            </span>
+            <span className="sidebar-org-name">{org.name}</span>
+            <span style={{ display: 'block', fontSize: 10, color: 'var(--accent-primary)', marginTop: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Switch Workspace
-            </div>
-          </div>
+            </span>
+          </button>
         )}
 
         <nav className="sidebar-nav">
@@ -52,20 +52,10 @@ export default function AppShell() {
           <NavLink to="/dashboard"     className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <LayoutDashboard size={15} /> Dashboard
           </NavLink>
-          <NavLink to="/segmentation"  className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <ScanLine size={15} /> 3D Segmentation
+          <NavLink to="/patients"      className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Users size={15} /> Patients
           </NavLink>
-          <NavLink to="/vqa"           className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <MessageSquare size={15} /> VQA Diagnostic Chat
-          </NavLink>
-          <NavLink to="/history"       className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <History size={15} /> Scan History
-          </NavLink>
-
-          <div className="nav-section-label" style={{ marginTop: 8 }}>Intelligence</div>
-          <NavLink to="/reports"       className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Activity size={15} /> Pathology Reports
-          </NavLink>
+          <div className="nav-section-label" style={{ marginTop: 8 }}>Platform</div>
           <NavLink to="/contribute"    className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <Database size={15} /> Data Contribution
           </NavLink>

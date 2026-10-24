@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
 import { runSegmentation, fetchAvailableModels } from '../services/api';
 import {
@@ -7,19 +8,9 @@ import {
 } from 'lucide-react';
 import './Segmentation.css';
 
-const MOCK_RESULT = {
-  tumor_type:    'Glioblastoma Multiforme (GBM)',
-  grade:         'Grade IV',
-  volume_cm3:    38.4,
-  surface_area:  112.7,
-  location:      'Right Temporal Lobe',
-  confidence:    91.2,
-  processing_s:  4.3,
-  model_version: '3D-UNet v2.1',
-};
-
 export default function Segmentation() {
-  const [patientFolder, setPatientFolder] = useState('BraTS2021_00000/Patient 1');
+  const { patient } = useOutletContext();
+  const [patientFolder, setPatientFolder] = useState('');
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState('');
@@ -52,9 +43,7 @@ export default function Segmentation() {
       const data = await runSegmentation(patientFolder, selModel);
       setResult(data);
     } catch {
-      // Use mock data for demo
-      await new Promise(r => setTimeout(r, 2800));
-      setResult(MOCK_RESULT);
+      setError('Segmentation service is unavailable. No clinical result was saved.');
     } finally {
       setLoading(false);
     }
@@ -67,6 +56,8 @@ export default function Segmentation() {
 Generated: ${new Date().toLocaleString()}
 
 PATIENT FOLDER: ${patientFolder}
+PATIENT ID: ${patient.patient_code}
+PATIENT: ${patient.display_name}
 
 FINDINGS:
   Tumor Type:   ${result.tumor_type}
@@ -82,8 +73,9 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
     const blob = new Blob([text], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `NeuroVision_Report_${patientFolder.replace(/\//g,'_')}.txt`;
+    a.download = `NeuroVision_Report_${patient.patient_code.replace(/[^a-z0-9_-]/gi, '_')}.txt`;
     a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -94,7 +86,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
             3D Segmentation Workspace
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            Upload patient MRI data and run AI tumor segmentation
+            {patient.patient_code} · Upload MRI data for this patient only
           </div>
         </div>
       </div>
@@ -108,7 +100,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
               <label className="field-label">Patient Folder Path</label>
               <input
                 className="field-input"
-                placeholder="BraTS2021_00000/Patient 1"
+                placeholder="Local scan folder or study identifier"
                 value={patientFolder}
                 onChange={e => setPatientFolder(e.target.value)}
               />

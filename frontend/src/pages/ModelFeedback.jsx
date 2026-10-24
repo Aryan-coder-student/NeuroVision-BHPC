@@ -29,7 +29,7 @@ export default function ModelFeedback() {
             </div>
           </div>
         ) : (
-          <form onSubmit={submitFeedback}>
+          <form onSubmit={submitFeedback} noValidate>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-label)', marginBottom: 8 }}>
                 Target Model
@@ -67,11 +67,11 @@ export default function ModelFeedback() {
                 Detailed Description
               </label>
               <textarea 
-                className="field-input" 
+                className="field-input resize-none"
                 rows={5} 
                 placeholder="Describe what the model predicted versus the actual ground truth finding..." 
                 required 
-                style={{ resize: 'vertical' }}
+                style={{ resize: 'none' }}
               />
             </div>
 

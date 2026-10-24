@@ -15,12 +15,16 @@ import Segmentation from './pages/Segmentation';
 import VQA         from './pages/VQA';
 import History     from './pages/History';
 import Reports     from './pages/Reports';
+import Patients    from './pages/Patients';
 import DataContribution from './pages/DataContribution';
 import ModelFeedback    from './pages/ModelFeedback';
 import ModelRegistry    from './pages/ModelRegistry';
 import Register         from './pages/Register';
 import VerifyOTP        from './pages/VerifyOTP';
 import AppShell    from './components/AppShell';
+import PatientWorkspace from './components/PatientWorkspace';
+import PatientDashboard from './pages/PatientDashboard';
+import MyPatients from './pages/MyPatients';
 
 /* Global spin keyframe */
 const style = document.createElement('style');
@@ -99,14 +103,24 @@ function AppRoutes() {
       <Route path="/register"   element={<CentralOnly><GuestOnly><Register /></GuestOnly></CentralOnly>} />
       <Route path="/verify-otp" element={<CentralOnly><GuestOnly><VerifyOTP /></GuestOnly></CentralOnly>} />
       <Route path="/select-org" element={<RequireAuth><CentralOnly><OrgSelect /></CentralOnly></RequireAuth>} />
+      <Route path="/my-patients" element={<RequireAuth><CentralOnly><MyPatients /></CentralOnly></RequireAuth>} />
 
       {/* Protected app shell */}
       <Route element={<RequireOrg><AppShell /></RequireOrg>}>
         <Route path="/dashboard"    element={<Dashboard />} />
-        <Route path="/segmentation" element={<Segmentation />} />
-        <Route path="/vqa"          element={<VQA />} />
-        <Route path="/history"      element={<History />} />
-        <Route path="/reports"      element={<Reports />} />
+        <Route path="/patients"     element={<Patients />} />
+        <Route path="/patients/:patientId" element={<PatientWorkspace />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="segmentation" element={<Segmentation />} />
+          <Route path="vqa" element={<VQA />} />
+          <Route path="history" element={<History />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
+        <Route path="/segmentation" element={<Navigate to="/patients" replace />} />
+        <Route path="/vqa" element={<Navigate to="/patients" replace />} />
+        <Route path="/history" element={<Navigate to="/patients" replace />} />
+        <Route path="/reports" element={<Navigate to="/patients" replace />} />
         <Route path="/contribute"   element={<DataContribution />} />
         <Route path="/feedback"     element={<ModelFeedback />} />
         <Route path="/models"       element={<ModelRegistry />} />

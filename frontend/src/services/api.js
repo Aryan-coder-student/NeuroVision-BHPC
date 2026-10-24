@@ -111,6 +111,72 @@ export async function tenantRequest(workspaceId, requestConfig) {
   return djangoApi.request({ ...requestConfig, url, headers });
 }
 
+export async function fetchPatients(workspaceId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: '/tenant/patients/',
+    signal,
+  });
+  return Array.isArray(res.data) ? res.data : res.data.results || [];
+}
+
+export async function fetchMyPatients({ workspaceId, search, page = 1, pageSize = 25, signal } = {}) {
+  const params = {
+    page,
+    page_size: pageSize,
+  };
+  if (workspaceId) params.workspace_id = workspaceId;
+  if (search) params.search = search;
+
+  const res = await djangoApi.get(`${API_BASE}/my-patients/`, { params, signal });
+  return res.data;
+}
+
+export async function createPatient(workspaceId, patient) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: '/tenant/patients/',
+    data: patient,
+  });
+  return res.data;
+}
+
+export async function fetchPatient(workspaceId, patientId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/`,
+    signal,
+  });
+  return res.data;
+}
+
+export async function fetchPatientGrant(workspaceId, patientId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/identity-grant/`,
+    signal,
+  });
+  return res.data;
+}
+
+export async function requestPatientGrant(workspaceId, patientId, email) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/identity-grant/request/`,
+    data: { email },
+  });
+  return res.data;
+}
+
+export async function verifyPatientGrant(workspaceId, patientId, challengeId, otp) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/identity-grant/verify/`,
+    data: { challenge_id: challengeId, otp },
+  });
+  return res.data;
+}
+
 export async function createWorkspace(data) {
   const res = await djangoApi.post(`${WORKSPACE_BASE}/`, data);
   return res.data;

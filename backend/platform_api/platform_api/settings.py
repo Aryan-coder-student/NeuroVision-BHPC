@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+from corsheaders.defaults import default_headers
 from config import settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -48,6 +49,7 @@ SHARED_APPS = [
     "django_tenants",  # Mandatory: must be first
     "tenant",  # Managing Institutions (Tenants)
     "users",  # Handing Identity and Memberships
+    "patient_identity",  # Cross-institution identity and consent grants
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -60,6 +62,7 @@ SHARED_APPS = [
 ]
 TENANT_APPS = [
     "django.contrib.contenttypes",
+    "clinical",
     # Add your clinical/research apps here later
 ]
 INSTALLED_APPS = list(SHARED_APPS) + [
@@ -172,6 +175,7 @@ STORAGES = {
 
 # CORS
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = (*default_headers, "x-workspace-id")
 CSRF_TRUSTED_ORIGINS = [
     "http://localtest.me:5173",
     "http://localtest.me:5174",

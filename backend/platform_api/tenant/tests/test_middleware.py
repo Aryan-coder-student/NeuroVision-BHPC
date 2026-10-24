@@ -2,6 +2,7 @@
 from unittest.mock import patch, MagicMock
 from uuid import uuid4
 
+from django.conf import settings
 from django.test import RequestFactory, SimpleTestCase
 from rest_framework_simplejwt.exceptions import InvalidToken
 
@@ -14,11 +15,26 @@ class WorkspaceTenantMiddlewareTests(SimpleTestCase):
         self.middleware = WorkspaceTenantMiddleware(lambda request: None)
         self.workspace_id = uuid4()
 
+    def test_cors_allows_workspace_header(self):
+        self.assertIn("x-workspace-id", settings.CORS_ALLOW_HEADERS)
+
     @patch("tenant.middleware.TenantMainMiddleware.process_request")
     def test_unscoped_route_never_selects_tenant(self, parent):
         request = self.factory.get(
             "/api/v1/auth/profile/", HTTP_X_WORKSPACE_ID=str(self.workspace_id)
         )
+        self.assertIsNone(self.middleware.process_request(request))
+        parent.assert_called_once()
+
+    @patch("tenant.middleware.TenantMainMiddleware.process_request")
+    def test_cors_preflight_does_not_require_workspace_credentials(self, parent):
+        request = self.factory.options(
+            "/api/v1/tenant/patients/",
+            HTTP_ORIGIN="http://localtest.me:5174",
+            HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET",
+            HTTP_ACCESS_CONTROL_REQUEST_HEADERS="x-workspace-id",
+        )
+
         self.assertIsNone(self.middleware.process_request(request))
         parent.assert_called_once()
 

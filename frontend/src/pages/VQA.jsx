@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { sendVQAQuery, fetchAvailableModels } from '../services/api';
 import { Send, Brain, MessageSquare, Trash2 } from 'lucide-react';
 import './VQA.css';
@@ -16,12 +17,8 @@ const QUICK_PROMPTS = [
   'Explain the significance of the FLAIR sequence findings.',
 ];
 
-const MOCK_RESPONSES = {
-  default: "Based on the imaging characteristics visible in the uploaded scan, the lesion demonstrates irregular margins, heterogeneous signal intensity, and surrounding edema — features consistent with a high-grade glioma. I would recommend cross-referencing with histopathological data for a definitive diagnosis. Would you like me to provide relevant literature references?",
-  research: "Here are recent high-impact papers on this topic:\n\n1. Stupp et al. (2023) — 'Bevacizumab plus radiotherapy for recurrent GBM' — NEJM\n2. Weller et al. (2024) — 'MGMT promoter methylation and survival in newly diagnosed GBM' — Lancet Oncology\n3. Wen et al. (2023) — 'Response Assessment in Neuro-Oncology Working Group criteria' — Neuro-Oncology",
-};
-
 export default function VQA() {
+  const { patient } = useOutletContext();
   const [messages, setMessages] = useState([SYSTEM_WELCOME]);
   const [input, setInput]       = useState('');
   const [typing, setTyping]     = useState(false);
@@ -59,19 +56,13 @@ export default function VQA() {
       const res = await sendVQAQuery(q, imageBlob, selModel);
       setMessages(m => [...m, { role: 'ai', text: res.response || res.answer || res.result || JSON.stringify(res) }]);
     } catch {
-      // Fallback to mock
-      await new Promise(r => setTimeout(r, 1200));
-      const lower = q.toLowerCase();
-      const reply = lower.includes('paper') || lower.includes('research') || lower.includes('link')
-        ? MOCK_RESPONSES.research
-        : MOCK_RESPONSES.default;
-      setMessages(m => [...m, { role: 'ai', text: reply }]);
+      setMessages(m => [...m, { role: 'ai', text: 'The VQA service is unavailable. No diagnostic answer was generated or saved.' }]);
     } finally {
       setTyping(false);
     }
   };
 
-  const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
+  const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMsg(); } };
 
   const initials = 'Dr';
 
@@ -83,7 +74,7 @@ export default function VQA() {
             VQA Diagnostic Chat
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            AI-powered visual question answering for brain tumor imaging
+            {patient.patient_code} · Session is scoped to this patient
           </div>
         </div>
       </div>
@@ -98,10 +89,8 @@ export default function VQA() {
             </div>
 
             <div className="vqa-meta">
-              <div className="vqa-meta-row"><span className="vqa-meta-key">Patient</span><span className="vqa-meta-val">P-0041 · Arun Mehta</span></div>
-              <div className="vqa-meta-row"><span className="vqa-meta-key">Modality</span><span className="vqa-meta-val">MRI T1+Gd</span></div>
-              <div className="vqa-meta-row"><span className="vqa-meta-key">Sequence</span><span className="vqa-meta-val">Axial FLAIR</span></div>
-              <div className="vqa-meta-row"><span className="vqa-meta-key">Finding</span><span className="vqa-meta-val" style={{ color: 'var(--error)' }}>Enhancing mass</span></div>
+              <div className="vqa-meta-row"><span className="vqa-meta-key">Patient</span><span className="vqa-meta-val">{patient.patient_code} · {patient.display_name}</span></div>
+              <div className="vqa-meta-row"><span className="vqa-meta-key">Image context</span><span className="vqa-meta-val">Sample image · not a saved patient scan</span></div>
             </div>
 
             <div style={{ marginTop: 16 }}>
