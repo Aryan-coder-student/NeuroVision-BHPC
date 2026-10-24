@@ -5,6 +5,7 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Select/Listbox | Native select | `DESIGN.md` and `premium-ui.json` | Platform-owned popup accepted | Keyboard selection and browser smoke test |
+| Date | Native date input | `DESIGN.md` and `premium-ui.json` | Platform calendar and locale accepted | Local-date boundary and browser smoke test |
 | Form | Page form with shared field tokens | `DESIGN.md` form contract | Identity OTP and patient registration | Inline errors, first-invalid focus, duplicate-submit check |
 | Scrollbar | Global document theme | `frontend/src/index.css` | Stable gutter on tables/tabs | Strict audit and browser overflow check |
 | CRUD | Tenant patient API and registry | `clinical.views.PatientViewSet` | Admin writes, member reads | Tenant isolation integration tests |

@@ -45,7 +45,7 @@ def generate_code():
 
 
 @transaction.atomic
-def start_email_grant(*, patient, institution, requested_by, email):
+def prepare_email_grant(*, patient, institution, requested_by, email):
     normalized = normalize_email(email)
     fingerprint = email_fingerprint(normalized)
     identity, _ = PatientIdentity.objects.get_or_create(
@@ -59,9 +59,10 @@ def start_email_grant(*, patient, institution, requested_by, email):
     if existing_grant and existing_grant.status == PatientAccessGrant.Status.ACTIVE:
         raise IdentityAlreadyLinkedError("Patient identity is already verified")
 
+    now = timezone.now()
     if existing_grant:
         latest_challenge = existing_grant.challenges.order_by("-created_at").first()
-        if latest_challenge and latest_challenge.created_at > timezone.now() - RESEND_COOLDOWN:
+        if latest_challenge and latest_challenge.created_at > now - RESEND_COOLDOWN:
             raise GrantRateLimitedError("A verification code was sent recently")
 
     if existing_grant:
@@ -79,11 +80,24 @@ def start_email_grant(*, patient, institution, requested_by, email):
             identity=identity,
             requested_by=requested_by,
         )
+    grant.challenges.filter(consumed_at__isnull=True).update(consumed_at=now)
     code = generate_code()
     challenge = PatientGrantChallenge.objects.create(
         grant=grant,
+        identity=identity,
         code_hash=make_password(code),
-        expires_at=timezone.now() + CHALLENGE_TTL,
+        expires_at=now + CHALLENGE_TTL,
+    )
+    return challenge, mask_email(normalized), normalized, code
+
+
+def start_email_grant(*, patient, institution, requested_by, email):
+    """Persist the challenge, commit it, then perform the external email call."""
+    challenge, masked_email, normalized, code = prepare_email_grant(
+        patient=patient,
+        institution=institution,
+        requested_by=requested_by,
+        email=email,
     )
     sent = email_service.send(
         normalized,
@@ -93,17 +107,19 @@ def start_email_grant(*, patient, institution, requested_by, email):
     if not sent:
         challenge.delete()
         raise RuntimeError("Verification email could not be delivered")
-    return challenge, mask_email(normalized)
+    return challenge, masked_email
 
 
 @transaction.atomic
 def verify_email_grant(*, patient, institution, challenge_id, code):
-    challenge = PatientGrantChallenge.objects.select_for_update().select_related("grant__identity").filter(
+    challenge = PatientGrantChallenge.objects.select_for_update().select_related("grant", "identity").filter(
         id=challenge_id,
         grant__institution=institution,
         grant__tenant_patient_id=patient.id,
     ).first()
     if challenge is None or challenge.consumed_at or challenge.expires_at <= timezone.now():
+        return None
+    if challenge.grant.identity_id != challenge.identity_id:
         return None
     if challenge.attempts >= MAX_ATTEMPTS:
         return None
@@ -120,7 +136,7 @@ def verify_email_grant(*, patient, institution, challenge_id, code):
     grant.verified_at = now
     grant.revoked_at = None
     grant.save(update_fields=("status", "verified_at", "revoked_at"))
-    identity = grant.identity
+    identity = challenge.identity
     identity.email_verified_at = now
     identity.save(update_fields=("email_verified_at", "updated_at"))
     patient.global_identity_id = identity.id

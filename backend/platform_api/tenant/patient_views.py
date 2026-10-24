@@ -14,6 +14,21 @@ class MyPatientsPagination(PageNumberPagination):
     page_size = 25
     page_size_query_param = "page_size"
     max_page_size = 100
+    last_page_strings = ()
+
+
+class BoundedPatientResults:
+    """Paginator adapter backed by only the rows needed for the requested page."""
+
+    def __init__(self, rows, total_count):
+        self.rows = rows
+        self.total_count = total_count
+
+    def __len__(self):
+        return self.total_count
+
+    def __getitem__(self, item):
+        return self.rows[item]
 
 
 class MyPatientsView(APIView):
@@ -37,7 +52,16 @@ class MyPatientsView(APIView):
         )
         search = request.query_params.get("search", "").strip()[:160]
 
+        paginator = self.pagination_class()
+        page_size = paginator.get_page_size(request)
+        try:
+            page_number = int(request.query_params.get(paginator.page_query_param, 1))
+        except (TypeError, ValueError):
+            page_number = 1
+        row_limit = max(page_number, 1) * page_size
+
         patients = []
+        total_count = 0
         for membership in memberships:
             workspace = membership.institution
             with tenant_context(workspace):
@@ -47,14 +71,15 @@ class MyPatientsView(APIView):
                         Q(patient_code__icontains=search)
                         | Q(display_name__icontains=search)
                     )
+                total_count += queryset.count()
                 patients.extend(
                     self._serialize_patient(patient, workspace)
-                    for patient in queryset.iterator()
+                    for patient in queryset.order_by("-created_at")[:row_limit]
                 )
 
         patients.sort(key=lambda patient: patient["created_at"], reverse=True)
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(patients, request, view=self)
+        bounded_results = BoundedPatientResults(patients[:row_limit], total_count)
+        page = paginator.paginate_queryset(bounded_results, request, view=self)
         return paginator.get_paginated_response(page)
 
     @staticmethod

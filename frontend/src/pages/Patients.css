@@ -132,6 +132,30 @@
   scrollbar-gutter: stable;
 }
 
+.patients-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 50px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--outline-dim);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.patients-pagination button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--outline-dim);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.patients-pagination button:hover:not(:disabled) { border-color: var(--accent-primary); }
+.patients-pagination button:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.patients-pagination button:disabled { cursor: not-allowed; opacity: .5; }
+
 .patients-table {
   width: 100%;
   min-width: 590px;
@@ -418,3 +442,66 @@
 
 /* Tables remain horizontally scrollable; form stays fully readable on narrow devices. */
 @media(max-width:600px){.patients-header{gap:12px;}.patients-header h1{font-size:22px;}.patients-panel-heading{padding:14px;}.patients-form-panel{padding:16px;}.patients-table-wrap{max-width:100%;-webkit-overflow-scrolling:touch;}.patients-table{min-width:570px;}.patients-table th,.patients-table td{padding-inline:12px;}.patients-state{flex-wrap:wrap;}.patients-count{min-width:0;}}
+
+
+/* Two-stage patient registration: generated ID followed by contact OTP. */
+.patients-meta {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.patients-generated-id-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text-muted);
+  padding: 12px;
+  border: 1px solid var(--outline-dim);
+  background: var(--bg-card-high);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.patients-generated-id-note svg { flex-shrink: 0; color: var(--accent-primary); }
+.patients-verification { min-width: 0; }
+.patients-verification-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px;
+  margin-top: 18px;
+  background: var(--bg-card-high);
+  border: 1px solid var(--outline-dim);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.patients-verification-summary strong {
+  color: var(--text-bright);
+  font-size: 18px;
+  letter-spacing: -.02em;
+  word-break: break-word;
+}
+.patients-verification-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.patients-verification-label:last-child {
+  margin-top: 6px;
+  color: var(--warning);
+}
+.patients-field input[type="date"] {
+  color-scheme: dark;
+  min-height: 44px;
+  font-family: inherit;
+}
+.patients-verification > .patients-field-help { margin-top: 12px; }
+@media (max-width: 640px) {
+  .patients-field input { min-height: 44px; font-size: 16px; }
+  .patients-verification-summary { padding: 14px; }
+}

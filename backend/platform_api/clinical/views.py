@@ -1,11 +1,14 @@
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from users.models import InstitutionMembership
 
 from .models import Patient
+from .services import delete_patient, register_patient
 from patient_identity.services import (
+    CHALLENGE_TTL,
     IdentityAlreadyLinkedError,
     GrantRateLimitedError,
     get_grant_status,
@@ -13,7 +16,19 @@ from patient_identity.services import (
     verify_email_grant,
 )
 
-from .serializers import PatientGrantRequestSerializer, PatientGrantVerifySerializer, PatientSerializer
+from .serializers import (
+    PatientGrantRequestSerializer,
+    PatientGrantVerifySerializer,
+    PatientReadSerializer,
+    PatientRegistrationSerializer,
+    PatientWriteSerializer,
+)
+
+
+class PatientPagination(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class VerifiedTenantMembership(permissions.BasePermission):
@@ -29,9 +44,45 @@ class VerifiedTenantMembership(permissions.BasePermission):
 
 
 class PatientViewSet(viewsets.ModelViewSet):
-    serializer_class = PatientSerializer
     permission_classes = (permissions.IsAuthenticated, VerifiedTenantMembership)
     queryset = Patient.objects.all()
+    pagination_class = PatientPagination
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return PatientRegistrationSerializer
+        if self.action in ("update", "partial_update"):
+            return PatientWriteSerializer
+        return PatientReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Register a patient and send OTP before returning its generated ID."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            patient, challenge, masked_email = register_patient(
+                institution=request.tenant,
+                requested_by=request.user,
+                **serializer.validated_data,
+            )
+        except RuntimeError:
+            return Response(
+                {"detail": "Verification email could not be sent. Try again later."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        data = PatientReadSerializer(patient, context=self.get_serializer_context()).data
+        data["identity_verification"] = {
+            "status": "PENDING",
+            "challenge_id": str(challenge.id),
+            "masked_email": masked_email,
+            "expires_in_seconds": int(CHALLENGE_TTL.total_seconds()),
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        delete_patient(patient=instance, institution=self.request.tenant)
 
     @action(detail=True, methods=("get",), url_path="identity-grant")
     def identity_grant(self, request, pk=None):

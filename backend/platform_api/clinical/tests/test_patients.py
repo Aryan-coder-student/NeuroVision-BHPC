@@ -1,4 +1,6 @@
 """Actual API + PostgreSQL-schema isolation tests using the project tenant middleware."""
+from uuid import uuid4
+
 from django.db import connection
 from django.test import override_settings
 from django.core import mail
@@ -62,6 +64,11 @@ class PatientTenantIsolationTests(TenantTestCase):
         )
 
     def request(self, method, institution, path=None, data=None):
+        if method == "post" and (path is None or path == self.url):
+            data = dict(data or {})
+            data.pop("patient_code", None)
+            data.setdefault("date_of_birth", "1995-07-12")
+            data.setdefault("email", f"test-{uuid4().hex}@example.com")
         return getattr(self.client, method)(
             path or self.url,
             data=data,
@@ -69,7 +76,7 @@ class PatientTenantIsolationTests(TenantTestCase):
             HTTP_X_WORKSPACE_ID=str(institution.id),
         )
 
-    def test_same_patient_code_isolated_between_schemas(self):
+    def test_generated_codes_and_records_isolated_between_schemas(self):
         self.authenticate(self.admin)
         left = self.request("post", self.apollo, data={
             "patient_code": "P-001", "display_name": "Apollo Patient",
@@ -79,11 +86,13 @@ class PatientTenantIsolationTests(TenantTestCase):
         })
         self.assertEqual(left.status_code, 201, left.data)
         self.assertEqual(right.status_code, 201, right.data)
+        self.assertNotEqual(left.data["patient_code"], right.data["patient_code"])
+        self.assertTrue(left.data["patient_code"].startswith("NV-"))
 
         apollo = self.request("get", self.apollo)
         aiims = self.request("get", self.aiims)
-        self.assertEqual([p["display_name"] for p in apollo.data], ["Apollo Patient"])
-        self.assertEqual([p["display_name"] for p in aiims.data], ["AIIMS Patient"])
+        self.assertEqual([p["display_name"] for p in apollo.data["results"]], ["Apollo Patient"])
+        self.assertEqual([p["display_name"] for p in aiims.data["results"]], ["AIIMS Patient"])
 
         self.assertEqual(
             self.request("get", self.aiims, path=f"{self.url}{left.data['id']}/").status_code,
@@ -129,59 +138,46 @@ class PatientTenantIsolationTests(TenantTestCase):
 
     def test_email_grant_verifies_global_identity_without_sharing_patient_records(self):
         self.authenticate(self.admin)
+        email = "patient.person@example.com"
         apollo_patient = self.request("post", self.apollo, data={
-            "patient_code": "P-GRANT", "display_name": "Apollo Record",
+            "display_name": "Apollo Record", "email": email,
         }).data
+        first_code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
         aiims_patient = self.request("post", self.aiims, data={
-            "patient_code": "P-GRANT", "display_name": "AIIMS Record",
+            "display_name": "AIIMS Record", "email": email,
         }).data
+        second_code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
 
-        with self.settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
-            first = self.request(
-                "post", self.apollo,
-                path=f"{self.url}{apollo_patient['id']}/identity-grant/request/",
-                data={"email": "Patient.Person@Example.com"},
-            )
-        self.assertEqual(first.status_code, 201, first.data)
-        self.assertNotIn("Patient.Person", str(first.data))
-        self.assertEqual(first.data["masked_email"], "pa************@example.com")
-        code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
-
+        first = apollo_patient["identity_verification"]
         wrong = self.request(
             "post", self.apollo,
             path=f"{self.url}{apollo_patient['id']}/identity-grant/verify/",
-            data={"challenge_id": first.data["challenge_id"], "otp": "000000" if code != "000000" else "999999"},
+            data={"challenge_id": first["challenge_id"], "otp": "000000" if first_code != "000000" else "999999"},
         )
         self.assertEqual(wrong.status_code, 400)
         verified = self.request(
             "post", self.apollo,
             path=f"{self.url}{apollo_patient['id']}/identity-grant/verify/",
-            data={"challenge_id": first.data["challenge_id"], "otp": code},
+            data={"challenge_id": first["challenge_id"], "otp": first_code},
         )
         self.assertEqual(verified.status_code, 200, verified.data)
         self.assertEqual(verified.data["status"], PatientAccessGrant.Status.ACTIVE)
 
-        second = self.request(
-            "post", self.aiims,
-            path=f"{self.url}{aiims_patient['id']}/identity-grant/request/",
-            data={"email": "patient.person@example.com"},
-        )
-        second_code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
-        self.assertEqual(second.status_code, 201, second.data)
-        self.assertEqual(self.request(
+        second = aiims_patient["identity_verification"]
+        verified_second = self.request(
             "post", self.aiims,
             path=f"{self.url}{aiims_patient['id']}/identity-grant/verify/",
-            data={"challenge_id": second.data["challenge_id"], "otp": second_code},
-        ).status_code, 200)
-
+            data={"challenge_id": second["challenge_id"], "otp": second_code},
+        )
+        self.assertEqual(verified_second.status_code, 200, verified_second.data)
         self.assertEqual(PatientIdentity.objects.count(), 1)
         self.assertEqual(PatientAccessGrant.objects.filter(status="ACTIVE").count(), 2)
         self.assertEqual(
-            [p["display_name"] for p in self.request("get", self.apollo).data],
+            [p["display_name"] for p in self.request("get", self.apollo).data["results"]],
             ["Apollo Record"],
         )
         self.assertEqual(
-            [p["display_name"] for p in self.request("get", self.aiims).data],
+            [p["display_name"] for p in self.request("get", self.aiims).data["results"]],
             ["AIIMS Record"],
         )
 
@@ -194,7 +190,7 @@ class PatientTenantIsolationTests(TenantTestCase):
         path = f"{self.url}{patient['id']}/identity-grant/"
         status_response = self.request("get", self.apollo, path=path)
         self.assertEqual(status_response.status_code, 200)
-        self.assertEqual(status_response.data, {"status": "UNLINKED", "verified_at": None})
+        self.assertEqual(status_response.data, {"status": "PENDING", "verified_at": None})
         self.assertEqual(self.request(
             "post", self.apollo,
             path=f"{self.url}{patient['id']}/identity-grant/request/",
@@ -204,14 +200,17 @@ class PatientTenantIsolationTests(TenantTestCase):
     def test_active_identity_cannot_be_replaced_by_another_email(self):
         self.authenticate(self.admin)
         patient = self.request("post", self.apollo, data={
-            "patient_code": "P-LOCK", "display_name": "Locked Patient",
+            "display_name": "Locked Patient", "email": "first@example.com",
         }).data
-        request_path = f"{self.url}{patient['id']}/identity-grant/request/"
         verify_path = f"{self.url}{patient['id']}/identity-grant/verify/"
-        first = self.request("post", self.apollo, path=request_path, data={"email": "first@example.com"})
         code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
         self.assertEqual(self.request("post", self.apollo, path=verify_path, data={
-            "challenge_id": first.data["challenge_id"], "otp": code,
+            "challenge_id": patient["identity_verification"]["challenge_id"],
+            "otp": code,
         }).status_code, 200)
-        replacement = self.request("post", self.apollo, path=request_path, data={"email": "other@example.com"})
+        replacement = self.request(
+            "post", self.apollo,
+            path=f"{self.url}{patient['id']}/identity-grant/request/",
+            data={"email": "other@example.com"},
+        )
         self.assertEqual(replacement.status_code, 409)

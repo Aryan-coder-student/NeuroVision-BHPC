@@ -1,0 +1,16 @@
+.patient-verification-form { display: grid; gap: 8px; margin-top: 18px; }
+.patient-verification-form label { color: var(--text-label); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.patient-verification-form input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--outline-dim); border-radius: 0; outline: none; background: var(--bg-secondary); color: var(--text-bright); }
+.patient-verification-form input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.patient-verification-form input[aria-invalid='true'] { border-color: var(--error); }
+.patient-verification-help,.patient-verification-error,.patient-verification-notice { font-size: 11px; line-height: 1.4; }
+.patient-verification-help { color: var(--text-label); }
+.patient-verification-error { color: var(--error); }
+.patient-verification-notice { color: var(--success); }
+.patient-verification-primary,.patient-verification-actions button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; font-size: 12px; font-weight: 650; }
+.patient-verification-primary { margin-top: 6px; border: 1px solid var(--accent-primary); background: var(--accent-primary); color: var(--bg-void); }
+.patient-verification-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.patient-verification-actions button { flex: 1 1 125px; border: 1px solid var(--outline); background: transparent; color: var(--text-primary); }
+.patient-verification-primary:hover:not(:disabled),.patient-verification-actions button:hover:not(:disabled) { border-color: var(--accent-dim); }
+.patient-verification-primary:focus-visible,.patient-verification-actions button:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.patient-verification-primary:disabled,.patient-verification-actions button:disabled { cursor: not-allowed; opacity: .55; }
