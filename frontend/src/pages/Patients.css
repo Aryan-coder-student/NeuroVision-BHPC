@@ -418,3 +418,94 @@
 
 /* Tables remain horizontally scrollable; form stays fully readable on narrow devices. */
 @media(max-width:600px){.patients-header{gap:12px;}.patients-header h1{font-size:22px;}.patients-panel-heading{padding:14px;}.patients-form-panel{padding:16px;}.patients-table-wrap{max-width:100%;-webkit-overflow-scrolling:touch;}.patients-table{min-width:570px;}.patients-table th,.patients-table td{padding-inline:12px;}.patients-state{flex-wrap:wrap;}.patients-count{min-width:0;}}
+
+
+/* Two-stage patient registration: generated ID followed by contact OTP. */
+.patients-meta {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.patients-generated-id-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text-muted);
+  padding: 12px;
+  border: 1px solid var(--outline-dim);
+  background: var(--bg-card-high);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.patients-generated-id-note svg { flex-shrink: 0; color: var(--accent-primary); }
+.patients-verification { min-width: 0; }
+.patients-verification-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px;
+  margin-top: 18px;
+  background: var(--bg-card-high);
+  border: 1px solid var(--outline-dim);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.patients-verification-summary strong {
+  color: var(--text-bright);
+  font-size: 18px;
+  letter-spacing: -.02em;
+  word-break: break-word;
+}
+.patients-verification-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.patients-verification-label:last-child {
+  margin-top: 6px;
+  color: var(--warning);
+}
+.patients-verification .patients-form { margin-top: 18px; }
+.patients-field input[type="date"] {
+  color-scheme: dark;
+  min-height: 44px;
+  font-family: inherit;
+}
+.patients-otp-input { letter-spacing: .2em; font-variant-numeric: tabular-nums; }
+.patients-verification-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.patients-secondary-action {
+  min-height: 42px;
+  flex: 1 1 125px;
+  padding: 8px 12px;
+  border: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+.patients-secondary-action:hover:not(:disabled) {
+  background: var(--bg-card-high);
+  border-color: var(--accent-primary);
+}
+.patients-secondary-action:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+.patients-secondary-action:disabled { opacity: .55; cursor: not-allowed; }
+.patients-verification > .patients-field-help { margin-top: 12px; }
+@media (max-width: 640px) {
+  .patients-field input { min-height: 44px; font-size: 16px; }
+  .patients-verification-summary { padding: 14px; }
+}
