@@ -65,6 +65,10 @@ export default function PatientDashboard() {
           <div className="patient-card-label">Patient overview</div>
           <h1>{patient.display_name}</h1>
           <code>{patient.patient_code}</code>
+          <dl className="patient-demographics">
+            <div><dt>Age</dt><dd>{patient.age == null ? 'Not recorded' : patient.age + ' years'}</dd></div>
+            <div><dt>Date of birth</dt><dd>{patient.date_of_birth || 'Not recorded'}</dd></div>
+          </dl>
           <p>All tools opened here are locked to this patient and the currently selected organization.</p>
           <div className="patient-actions">
             <Link to={`${base}/segmentation`}><ScanLine size={14} /> Run segmentation</Link>
