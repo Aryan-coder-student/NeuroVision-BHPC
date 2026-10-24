@@ -106,7 +106,7 @@ export default function Register() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="register-name-grid">
                 <div className="field-group">
                   <label className="field-label">First Name</label>
                   <input
