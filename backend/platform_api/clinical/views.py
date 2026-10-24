@@ -5,7 +5,9 @@ from rest_framework.response import Response
 from users.models import InstitutionMembership
 
 from .models import Patient
+from .services import register_patient
 from patient_identity.services import (
+    CHALLENGE_TTL,
     IdentityAlreadyLinkedError,
     GrantRateLimitedError,
     get_grant_status,
@@ -32,6 +34,32 @@ class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
     permission_classes = (permissions.IsAuthenticated, VerifiedTenantMembership)
     queryset = Patient.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        """Register a patient and send OTP before returning its generated ID."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            patient, challenge, masked_email = register_patient(
+                institution=request.tenant,
+                requested_by=request.user,
+                **serializer.validated_data,
+            )
+        except RuntimeError:
+            return Response(
+                {"detail": "Verification email could not be sent. Try again later."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        data = self.get_serializer(patient).data
+        data["identity_verification"] = {
+            "status": "PENDING",
+            "challenge_id": str(challenge.id),
+            "masked_email": masked_email,
+            "expires_in_seconds": int(CHALLENGE_TTL.total_seconds()),
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=("get",), url_path="identity-grant")
     def identity_grant(self, request, pk=None):
