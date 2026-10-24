@@ -151,6 +151,16 @@ export async function fetchPatient(workspaceId, patientId, { signal } = {}) {
   return res.data;
 }
 
+/** Update editable demographics within the verified patient workspace. */
+export async function updatePatientDetails(workspaceId, patientId, details) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'patch',
+    url: `/tenant/patients/${patientId}/`,
+    data: details,
+  });
+  return res.data;
+}
+
 export async function fetchPatientGrant(workspaceId, patientId, { signal } = {}) {
   const res = await tenantRequest(workspaceId, {
     method: 'get',
