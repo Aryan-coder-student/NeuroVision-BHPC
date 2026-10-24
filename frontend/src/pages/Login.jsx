@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
-import { Brain, Lock, Mail, ArrowRight, Loader, Eye, EyeOff } from 'lucide-react';
+import { Brain, Lock, Mail, ArrowLeft, ArrowRight, Loader, Eye, EyeOff } from 'lucide-react';
 import './Login.css';
 
 export default function Login() {
@@ -65,6 +65,9 @@ export default function Login() {
       {/* ── Right Form Panel ── */}
       <div className="login-form-panel">
         <div className="login-form-box">
+          <Link to="/" className="login-back-link">
+            <ArrowLeft size={16} aria-hidden="true" /> Back to home
+          </Link>
           <div className="login-form-header">
             <div className="login-form-title">Sign in to NeuroVision</div>
             <div className="login-form-subtitle">Access your organization's clinical workspace</div>

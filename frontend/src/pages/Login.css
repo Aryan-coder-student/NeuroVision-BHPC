@@ -232,3 +232,25 @@
  .password-toggle-btn{width:38px;height:38px;right:5px;}
 }
 @media(max-width:400px){.login-brand{padding-inline:16px;}.login-form-panel{padding-inline:16px;}}
+
+/* Always-visible return path from sign-in, including on small screens. */
+.login-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.login-back-link:hover { color: var(--text-bright); }
+.login-back-link:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .login-back-link { margin-bottom: 20px; }
+}
