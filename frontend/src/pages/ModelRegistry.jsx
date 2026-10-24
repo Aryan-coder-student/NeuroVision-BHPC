@@ -41,14 +41,14 @@ export default function ModelRegistry() {
 
   return (
     <>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="model-registry-toolbar" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>Neural Model Registry</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             System-wide manifest of trained AI models, performance telemetry, and deployment status.
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="model-registry-filters" style={{ display: 'flex', gap: 8 }}>
           {['All', 'Deployed', 'In-Training', 'Archived'].map(f => (
             <button key={f}
               onClick={() => setFilter(f)}
@@ -65,7 +65,7 @@ export default function ModelRegistry() {
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--outline-dim)' }}>
+      <div className="model-registry-table-wrap" style={{ background: 'var(--bg-card)', border: '1px solid var(--outline-dim)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
