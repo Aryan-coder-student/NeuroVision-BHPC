@@ -246,9 +246,15 @@ class PatientRegistrationTests(TenantTestCase):
         self.assertEqual(updated.status_code, 200, updated.data)
         self.assertEqual(updated.data["display_name"], "Corrected Patient")
         self.assertEqual(updated.data["date_of_birth"], "1990-12-05")
-        self.assertEqual(updated.data["patient_code"], initial_code)
-        self.assertEqual(updated.data["id"], patient_id)
-        self.assertNotIn("email", updated.data)
+        detail = self.client.get(
+            f"{self.url}{patient_id}/",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.data["patient_code"], initial_code)
+        self.assertEqual(str(detail.data["id"]), str(patient_id))
+        self.assertEqual(detail.data["display_name"], "Corrected Patient")
+        self.assertNotIn("email", detail.data)
         self.assertEqual(
             str(PatientGrantChallenge.objects.get(id=initial_challenge).grant.tenant_patient_id),
             str(patient_id),
