@@ -229,3 +229,47 @@ class PatientRegistrationTests(TenantTestCase):
             ).exists()
         )
         self.assertEqual(PatientIdentity.objects.count(), 0)
+
+    def test_admin_can_correct_name_and_dob_without_changing_identity(self):
+        response = self.register()
+        self.assertEqual(response.status_code, 201, response.data)
+        patient_id = response.data["id"]
+        initial_code = response.data["patient_code"]
+        initial_challenge = response.data["identity_verification"]["challenge_id"]
+
+        updated = self.client.patch(
+            f"{self.url}{patient_id}/",
+            {"display_name": "Corrected Patient", "date_of_birth": "1990-12-05"},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(updated.status_code, 200, updated.data)
+        self.assertEqual(updated.data["display_name"], "Corrected Patient")
+        self.assertEqual(updated.data["date_of_birth"], "1990-12-05")
+        self.assertEqual(updated.data["patient_code"], initial_code)
+        self.assertEqual(updated.data["id"], patient_id)
+        self.assertNotIn("email", updated.data)
+        self.assertEqual(
+            str(PatientGrantChallenge.objects.get(id=initial_challenge).grant.tenant_patient_id),
+            str(patient_id),
+        )
+        self.assertEqual(PatientAccessGrant.objects.count(), 1)
+
+    def test_patient_edit_rejects_invalid_demographics(self):
+        patient = self.register().data
+        url = f"{self.url}{patient['id']}/"
+        for payload in (
+            {"display_name": ""},
+            {"date_of_birth": "2999-01-01"},
+            {"date_of_birth": None},
+        ):
+            updated = self.client.patch(
+                url, payload, format="json",
+                HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+            )
+            self.assertEqual(updated.status_code, 400, updated.data)
+        detail = self.client.get(
+            url, HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(detail.data["display_name"], "Case Example")
+        self.assertEqual(detail.data["date_of_birth"], "2000-02-29")
