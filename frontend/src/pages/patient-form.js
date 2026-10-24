@@ -17,11 +17,10 @@ function validDateOfBirth(value, today) {
   return value >= oldest && value <= today;
 }
 
-export function validatePatientRegistration(input, today = localDateInputValue()) {
+export function validatePatientDetails(input, today = localDateInputValue()) {
   const values = {
     display_name: (input.display_name ?? '').trim(),
     date_of_birth: (input.date_of_birth ?? '').trim(),
-    email: (input.email ?? '').trim(),
   };
   const errors = {};
 
@@ -36,6 +35,13 @@ export function validatePatientRegistration(input, today = localDateInputValue()
   } else if (!validDateOfBirth(values.date_of_birth, today)) {
     errors.date_of_birth = 'Enter a valid date of birth (not in the future, up to 130 years ago).';
   }
+
+  return { values, errors };
+}
+
+export function validatePatientRegistration(input, today = localDateInputValue()) {
+  const { values, errors } = validatePatientDetails(input, today);
+  values.email = (input.email ?? '').trim();
 
   if (!values.email) {
     errors.email = 'Enter the patient email.';
