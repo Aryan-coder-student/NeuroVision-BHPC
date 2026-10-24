@@ -29,7 +29,7 @@ export default function DataContribution() {
             </div>
           </div>
         ) : (
-          <form onSubmit={submitData}>
+          <form onSubmit={submitData} noValidate>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-label)', marginBottom: 8 }}>
                 Modality

@@ -129,6 +129,42 @@ export async function createPatient(workspaceId, patient) {
   return res.data;
 }
 
+export async function fetchPatient(workspaceId, patientId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/`,
+    signal,
+  });
+  return res.data;
+}
+
+export async function fetchPatientGrant(workspaceId, patientId, { signal } = {}) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/identity-grant/`,
+    signal,
+  });
+  return res.data;
+}
+
+export async function requestPatientGrant(workspaceId, patientId, email) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/identity-grant/request/`,
+    data: { email },
+  });
+  return res.data;
+}
+
+export async function verifyPatientGrant(workspaceId, patientId, challengeId, otp) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/identity-grant/verify/`,
+    data: { challenge_id: challengeId, otp },
+  });
+  return res.data;
+}
+
 export async function createWorkspace(data) {
   const res = await djangoApi.post(`${WORKSPACE_BASE}/`, data);
   return res.data;

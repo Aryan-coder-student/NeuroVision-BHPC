@@ -34,7 +34,7 @@ class EmailService:
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"SMTP Error: Failed to send email to {to_mail_id}. Details: {str(e)}")
+            logger.error("SMTP error while sending verification email: %s", type(e).__name__)
             return False
 
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Loader2, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { createPatient, fetchPatients } from '../services/api';
 import { validatePatientRegistration } from './patient-form';
@@ -175,6 +176,7 @@ export default function Patients() {
                     <th scope="col">Patient ID</th>
                     <th scope="col">Display name</th>
                     <th scope="col">Registered</th>
+                    <th scope="col"><span className="sr-only">Action</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -183,6 +185,7 @@ export default function Patients() {
                       <td><code>{patient.patient_code}</code></td>
                       <td className="patients-name">{patient.display_name}</td>
                       <td>{formatCreatedAt(patient.created_at)}</td>
+                      <td><Link className="patients-open-link" to={`/patients/${patient.id}/dashboard`}>Open <ArrowRight size={12} /></Link></td>
                     </tr>
                   ))}
                 </tbody>

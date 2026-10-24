@@ -93,7 +93,7 @@ export default function Login() {
 
           {authError && <div className="login-error">{authError}</div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="field-group">
               <label className="field-label"><Mail size={11} style={{ marginRight: 5 }} />Professional Email</label>
               <input

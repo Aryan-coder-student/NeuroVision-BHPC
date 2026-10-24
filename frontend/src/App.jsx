@@ -22,6 +22,8 @@ import ModelRegistry    from './pages/ModelRegistry';
 import Register         from './pages/Register';
 import VerifyOTP        from './pages/VerifyOTP';
 import AppShell    from './components/AppShell';
+import PatientWorkspace from './components/PatientWorkspace';
+import PatientDashboard from './pages/PatientDashboard';
 
 /* Global spin keyframe */
 const style = document.createElement('style');
@@ -104,11 +106,19 @@ function AppRoutes() {
       {/* Protected app shell */}
       <Route element={<RequireOrg><AppShell /></RequireOrg>}>
         <Route path="/dashboard"    element={<Dashboard />} />
-        <Route path="/segmentation" element={<Segmentation />} />
-        <Route path="/vqa"          element={<VQA />} />
-        <Route path="/history"      element={<History />} />
-        <Route path="/reports"      element={<Reports />} />
         <Route path="/patients"     element={<Patients />} />
+        <Route path="/patients/:patientId" element={<PatientWorkspace />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="segmentation" element={<Segmentation />} />
+          <Route path="vqa" element={<VQA />} />
+          <Route path="history" element={<History />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
+        <Route path="/segmentation" element={<Navigate to="/patients" replace />} />
+        <Route path="/vqa" element={<Navigate to="/patients" replace />} />
+        <Route path="/history" element={<Navigate to="/patients" replace />} />
+        <Route path="/reports" element={<Navigate to="/patients" replace />} />
         <Route path="/contribute"   element={<DataContribution />} />
         <Route path="/feedback"     element={<ModelFeedback />} />
         <Route path="/models"       element={<ModelRegistry />} />

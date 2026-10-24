@@ -87,6 +87,8 @@ Primary actions use the light accent surface with dark text. Secondary actions a
 
 Sidebar navigation uses Lucide outline icons with text labels. Tables use native semantics, uppercase column labels, visible overflow, and stable panel geometry. Rows must not appear clickable unless a real detail action exists.
 
+Clinical intelligence is a patient-level navigation mode. The global sidebar exposes organization dashboard and patient registry; selecting a patient opens a persistent identity header and patient tabs for segmentation, VQA, history, and reports. A clinical tool must never infer a patient from the most recent record.
+
 ### Forms and overlays
 
 Inputs use dark secondary surfaces, square borders, persistent labels, inline help, and associated text errors. Product forms disable native validation bubbles and focus the first invalid field. Clinical identity fields must not invite free-form medical history.
@@ -107,5 +109,6 @@ Copy uses direct clinical operations such as “Register patient” and “Try a
 
 - **Do:** Keep tenant scope and permission state visible wherever records are created or reviewed.
 - **Do:** Separate stable patient identity from repeatable scans, encounters, and reports.
+- **Do:** Keep organization and patient scope visible throughout every clinical tool.
 - **Don't:** Add speculative patient PII fields without an approved domain and privacy contract.
 - **Don't:** use decorative gradients, rounded cards, or color-only status inside clinical workflows.

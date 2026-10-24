@@ -102,7 +102,7 @@ export default function VerifyOTP() {
           {error && <div className="login-error">{error}</div>}
           {resendMessage && <div className="login-success" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '10px 12px', borderRadius: 8, fontSize: 13, marginBottom: 20, border: '1px solid rgba(34, 197, 94, 0.2)' }}>{resendMessage}</div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="field-group">
               <label className="field-label"><Mail size={11} style={{ marginRight: 5 }} />Email Address</label>
               <input

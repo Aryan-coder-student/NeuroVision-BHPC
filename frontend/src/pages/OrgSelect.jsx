@@ -10,6 +10,8 @@ export default function OrgSelect() {
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [pageError, setPageError] = useState('');
+  const [createError, setCreateError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     inst_type: 'HOSPITAL',
@@ -20,17 +22,19 @@ export default function OrgSelect() {
   });
 
   const handleSelect = async (ws) => {
+    setPageError('');
     try {
       await selectOrg(ws);
       navigate('/dashboard');
     } catch (err) {
       console.error('Workspace access denied', err);
-      alert('Could not access this workspace. Please check your membership.');
+      setPageError('Could not access this workspace. Check your membership and try again.');
     }
   };
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+    setCreateError('');
     setCreating(true);
     try {
       const newWs = await createWorkspace(formData);
@@ -38,7 +42,7 @@ export default function OrgSelect() {
       // Automatically select the newly created workspace
       await handleSelect(newWs);
     } catch {
-      alert("Failed to create workspace. Please try again.");
+      setCreateError('Failed to create workspace. Review the details and try again.');
     } finally {
       setCreating(false);
     }
@@ -60,9 +64,10 @@ export default function OrgSelect() {
       </div>
 
       <div className="org-select-grid">
+        {pageError && <div className="org-select-error" role="alert">{pageError}</div>}
         {/* --- Real Workspaces --- */}
         {workspaces.map(ws => (
-          <div key={ws.id} className="org-card" onClick={() => handleSelect(ws)}>
+          <button type="button" key={ws.id} className="org-card" onClick={() => handleSelect(ws)}>
             <div className="org-card-badge">{ws.inst_type}</div>
             <div className="org-card-name">{ws.name}</div>
             <div className="org-card-location">
@@ -78,11 +83,11 @@ export default function OrgSelect() {
                 <ChevronRight size={14} />
               </div>
             </div>
-          </div>
+          </button>
         ))}
 
         {/* --- Create New Workspace Card --- */}
-        <div className="org-card create-card" onClick={() => setShowCreateModal(true)}>
+        <button type="button" className="org-card create-card" onClick={() => { setCreateError(''); setShowCreateModal(true); }}>
           <div className="create-card-content">
             <div className="create-icon">
               <Plus size={24} />
@@ -90,7 +95,7 @@ export default function OrgSelect() {
             <div className="create-label">Create New Workspace</div>
             <div className="create-sub">Set up a new clinical or research environment</div>
           </div>
-        </div>
+        </button>
       </div>
 
       <button className="org-select-logout" onClick={() => { logout(); navigate('/login'); }}>
@@ -109,7 +114,8 @@ export default function OrgSelect() {
               </button>
             </div>
             
-            <form onSubmit={handleCreateSubmit}>
+            <form onSubmit={handleCreateSubmit} noValidate>
+              {createError && <div className="org-select-error" role="alert">{createError}</div>}
               <div className="form-grid">
                 <div className="field-group">
                   <label className="field-label"><Building2 size={11} style={{ marginRight: 5 }} />Institution Name</label>

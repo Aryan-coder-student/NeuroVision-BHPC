@@ -1,8 +1,8 @@
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 import {
-  Brain, LayoutDashboard, MessageSquare, ScanLine,
-  History, LogOut, ChevronRight, Activity, Database, MessageSquarePlus, Server, Users
+  Brain, LayoutDashboard,
+  LogOut, ChevronRight, Database, MessageSquarePlus, Server, Users
 } from 'lucide-react';
 import './AppShell.css';
 import config from '../config';
@@ -55,20 +55,7 @@ export default function AppShell() {
           <NavLink to="/patients"      className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <Users size={15} /> Patients
           </NavLink>
-          <NavLink to="/segmentation"  className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <ScanLine size={15} /> 3D Segmentation
-          </NavLink>
-          <NavLink to="/vqa"           className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <MessageSquare size={15} /> VQA Diagnostic Chat
-          </NavLink>
-          <NavLink to="/history"       className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <History size={15} /> Scan History
-          </NavLink>
-
-          <div className="nav-section-label" style={{ marginTop: 8 }}>Intelligence</div>
-          <NavLink to="/reports"       className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Activity size={15} /> Pathology Reports
-          </NavLink>
+          <div className="nav-section-label" style={{ marginTop: 8 }}>Platform</div>
           <NavLink to="/contribute"    className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <Database size={15} /> Data Contribution
           </NavLink>

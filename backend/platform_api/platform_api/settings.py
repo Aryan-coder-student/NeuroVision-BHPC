@@ -49,6 +49,7 @@ SHARED_APPS = [
     "django_tenants",  # Mandatory: must be first
     "tenant",  # Managing Institutions (Tenants)
     "users",  # Handing Identity and Memberships
+    "patient_identity",  # Cross-institution identity and consent grants
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
