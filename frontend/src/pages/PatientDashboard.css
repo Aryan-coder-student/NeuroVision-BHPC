@@ -22,3 +22,10 @@
 .identity-readonly { border-color:var(--outline-dim); background:var(--bg-secondary); color:var(--text-muted); }
 .identity-future { margin-top:16px; border-top:1px solid var(--outline-dim); padding-top:13px; color:var(--text-label); font-size:10px; }
 @media (max-width:900px) { .patient-dashboard-grid { grid-template-columns:1fr; } }
+
+
+.patient-demographics { display:flex;flex-wrap:wrap;gap:18px;margin-top:20px; }
+.patient-demographics > div { display:flex;flex-direction:column;gap:5px;min-width:130px; }
+.patient-demographics dt { color:var(--text-label);font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-weight:700; }
+.patient-demographics dd { color:var(--text-bright);font-size:13px;font-weight:600;margin:0; }
+@media(max-width:600px){.patient-demographics{gap:16px;}.patient-demographics>div{min-width:110px;}}
