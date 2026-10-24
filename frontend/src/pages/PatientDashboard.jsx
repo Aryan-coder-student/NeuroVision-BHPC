@@ -57,9 +57,6 @@ export default function PatientDashboard() {
     setIsSaving(true);
     try {
       await updatePatientDetails(org.id, patient.id, values);
-      await refreshPatient();
-      setIsEditing(false);
-      setEditSuccess('Patient details updated.');
     } catch (requestError) {
       const data = requestError.response?.data;
       const serverErrors = {
@@ -71,6 +68,18 @@ export default function PatientDashboard() {
       } else {
         setEditError(data?.detail || 'Could not save patient details. Try again.');
       }
+      setIsSaving(false);
+      return;
+    }
+
+    // A successful PATCH must not be presented as a failed save if the
+    // subsequent read fails (for example due to a transient network error).
+    setIsEditing(false);
+    setEditSuccess('Patient details updated.');
+    try {
+      await refreshPatient();
+    } catch {
+      setEditSuccess('Changes saved, but the updated record could not be loaded. Refresh this page to see them.');
     } finally {
       setIsSaving(false);
     }
