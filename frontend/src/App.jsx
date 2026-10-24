@@ -4,6 +4,7 @@ import { useAuth } from './context/auth-context';
 import { initializeCsrf } from './services/api';
 import { useEffect } from 'react';
 import './index.css';
+import './responsive.css';
 import config from './config';
 
 /* Pages */
