@@ -62,4 +62,4 @@ class PatientGrantRequestSerializer(serializers.Serializer):
 
 class PatientGrantVerifySerializer(serializers.Serializer):
     challenge_id = serializers.UUIDField()
-    otp = serializers.RegexField(r"^\\d{6}$", max_length=6, min_length=6)
+    otp = serializers.RegexField(r"^\d{6}$", max_length=6, min_length=6)
