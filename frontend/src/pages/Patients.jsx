@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Loader2, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Mail, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
-import { createPatient, fetchPatients } from '../services/api';
-import { validatePatientRegistration } from './patient-form';
+import { createPatient, fetchPatients, requestPatientGrant, verifyPatientGrant } from '../services/api';
+import { validatePatientRegistration, validPatientOtp } from './patient-form';
 import './Patients.css';
 
-const EMPTY_FORM = { patient_code: '', display_name: '' };
+const EMPTY_FORM = { display_name: '', date_of_birth: '', email: '' };
 
 function firstMessage(value) {
   return Array.isArray(value) ? value[0] : value;
@@ -29,9 +29,18 @@ export default function Patients() {
   const [submitError, setSubmitError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const patientCodeRef = useRef(null);
+  const [pendingVerification, setPendingVerification] = useState(null);
+  const [otp, setOtp] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+  const [verificationNotice, setVerificationNotice] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const displayNameRef = useRef(null);
+  const dobRef = useRef(null);
+  const emailRef = useRef(null);
+  const otpRef = useRef(null);
   const isAdmin = org?.role === 'ADMIN';
+  const activeVerification = pendingVerification?.workspaceId === org?.id ? pendingVerification : null;
 
   const loadPatients = useCallback(async (signal) => {
     setIsLoading(true);
@@ -69,13 +78,14 @@ export default function Patients() {
   };
 
   const focusFirstInvalidField = (errors) => {
-    if (errors.patient_code) patientCodeRef.current?.focus();
-    else if (errors.display_name) displayNameRef.current?.focus();
+    if (errors.display_name) displayNameRef.current?.focus();
+    else if (errors.date_of_birth) dobRef.current?.focus();
+    else if (errors.email) emailRef.current?.focus();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!isAdmin || isSaving) return;
+    if (!isAdmin || isSaving || activeVerification) return;
 
     const validation = validatePatientRegistration(form);
     setFieldErrors(validation.errors);
@@ -90,14 +100,21 @@ export default function Patients() {
     try {
       const patient = await createPatient(org.id, validation.values);
       setPatients(current => [patient, ...current]);
+      setPendingVerification({
+        patient, email: validation.values.email, workspaceId: org.id,
+        ...patient.identity_verification,
+      });
       setForm(EMPTY_FORM);
-      setSuccessMessage(`${patient.display_name} was registered with patient ID ${patient.patient_code}.`);
-      patientCodeRef.current?.focus();
+      setOtp('');
+      setVerificationError('');
+      setVerificationNotice('');
+      setSuccessMessage('');
     } catch (error) {
       const response = error.response?.data;
       const serverFieldErrors = {
-        patient_code: firstMessage(response?.patient_code),
         display_name: firstMessage(response?.display_name),
+        date_of_birth: firstMessage(response?.date_of_birth),
+        email: firstMessage(response?.email),
       };
       const hasFieldError = Object.values(serverFieldErrors).some(Boolean);
       if (hasFieldError) {
@@ -106,11 +123,70 @@ export default function Patients() {
       } else if (error.response?.status === 403) {
         setSubmitError('Only workspace administrators can register patients.');
       } else {
-        setSubmitError('The patient could not be registered. Review the details and try again.');
+        setSubmitError(response?.detail || 'The patient could not be registered. Review the details and try again.');
       }
     } finally {
       setIsSaving(false);
     }
+  };
+
+
+  const verifyEmail = async (event) => {
+    event.preventDefault();
+    if (!activeVerification || isVerifying || isResending) return;
+    if (!validPatientOtp(otp)) {
+      setVerificationError('Enter the six-digit verification code.');
+      otpRef.current?.focus();
+      return;
+    }
+    if (!activeVerification.challenge_id) {
+      setVerificationError('Request a new verification code to continue.');
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationError('');
+    setVerificationNotice('');
+    try {
+      await verifyPatientGrant(org.id, activeVerification.patient.id, activeVerification.challenge_id, otp);
+      setPendingVerification(null);
+      setOtp('');
+      setSuccessMessage(activeVerification.patient.display_name + ' (ID ' + activeVerification.patient.patient_code + ') is registered and their email is verified.');
+      void loadPatients();
+    } catch (error) {
+      setVerificationError(error.response?.data?.detail || 'The code could not be verified. Check it and try again.');
+      otpRef.current?.focus();
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (!activeVerification || isVerifying || isResending) return;
+    setIsResending(true);
+    setVerificationError('');
+    setVerificationNotice('');
+    try {
+      const challenge = await requestPatientGrant(org.id, activeVerification.patient.id, activeVerification.email);
+      setPendingVerification(current => ({ ...current, ...challenge }));
+      setOtp('');
+      setVerificationNotice('A new code was sent. Please check the patient’s email.');
+      otpRef.current?.focus();
+    } catch (error) {
+      setVerificationError(error.response?.data?.detail || 'Could not resend the code. Try again.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const finishLater = () => {
+    if (!activeVerification || isVerifying || isResending) return;
+    setSuccessMessage('Patient ID ' + activeVerification.patient.patient_code + ' was created. Email is not verified yet; resume from the patient dashboard.');
+    setPendingVerification(null);
+    setOtp('');
+    setVerificationError('');
+    setVerificationNotice('');
+    displayNameRef.current?.focus();
   };
 
   return (
@@ -183,7 +259,14 @@ export default function Patients() {
                   {patients.map(patient => (
                     <tr key={patient.id}>
                       <td><code>{patient.patient_code}</code></td>
-                      <td className="patients-name">{patient.display_name}</td>
+                      <td className="patients-name">
+                        {patient.display_name}
+                        <span className="patients-meta">
+                          {patient.age == null ? 'Age not available' : patient.age + ' years'}
+                          {' · '}
+                          {patient.global_identity_id ? 'Email verified' : 'Contact not verified'}
+                        </span>
+                      </td>
                       <td>{formatCreatedAt(patient.created_at)}</td>
                       <td><Link className="patients-open-link" to={`/patients/${patient.id}/dashboard`}>Open <ArrowRight size={12} /></Link></td>
                     </tr>
