@@ -444,3 +444,6 @@
     flex-direction: column;
   }
 }
+
+
+@media(max-width:460px){.my-patients-topbar{padding-inline:12px;gap:8px;}.my-patients-nav{gap:1px;}.my-patients-content{width:calc(100% - 24px);}.my-patients-heading h1{font-size:24px;}.my-patients-table-wrap{max-width:100%;-webkit-overflow-scrolling:touch;}.my-patients-pagination{gap:12px;}.my-patients-refresh{min-height:44px;}}
