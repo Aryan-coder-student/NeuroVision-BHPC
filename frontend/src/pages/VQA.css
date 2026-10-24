@@ -164,3 +164,22 @@
 }
 .chat-send-btn:hover:not(:disabled) { background: var(--accent-dim); }
 .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+/* Scan context and conversation stack vertically on phones. */
+@media(max-width:1100px){.vqa-layout{grid-template-columns:minmax(0,1fr);height:auto;}.vqa-scan-panel,.vqa-chat-panel{min-width:0;}.vqa-scan-canvas{min-height:230px;}.prompt-chips{flex-direction:row;flex-wrap:wrap;}.vqa-chat-panel{min-height:540px;}}
+@media(max-width:620px){
+ .vqa-layout{gap:12px;}
+ .vqa-scan-body{padding:12px;}
+ .vqa-scan-canvas{min-height:180px;max-height:250px;}
+ .vqa-chat-panel{min-height:510px;height:min(68dvh,620px);}
+ .vqa-chat-header{flex-wrap:wrap;gap:10px;padding:12px;}
+ .vqa-chat-header>div:first-child{flex-wrap:wrap;min-width:0;}
+ .vqa-chat-header select{max-width:100%;}
+ .chat-messages{padding:12px;}
+ .chat-bubble{max-width:calc(100% - 38px);overflow-wrap:anywhere;}
+ .chat-input-row{padding:10px;gap:8px;}
+ .chat-input{min-width:0;font-size:16px;}
+ .chat-send-btn{padding-inline:12px;}
+ .vqa-meta-row{gap:10px;overflow-wrap:anywhere;}
+}
