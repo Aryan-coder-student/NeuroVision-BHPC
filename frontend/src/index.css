@@ -121,3 +121,10 @@ input, select, textarea { font-family: inherit; }
 .status-dot.active   { background: var(--success); }
 .status-dot.warning  { background: var(--warning); }
 .status-dot.critical { background: var(--error); }
+
+
+/* Global small-screen safety net for forms, images and focus states. */
+img,canvas,video,svg{max-width:100%;}
+input,select,textarea{max-width:100%;}
+:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px;}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr;}.patient-context-title{overflow-wrap:anywhere;}.patient-tabs{-webkit-overflow-scrolling:touch;}.patient-tabs a{min-height:44px;}.patient-actions{flex-direction:column;align-items:stretch;}.patient-actions a{min-height:44px;}.patient-card{padding:16px;}.modal-content{max-width:100%;}}
