@@ -15,6 +15,11 @@ RUN uv sync --frozen --no-install-project --no-dev
 COPY . .
 RUN uv sync --frozen --no-dev
 
+# Patch the pinned Brotli runtime vulnerability until the lockfile is refreshed.
+# Do this after the final uv sync so it cannot reinstall vulnerable Brotli 1.2.0.
+RUN uv pip install --python /app/.venv/bin/python --upgrade "brotli==1.2.1"
+RUN /app/.venv/bin/python -c "import importlib.metadata as m; assert m.version('Brotli') == '1.2.1'"
+
 # --- Stage 2: Runtime ---
 FROM python:3.13-slim
 
