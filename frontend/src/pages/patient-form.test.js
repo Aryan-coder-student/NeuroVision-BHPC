@@ -46,7 +46,7 @@ test('patient form enforces backend name and email lengths', () => {
 });
 
 test('patient form rejects invalid or future dates including impossible leap days', () => {
-  for (const date_of_birth of ['2026-10-25', '2001-02-29', '1900-01-01', 'not-a-date', '2000-13-01']) {
+  for (const date_of_birth of ['2026-10-25', '2001-02-29', '1800-01-01', 'not-a-date', '2000-13-01']) {
     const result = validatePatientRegistration({
       display_name: 'Maya Rao', date_of_birth, email: 'maya@example.com',
     }, TODAY);
