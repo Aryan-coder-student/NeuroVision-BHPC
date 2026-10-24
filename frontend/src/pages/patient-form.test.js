@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import process from 'node:process';
 
 import { localDateInputValue, validatePatientRegistration, validPatientOtp } from './patient-form.js';
 
@@ -70,7 +71,14 @@ test('patient OTP must be exactly six numeric digits', () => {
   }
 });
 
-test('date input limit uses the browser local calendar date', () => {
+test('date input limit uses the browser local calendar date', (context) => {
+  const originalTimezone = process.env.TZ;
+  process.env.TZ = 'Asia/Kolkata';
+  context.after(() => {
+    if (originalTimezone === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTimezone;
+  });
+
   const justAfterMidnightInIndia = new Date('2026-10-24T18:45:00.000Z');
   assert.equal(localDateInputValue(justAfterMidnightInIndia), '2026-10-25');
 });
