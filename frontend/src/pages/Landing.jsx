@@ -76,12 +76,8 @@ export default function Landing() {
               Built for teams that need to focus on the case—not the interface.
             </p>
             <div className="landing-hero-actions">
-              <Link className="landing-button landing-button-primary" to={workspacePath}>
-                {user ? 'Enter your workspace' : 'Sign in to your workspace'}
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-              <a className="landing-text-link" href="#platform">
-                Explore the platform <ArrowUpRight size={17} aria-hidden="true" />
+              <a className="landing-button landing-button-primary" href="#platform">
+                Explore the platform <ArrowUpRight size={18} aria-hidden="true" />
               </a>
             </div>
             <p className="landing-hero-footnote">Research and development platform · Not for clinical diagnosis</p>
@@ -169,7 +165,6 @@ export default function Landing() {
             <div>
               <p>NeuroVision is an evolving, multi-tenant research platform for organizing patient data and exploring brain imaging workflows.</p>
               <p className="landing-about-disclaimer"><Shield size={17} aria-hidden="true" /> It is not a certified medical device and must not be used to make clinical decisions.</p>
-              <Link className="landing-button landing-button-light" to={workspacePath}>{user ? 'Open your workspace' : 'Sign in'}<ArrowRight size={18} aria-hidden="true" /></Link>
             </div>
           </div>
         </section>
