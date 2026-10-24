@@ -414,3 +414,7 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Tables remain horizontally scrollable; form stays fully readable on narrow devices. */
+@media(max-width:600px){.patients-header{gap:12px;}.patients-header h1{font-size:22px;}.patients-panel-heading{padding:14px;}.patients-form-panel{padding:16px;}.patients-table-wrap{max-width:100%;-webkit-overflow-scrolling:touch;}.patients-table{min-width:570px;}.patients-table th,.patients-table td{padding-inline:12px;}.patients-state{flex-wrap:wrap;}.patients-count{min-width:0;}}

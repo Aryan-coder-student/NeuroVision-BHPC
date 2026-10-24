@@ -1,278 +1,187 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createElement, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight, Building2, FileText, ScanLine, Shield, Users } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
-import { motion as Motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
-import { Brain, ArrowRight, ScanLine, MessageSquare, Database, ChevronRight, Activity, Cpu } from 'lucide-react';
 import config from '../config';
+import './Landing.css';
 
-const CountUp = ({ to }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+const capabilities = [
+  {
+    number: '01',
+    icon: Users,
+    title: 'Patient records',
+    description: 'Create and review patient records inside your organization’s workspace, with access controlled by membership and role.',
+    status: 'Available in workspace',
+  },
+  {
+    number: '02',
+    icon: ScanLine,
+    title: 'Imaging workspace',
+    description: 'Explore the segmentation viewer and image-based question-answering tools as part of the research workflow.',
+    status: 'Research tools',
+  },
+  {
+    number: '03',
+    icon: FileText,
+    title: 'Review and reporting',
+    description: 'Keep imaging tools and report workflows connected to patient context. Persistent clinical reporting remains in development.',
+    status: 'In development',
+  },
+];
 
-  useEffect(() => {
-    if (!isInView) return;
-    let start = 0;
-    const end = parseFloat(to);
-    const duration = 2000;
-    const incrementTime = 30;
-    const steps = duration / incrementTime;
-    const stepValue = end / steps;
-
-    const timer = setInterval(() => {
-      start += stepValue;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(start);
-      }
-    }, incrementTime);
-    return () => clearInterval(timer);
-  }, [to, isInView]);
-
-  return <span ref={ref}>{Number.isInteger(parseFloat(to)) ? Math.floor(count) : count.toFixed(1)}</span>;
-};
-
+const workflow = [
+  { count: '01', title: 'Sign in', body: 'Use your registered account to enter the platform.' },
+  { count: '02', title: 'Choose a workspace', body: 'Access the institution you belong to, with its own patient records.' },
+  { count: '03', title: 'Open a patient', body: 'Move from the patient record to the available imaging and review tools.' },
+];
 
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { scrollYProgress } = useScroll();
-  const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const yHero = useTransform(scrollYProgress, [0, 0.2], [0, -100]);
-
-  const [loading, setLoading] = useState(true);
+  const workspacePath = user ? '/select-org' : '/login';
 
   useEffect(() => {
-    // If on a tenant subdomain, redirect to dashboard immediately
-    if (!config.isMainDomain) {
-      navigate('/dashboard');
-      return;
-    }
-
-    // Simulate premium loader
-    const to = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(to);
+    if (!config.isMainDomain) navigate('/dashboard', { replace: true });
   }, [navigate]);
 
-  const carouselRef = useRef(null);
-  const carouselContentRef = useRef(null);
-  const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0 });
-
-  useLayoutEffect(() => {
-    if (carouselRef.current && carouselContentRef.current) {
-      const containerWidth = carouselRef.current.offsetWidth;
-      const contentWidth = carouselContentRef.current.scrollWidth;
-      const constraint = containerWidth - contentWidth;
-      setDragConstraints({ left: Math.min(0, constraint), right: 0 });
-    }
-  }, [loading]); // Re-calculate after loading finishes and cards render
+  if (!config.isMainDomain) return null;
 
   return (
-    <div style={{ background: '#000000', color: '#fff', minHeight: '100vh', overflowX: 'hidden', position: 'relative' }}>
-
-      {/* ── Global Preloader ── */}
-      <AnimatePresence>
-        {loading && (
-          <Motion.div
-            initial={{ opacity: 1 }} exit={{ opacity: 0, filter: 'blur(10px)' }} transition={{ duration: 0.6 }}
-            style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <div className="network-spinner" />
-          </Motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Header ── */}
-      <Motion.header
-        initial={{ y: -100 }} animate={{ y: 0 }} transition={{ delay: 1.2, duration: 0.8, type: 'spring' }}
-        style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-          padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)',
-          background: 'rgba(0,0,0,0.5)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Brain size={24} style={{ color: 'var(--text-bright)' }} />
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '0.1em' }}>NEUROVISION</span>
+    <div className="landing">
+      <a className="landing-skip" href="#landing-main">Skip to content</a>
+      <header className="landing-header">
+        <div className="landing-container landing-header-inner">
+          <Link className="landing-brand" to="/" aria-label="NeuroVision home">
+            <span className="landing-brand-mark" aria-hidden="true"><ScanLine size={23} strokeWidth={1.8} /></span>
+            <span className="landing-brand-name">NeuroVision<span className="landing-brand-sub">Imaging workspace</span></span>
+          </Link>
+          <nav className="landing-nav" aria-label="Main navigation">
+            <a href="#platform">Platform</a>
+            <a href="#workflow">How it works</a>
+            <a href="#about">About</a>
+          </nav>
+          <Link className="landing-nav-cta" to={workspacePath}>
+            {user ? 'Open workspace' : 'Sign in'} <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
-        <Motion.button
-          whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate(user ? '/select-org' : '/login')}
-          style={{ background: '#fff', color: '#000', border: 'none', padding: '10px 24px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
-        >
-          {user ? 'Go to Workspace' : 'Sign In'}
-        </Motion.button>
-      </Motion.header>
+      </header>
 
-      {/* ── Background Parallax Layer ── */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
-          backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(6,182,212,0.1) 0%, rgba(147,51,234,0.05) 30%, #000000 60%)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-          backgroundSize: '80px 80px', opacity: 0.5,
-          maskImage: 'radial-gradient(ellipse at center, black 0%, transparent 80%)'
-        }} />
-      </div>
-
-      {/* ── Main Content ── */}
-      <main style={{ position: 'relative', zIndex: 10, paddingTop: 160 }}>
-
-        {/* HERO SECTION */}
-        <Motion.section
-          style={{ opacity: opacityHero, y: yHero, minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 24px' }}
-        >
-          <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4, duration: 0.8 }}
-            style={{ fontSize: 12, fontWeight: 800, color: 'var(--neon-cyan)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24, border: '1px solid rgba(6,182,212,0.3)', padding: '6px 16px', background: 'rgba(6,182,212,0.05)' }}>
-            Clinical Platform 2.0
-          </Motion.div>
-          <Motion.h1
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.6, duration: 1, type: 'spring' }}
-            className="title-glow" style={{ fontSize: 'clamp(48px, 8vw, 96px)', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', letterSpacing: '-0.04em', marginBottom: 32 }}
-          >
-            NEUROVISION<br/>PRECISION
-          </Motion.h1>
-          <Motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8, duration: 0.8 }}
-            style={{ fontSize: 20, color: 'var(--text-muted)', maxWidth: 640, textAlign: 'center', lineHeight: 1.6, marginBottom: 56 }}
-          >
-            A high-fidelity framework for neural analytics. Seamlessly integrate multi-modal AI segmentations and VQA directly into your surgical workflow.
-          </Motion.p>
-          <Motion.button
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.0, duration: 0.8 }}
-            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(255,255,255,0.2)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(user ? '/select-org' : '/login')}
-            style={{ background: '#fff', color: '#000', border: 'none', padding: '18px 48px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-          >
-            Deploy Workflow <ArrowRight size={18} />
-          </Motion.button>
-        </Motion.section>
-
-        {/* CAROUSEL SECTION */}
-        <section style={{ padding: '100px 0', overflow: 'hidden' }}>
-          <div style={{ padding: '0 48px', marginBottom: 48 }}>
-            <h2 className="text-gradient" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.02em' }}>Platform Subsystems</h2>
+      <main id="landing-main">
+        <section className="landing-hero landing-container" aria-labelledby="landing-title">
+          <div className="landing-hero-copy">
+            <p className="landing-eyebrow"><span className="landing-eyebrow-line" /> A workspace for brain imaging research</p>
+            <h1 id="landing-title">Clarity for the work behind every scan.</h1>
+            <p className="landing-hero-intro">
+              Patient records, imaging tools, and research workflows in one organized place.
+              Built for teams that need to focus on the case—not the interface.
+            </p>
+            <div className="landing-hero-actions">
+              <Link className="landing-button landing-button-primary" to={workspacePath}>
+                {user ? 'Enter your workspace' : 'Sign in to your workspace'}
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <a className="landing-text-link" href="#platform">
+                Explore the platform <ArrowUpRight size={17} aria-hidden="true" />
+              </a>
+            </div>
+            <p className="landing-hero-footnote">Research and development platform · Not for clinical diagnosis</p>
           </div>
 
-          {/* Framer Motion Draggable Carousel */}
-          <div ref={carouselRef} style={{ width: '100%', overflow: 'visible' }}>
-            <Motion.div
-              ref={carouselContentRef}
-              drag="x"
-              dragConstraints={dragConstraints}
-              dragElastic={0.05}
-              style={{
-                display: 'flex',
-                gap: 64,
-                padding: '0 0 0 0',
-                cursor: 'grab',
-                width: 'max-content'
-              }}
-              whileTap={{ cursor: 'grabbing' }}
-            >
-              {[
-                { icon: <ScanLine size={32}/>, title: '3D Segmentation', desc: 'Real-time WebGL NIfTI rendering powered by optimized U-Net models for precise volumetric extraction.', metric: '0.94 DICE', color: 'var(--neon-blue)' },
-                { icon: <MessageSquare size={32}/>, title: 'Diagnostic VQA', desc: 'Multimodal transformer querying against MRI slices backed by proprietary literature weights.', metric: '91.5% F1', color: 'var(--neon-cyan)' },
-                { icon: <Database size={32}/>, title: 'Federated Registry', desc: 'Secure PHI-scrubbed contribution endpoints with immutable trails for decentralized training.', metric: 'HIPAA', color: 'var(--neon-purple)' },
-                { icon: <Activity size={32}/>, title: 'Pathology Reports', desc: 'Automated synthesis of clinical metrics into standardized narrative reporting for EHR ingestion.', metric: 'HL7 / FHIR', color: '#ffffff' },
-              ].map((card, i) => (
-                <Motion.div key={i} className="glass-panel"
-                  style={{
-                    width: 400,
-                    aspectRatio: '1/1',
-                    padding: 40,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                  whileHover={{ y: -10, backgroundColor: 'rgba(255,255,255,0.05)', borderColor: card.color }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <div>
-                    <div style={{ color: card.color, marginBottom: 24 }}>{card.icon}</div>
-                    <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{card.title}</h3>
-                    <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>{card.desc}</p>
+          <div className="landing-preview" aria-label="Illustration of NeuroVision workspace layout">
+            <div className="landing-preview-top">
+              <span className="landing-preview-mark"><ScanLine size={17} aria-hidden="true" /> NeuroVision</span>
+              <span className="landing-preview-caption">WORKSPACE PREVIEW</span>
+            </div>
+            <div className="landing-preview-content">
+              <div className="landing-preview-heading">
+                <span className="landing-preview-kicker">ORGANIZATION / PATIENTS</span>
+                <strong>Patient workspace</strong>
+                <span>Records and related tools in context</span>
+              </div>
+              <div className="landing-preview-columns">
+                <div className="landing-preview-list">
+                  <div className="landing-preview-list-title">Patient registry <span>EXAMPLE</span></div>
+                  <div className="landing-preview-record active">
+                    <span className="landing-preview-initials">01</span>
+                    <span><strong>Sample record 01</strong><small>Example patient</small></span>
+                    <ArrowRight size={15} aria-hidden="true" />
                   </div>
-                  <div style={{ marginTop: 24, fontSize: 11, fontWeight: 800, color: 'var(--text-bright)', letterSpacing: '0.05em', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>METRIC</span>
-                    <span style={{ color: card.color }}>{card.metric}</span>
+                  <div className="landing-preview-record">
+                    <span className="landing-preview-initials">02</span>
+                    <span><strong>Sample record 02</strong><small>Example patient</small></span>
                   </div>
-                </Motion.div>
+                  <div className="landing-preview-record">
+                    <span className="landing-preview-initials">03</span>
+                    <span><strong>Sample record 03</strong><small>Example patient</small></span>
+                  </div>
+                </div>
+                <div className="landing-preview-detail">
+                  <div className="landing-preview-detail-header">
+                    <span>WORKSPACE TOOLS</span>
+                    <span className="landing-preview-status">Research environment</span>
+                  </div>
+                  <div className="landing-preview-detail-row"><Users size={18} aria-hidden="true" /><span>Patient overview</span><ArrowUpRight size={15} aria-hidden="true" /></div>
+                  <div className="landing-preview-detail-row"><ScanLine size={18} aria-hidden="true" /><span>Segmentation viewer</span><ArrowUpRight size={15} aria-hidden="true" /></div>
+                  <div className="landing-preview-detail-row"><FileText size={18} aria-hidden="true" /><span>Review notes</span><ArrowUpRight size={15} aria-hidden="true" /></div>
+                  <div className="landing-preview-detail-footer">Illustrative layout · No real patient data</div>
+                </div>
+              </div>
+            </div>
+            <div className="landing-preview-bottom"><span>NEUROVISION / RESEARCH</span><span>01 — 03</span></div>
+          </div>
+        </section>
+
+        <section id="platform" className="landing-capabilities" aria-labelledby="landing-capabilities-title">
+          <div className="landing-container">
+            <div className="landing-section-heading">
+              <div><p className="landing-section-tag">THE PLATFORM</p><h2 id="landing-capabilities-title">A place for the whole workflow.</h2></div>
+              <p>Designed around patient context and practical research tasks, rather than dashboards for their own sake.</p>
+            </div>
+            <div className="landing-feature-grid">
+              {capabilities.map(({ number, icon, title, description, status }) => (
+                <article className="landing-feature" key={number}>
+                  <span className="landing-feature-number">{number} / 03</span>
+                  <span className="landing-feature-icon">{createElement(icon, { size: 25, strokeWidth: 1.5, "aria-hidden": true })}</span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                  <div className="landing-feature-status">{status}</div>
+                </article>
               ))}
-            </Motion.div>
+            </div>
           </div>
         </section>
 
-        {/* STATISTICS SECTION */}
-        <section style={{ padding: '100px 48px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48 }}>
-          {[
-            { label: 'Volumetric Accuracy', val: '99', suffix: '.8%' },
-            { label: 'Global Models Deployed', val: '14', suffix: '+' },
-            { label: 'Inference Latency', val: '400', suffix: 'ms' },
-            { label: 'Federated Datasets', val: '1.2', suffix: 'M' }
-          ].map((stat, i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 64, fontWeight: 800, color: 'var(--text-bright)', letterSpacing: '-0.03em', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CountUp to={stat.val} />
-                <span className="text-gradient" style={{ fontSize: 32, marginLeft: 4 }}>{stat.suffix}</span>
+        <section id="workflow" className="landing-workflow landing-container" aria-labelledby="landing-workflow-title">
+          <div className="landing-workflow-heading"><p className="landing-section-tag">A SIMPLE START</p><h2 id="landing-workflow-title">From sign-in to patient context.</h2></div>
+          <div className="landing-steps">
+            {workflow.map(step => (
+              <div className="landing-step" key={step.count}>
+                <span>{step.count}</span>
+                <div><h3>{step.title}</h3><p>{step.body}</p></div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-label)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{stat.label}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
 
-        {/* TESTIMONIALS */}
-        <section style={{ padding: '100px 48px', display: 'flex', justifyContent: 'center' }}>
-          <div className="glass-panel"
-            style={{
-              width: 400,
-              aspectRatio: '1/1',
-              padding: 40,
-              position: 'relative',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, background: 'linear-gradient(90deg, var(--neon-blue), var(--neon-cyan), var(--neon-purple))' }} />
+        <section id="about" className="landing-about" aria-labelledby="landing-about-title">
+          <div className="landing-container landing-about-inner">
+            <div><span className="landing-about-icon"><Building2 size={23} aria-hidden="true" /></span><p className="landing-section-tag">BUILT WITH CARE</p><h2 id="landing-about-title">Structure before spectacle.</h2></div>
             <div>
-              <Cpu size={32} style={{ color: 'var(--neon-cyan)', marginBottom: 24, opacity: 0.8 }} />
-              <p style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.6, color: 'var(--text-primary)' }}>
-                "The 3D-UNet pipeline delivers boundary estimates with a precision that borders on clairvoyance."
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-container)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>SC</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Dr. Sarah Chen</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Chief of Neurosurgery</div>
-              </div>
+              <p>NeuroVision is an evolving, multi-tenant research platform for organizing patient data and exploring brain imaging workflows.</p>
+              <p className="landing-about-disclaimer"><Shield size={17} aria-hidden="true" /> It is not a certified medical device and must not be used to make clinical decisions.</p>
+              <Link className="landing-button landing-button-light" to={workspacePath}>{user ? 'Open your workspace' : 'Sign in'}<ArrowRight size={18} aria-hidden="true" /></Link>
             </div>
           </div>
         </section>
-
-        {/* FOOTER CTA */}
-        <section style={{ padding: '120px 48px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 32 }}>Ready for the next iteration?</h2>
-          <Motion.button
-            whileHover={{ scale: 1.05 }}
-            onClick={() => navigate('/login')}
-            style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '16px 40px', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}
-          >
-            Initialize Workspace
-          </Motion.button>
-        </section>
-
       </main>
+
+      <footer className="landing-footer">
+        <div className="landing-container landing-footer-inner">
+          <div className="landing-footer-brand"><ScanLine size={19} aria-hidden="true" /><strong>NeuroVision</strong></div>
+          <span>Brain imaging research workspace</span>
+          <a href="#landing-main">Back to top ↑</a>
+        </div>
+      </footer>
     </div>
   );
 }

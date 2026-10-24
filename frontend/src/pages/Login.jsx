@@ -41,44 +41,23 @@ export default function Login() {
             <div className="brand-logo-icon"><Brain size={22} /></div>
             <div>
               <div className="brand-logo-text">NeuroVision</div>
-              <div className="brand-logo-sub">Clinical AI Platform</div>
+              <div className="brand-logo-sub">Imaging research workspace</div>
             </div>
           </div>
           <div style={{ marginTop: 64 }}>
             <div className="brand-tagline">
-              Precision diagnostics.<br />
-              <span>Powered by AI.</span>
+              Careful workflows.<br />
+              <span>Clearer context.</span>
             </div>
             <p style={{ marginTop: 20, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-              Real-time 3D tumor segmentation, visual question answering, and
-              AI-powered pathology reports — all in one secure clinical platform.
+              Access your organization’s patient records and explore imaging research tools in a single workspace.
             </p>
           </div>
         </div>
 
         <div>
-          <div className="brand-stats" style={{ marginBottom: 24 }}>
-            <div className="brand-stat">
-              <div className="brand-stat-val">94%</div>
-              <div className="brand-stat-label">Diagnostic accuracy</div>
-            </div>
-            <div className="brand-stat">
-              <div className="brand-stat-val">+29%</div>
-              <div className="brand-stat-label">Improvement over baseline</div>
-            </div>
-            <div className="brand-stat">
-              <div className="brand-stat-val">3D</div>
-              <div className="brand-stat-label">Tumor visualization</div>
-            </div>
-            <div className="brand-stat">
-              <div className="brand-stat-val">VQA</div>
-              <div className="brand-stat-label">AI chat interface</div>
-            </div>
-          </div>
           <div className="brand-disclaimer">
-            For authorized medical personnel only. All patient data is encrypted
-            and scoped to your organization.&nbsp;
-            HIPAA compliant.
+            Research and development environment. Not for clinical diagnosis.
           </div>
         </div>
       </div>

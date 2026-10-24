@@ -60,17 +60,16 @@ export default function Register() {
             <div className="brand-logo-icon"><Brain size={22} /></div>
             <div>
               <div className="brand-logo-text">NeuroVision</div>
-              <div className="brand-logo-sub">Clinical AI Platform</div>
+              <div className="brand-logo-sub">Imaging research workspace</div>
             </div>
           </div>
           <div style={{ marginTop: 64 }}>
             <div className="brand-tagline">
-              Join the future of<br />
-              <span>Medical Imaging.</span>
+              Create an account.<br />
+              <span>Join your workspace.</span>
             </div>
             <p style={{ marginTop: 20, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-              Create your professional account to access AI-powered diagnostics, 
-              collaborative research tools, and secure clinical workspaces.
+              Register to access organization workspaces, patient records, and imaging research tools.
             </p>
           </div>
         </div>
@@ -78,7 +77,7 @@ export default function Register() {
         <div className="brand-stats" style={{ marginBottom: 24 }}>
           <div className="brand-stat">
             <div className="brand-stat-val">Secure</div>
-            <div className="brand-stat-label">End-to-end encrypted</div>
+            <div className="brand-stat-label">Institution workspaces</div>
           </div>
           <div className="brand-stat">
             <div className="brand-stat-val">Global</div>
@@ -107,7 +106,7 @@ export default function Register() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="register-name-grid">
                 <div className="field-group">
                   <label className="field-label">First Name</label>
                   <input

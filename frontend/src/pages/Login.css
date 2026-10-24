@@ -215,3 +215,20 @@
   background: var(--bg-card-high);
   padding: 2px 6px;
 }
+
+
+/* Shared mobile auth layout for sign in, register and OTP screens. */
+@media(max-width:1060px){.login-brand{width:38%;padding:32px;}.login-form-panel{padding:32px;}}
+@media(max-width:720px){
+ .login-page{display:block;min-height:100dvh;}
+ .login-brand{width:100%;min-height:auto;padding:22px 20px;border-right:0;border-bottom:1px solid var(--outline-dim);}
+ .login-brand::before,.login-brand .brand-stats,.login-brand .brand-disclaimer,.login-brand .brand-tagline,.login-brand>div>p{display:none;}
+ .login-brand>div>div[style*="margin-top"]{display:none;}
+ .login-form-panel{min-height:calc(100dvh - 88px);padding:28px 20px;align-items:flex-start;}
+ .login-form-box{max-width:480px;margin:0 auto;}
+ .login-form-header{margin-bottom:26px;}
+ .login-form-title{font-size:23px;}
+ .field-input,.login-btn{min-height:44px;font-size:16px;}
+ .password-toggle-btn{width:38px;height:38px;right:5px;}
+}
+@media(max-width:400px){.login-brand{padding-inline:16px;}.login-form-panel{padding-inline:16px;}}

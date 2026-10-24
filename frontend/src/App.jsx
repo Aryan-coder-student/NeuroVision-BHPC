@@ -25,6 +25,8 @@ import AppShell    from './components/AppShell';
 import PatientWorkspace from './components/PatientWorkspace';
 import PatientDashboard from './pages/PatientDashboard';
 import MyPatients from './pages/MyPatients';
+// Load adaptive layout rules after component styles so mobile overrides win.
+import './responsive.css';
 
 /* Global spin keyframe */
 const style = document.createElement('style');

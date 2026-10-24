@@ -170,3 +170,20 @@
 }
 .run-seg-btn:hover:not(:disabled) { background: rgba(173,198,255,0.12); }
 .run-seg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+/* On tablets and phones the viewer must not be clipped to viewport height. */
+@media(max-width:1250px){
+ .seg-workspace{height:auto;grid-template-columns:minmax(220px,.85fr) minmax(0,1.15fr);align-items:stretch;}
+ .seg-workspace>.seg-panel:nth-child(3){grid-column:1/-1;}
+ .seg-workspace>.seg-panel:nth-child(2) .viewer-area{min-height:390px;}
+ .seg-panel{min-width:0;}
+}
+@media(max-width:800px){
+ .seg-workspace{display:flex;flex-direction:column;gap:12px;}
+ .seg-workspace>.seg-panel{flex:0 0 auto;}
+ .seg-workspace>.seg-panel:nth-child(2) .viewer-area{min-height:340px;height:52vw;max-height:530px;}
+ .seg-panel-body{overflow:visible;}
+ .viewer-result-badge{max-width:calc(100% - 28px);overflow-wrap:anywhere;}
+}
+@media(max-width:450px){.seg-workspace>.seg-panel:nth-child(2) .viewer-area{min-height:275px;height:74vw;}.seg-panel-body{padding:13px;}}

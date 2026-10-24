@@ -120,3 +120,9 @@
   color: var(--text-muted);
 }
 .action-btn.ghost:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+
+/* Workspace KPIs and patient table adapt to smaller screens. */
+.dash-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+@media(max-width:1250px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.dash-row{grid-template-columns:minmax(0,1fr);}}
+@media(max-width:620px){.dash-grid{grid-template-columns:1fr;gap:10px;margin-bottom:16px;}.dash-kpi,.dash-panel{min-width:0;padding:16px;}.dash-table-scroll .patient-table{min-width:520px;}.dash-panel-title{margin-bottom:12px;}}
