@@ -279,61 +279,137 @@ export default function Patients() {
 
         {isAdmin ? (
           <aside className="patients-panel patients-form-panel" aria-labelledby="register-patient-title">
-            <div className="patients-form-icon"><UserPlus size={18} aria-hidden="true" /></div>
-            <h2 id="register-patient-title">Register patient</h2>
+            <div className="patients-form-icon">{activeVerification ? <Mail size={18} /> : <UserPlus size={18} />}</div>
+            <h2 id="register-patient-title">{activeVerification ? 'Verify patient email' : 'Register patient'}</h2>
             <p className="patients-form-intro">
-              Add the minimum identity needed to connect future scans and reports.
+              {activeVerification
+                ? 'The patient record has been created. Verify the email to activate its identity link.'
+                : 'Enter the patient details. A patient ID is generated automatically and a verification code is emailed.'}
             </p>
 
-            {successMessage && <div className="patients-feedback success" role="status">{successMessage}</div>}
-            {submitError && <div className="patients-feedback error" role="alert">{submitError}</div>}
+            {!activeVerification && successMessage && <div className="patients-feedback success" role="status">{successMessage}</div>}
+            {submitError && !activeVerification && <div className="patients-feedback error" role="alert">{submitError}</div>}
 
-            <form className="patients-form" onSubmit={handleSubmit} noValidate>
-              <div className="patients-field">
-                <label htmlFor="patient-code">Patient ID</label>
-                <input
-                  ref={patientCodeRef}
-                  id="patient-code"
-                  name="patient_code"
-                  value={form.patient_code}
-                  onChange={updateField}
-                  maxLength={64}
-                  autoComplete="off"
-                  placeholder="e.g. P-0042"
-                  aria-invalid={Boolean(fieldErrors.patient_code)}
-                  aria-describedby={fieldErrors.patient_code ? 'patient-code-error' : 'patient-code-help'}
-                />
-                <span id="patient-code-help" className="patients-field-help">Unique inside this workspace.</span>
-                {fieldErrors.patient_code && <span id="patient-code-error" className="patients-field-error">{fieldErrors.patient_code}</span>}
+            {activeVerification ? (
+              <div className="patients-verification">
+                <div className="patients-verification-summary">
+                  <span className="patients-verification-label">Generated patient ID</span>
+                  <strong><code>{activeVerification.patient.patient_code}</code></strong>
+                  <span>{activeVerification.patient.display_name}{activeVerification.patient.age == null ? '' : ' · ' + activeVerification.patient.age + ' years'}</span>
+                  <span className="patients-verification-label">Email verification pending</span>
+                </div>
+                <form className="patients-form" onSubmit={verifyEmail} noValidate>
+                  <div className="patients-field">
+                    <label htmlFor="patient-otp">6-digit verification code</label>
+                    <input
+                      ref={otpRef}
+                      id="patient-otp"
+                      name="otp"
+                      className="patients-otp-input"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      autoComplete="one-time-code"
+                      value={otp}
+                      onChange={event => { setOtp(event.target.value.replace(/\D/g, '')); setVerificationError(''); }}
+                      aria-invalid={Boolean(verificationError)}
+                      aria-describedby="patient-otp-help"
+                      placeholder="000000"
+                      disabled={isVerifying || isResending}
+                    />
+                    <span id="patient-otp-help" className="patients-field-help">
+                      Sent to {activeVerification.masked_email || 'the patient’s email'}.
+                      The code expires in 10 minutes.
+                    </span>
+                  </div>
+                  {verificationError && <div className="patients-feedback error" role="alert">{verificationError}</div>}
+                  {verificationNotice && <div className="patients-feedback success" role="status">{verificationNotice}</div>}
+                  <button type="submit" className="patients-submit" disabled={isVerifying || isResending || !validPatientOtp(otp)} aria-busy={isVerifying}>
+                    {isVerifying ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <CheckCircle2 size={15} aria-hidden="true" />}
+                    <span>{isVerifying ? 'Verifying…' : 'Verify email'}</span>
+                  </button>
+                </form>
+                <div className="patients-verification-actions">
+                  <button type="button" className="patients-secondary-action" disabled={isVerifying || isResending} onClick={resendCode}>
+                    {isResending ? 'Sending…' : 'Resend code'}
+                  </button>
+                  <button type="button" className="patients-secondary-action" disabled={isVerifying || isResending} onClick={finishLater}>
+                    Finish later
+                  </button>
+                </div>
+                <p className="patients-field-help">If you leave this page, verification can be restarted from the patient dashboard. Resending is rate-limited.</p>
               </div>
+            ) : (
+              <form className="patients-form" onSubmit={handleSubmit} noValidate>
+                <div className="patients-field">
+                  <label htmlFor="patient-display-name">Patient name</label>
+                  <input
+                    ref={displayNameRef}
+                    id="patient-display-name"
+                    name="display_name"
+                    value={form.display_name}
+                    onChange={updateField}
+                    maxLength={160}
+                    autoComplete="off"
+                    placeholder="Patient full name"
+                    aria-invalid={Boolean(fieldErrors.display_name)}
+                    aria-describedby={fieldErrors.display_name ? 'patient-display-name-error' : 'patient-display-name-help'}
+                  />
+                  <span id="patient-display-name-help" className="patients-field-help">Use the patient name approved by your organization.</span>
+                  {fieldErrors.display_name && <span id="patient-display-name-error" className="patients-field-error" role="alert">{fieldErrors.display_name}</span>}
+                </div>
 
-              <div className="patients-field">
-                <label htmlFor="patient-display-name">Display name</label>
-                <input
-                  ref={displayNameRef}
-                  id="patient-display-name"
-                  name="display_name"
-                  value={form.display_name}
-                  onChange={updateField}
-                  maxLength={160}
-                  autoComplete="off"
-                  placeholder="Patient display name"
-                  aria-invalid={Boolean(fieldErrors.display_name)}
-                  aria-describedby={fieldErrors.display_name ? 'patient-display-name-error' : 'patient-display-name-help'}
-                />
-                <span id="patient-display-name-help" className="patients-field-help">Use the identifier approved by your organization.</span>
-                {fieldErrors.display_name && <span id="patient-display-name-error" className="patients-field-error">{fieldErrors.display_name}</span>}
-              </div>
+                <div className="patients-field">
+                  <label htmlFor="patient-date-of-birth">Date of birth</label>
+                  <input
+                    ref={dobRef}
+                    id="patient-date-of-birth"
+                    name="date_of_birth"
+                    type="date"
+                    max={new Date().toISOString().slice(0, 10)}
+                    value={form.date_of_birth}
+                    onChange={updateField}
+                    aria-invalid={Boolean(fieldErrors.date_of_birth)}
+                    aria-describedby={fieldErrors.date_of_birth ? 'patient-dob-error' : 'patient-dob-help'}
+                  />
+                  <span id="patient-dob-help" className="patients-field-help">Age is calculated automatically from the date of birth.</span>
+                  {fieldErrors.date_of_birth && <span id="patient-dob-error" className="patients-field-error" role="alert">{fieldErrors.date_of_birth}</span>}
+                </div>
 
-              <button type="submit" className="patients-submit" disabled={isSaving} aria-busy={isSaving}>
-                {isSaving ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <UserPlus size={15} aria-hidden="true" />}
-                <span>{isSaving ? 'Registering…' : 'Register patient'}</span>
-              </button>
-            </form>
+                <div className="patients-field">
+                  <label htmlFor="patient-email">Patient email</label>
+                  <input
+                    ref={emailRef}
+                    id="patient-email"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={updateField}
+                    maxLength={254}
+                    autoComplete="email"
+                    placeholder="patient@example.com"
+                    aria-invalid={Boolean(fieldErrors.email)}
+                    aria-describedby={fieldErrors.email ? 'patient-email-error' : 'patient-email-help'}
+                  />
+                  <span id="patient-email-help" className="patients-field-help">A verification code will be sent to this address.</span>
+                  {fieldErrors.email && <span id="patient-email-error" className="patients-field-error" role="alert">{fieldErrors.email}</span>}
+                </div>
+
+                <div className="patients-generated-id-note">
+                  <ShieldCheck size={16} aria-hidden="true" />
+                  <span>Patient ID is created by NeuroVision. You don't need to enter one.</span>
+                </div>
+                <button type="submit" className="patients-submit" disabled={isSaving} aria-busy={isSaving}>
+                  {isSaving ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <Mail size={15} aria-hidden="true" />}
+                  <span>{isSaving ? 'Registering…' : 'Register & send code'}</span>
+                </button>
+              </form>
+            )}
 
             <div className="patients-privacy-note">
               <ShieldCheck size={15} aria-hidden="true" />
-              <span>Stored only in the active tenant schema. Do not enter clinical history in these identity fields.</span>
+              <span>Patient records stay in this workspace. Email verification uses the existing encrypted identity service and does not share medical records.</span>
             </div>
           </aside>
         ) : (
