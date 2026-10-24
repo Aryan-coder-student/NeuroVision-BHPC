@@ -15,6 +15,8 @@
 
 - Server timestamps are timezone-aware UTC instants. Patient-facing timestamps are rendered explicitly in `Asia/Kolkata`, independent of the browser timezone.
 - Date of birth is a calendar date (`YYYY-MM-DD`), not an instant; it is never timezone-converted. Its validation boundary uses the India calendar day.
+- Every patient read model carries a monotonically increasing version. Demographic updates submit the version they were based on; a stale update returns `409 Conflict` with the current record and never overwrites it.
+- Every material name/DOB correction atomically appends a tenant-scoped audit event containing the actor ID and username snapshot, changed fields, before/after values, record versions, and a UTC timestamp. No-op saves do not create events. Audit events are append-only and follow the patient record's existing deletion lifecycle.
 - Organization selection happens before patient selection.
 - The central `/my-patients` directory is available before organization selection and aggregates only active member workspaces.
 - Opening a central patient verifies and selects that patient’s workspace before handing off to the existing patient detail route.

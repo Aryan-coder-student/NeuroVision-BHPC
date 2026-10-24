@@ -6,7 +6,12 @@ from rest_framework.response import Response
 from users.models import InstitutionMembership
 
 from .models import Patient
-from .services import delete_patient, register_patient
+from .services import (
+    PatientVersionConflict,
+    correct_patient_demographics,
+    delete_patient,
+    register_patient,
+)
 from patient_identity.services import (
     CHALLENGE_TTL,
     IdentityAlreadyLinkedError,
@@ -82,12 +87,33 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        """Persist editable fields and return the canonical patient read model."""
+        """Atomically correct demographics unless the submitted version is stale."""
         partial = kwargs.pop("partial", False)
         patient = self.get_object()
         serializer = self.get_serializer(patient, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        changes = dict(serializer.validated_data)
+        expected_version = changes.pop("version")
+        try:
+            patient = correct_patient_demographics(
+                patient=patient,
+                expected_version=expected_version,
+                actor=request.user,
+                changes=changes,
+            )
+        except PatientVersionConflict as conflict:
+            current = PatientReadSerializer(
+                conflict.current_patient,
+                context=self.get_serializer_context(),
+            ).data
+            return Response(
+                {
+                    "code": "patient_version_conflict",
+                    "detail": "This patient was updated by another administrator.",
+                    "current": current,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
         data = PatientReadSerializer(
             patient,
             context=self.get_serializer_context(),

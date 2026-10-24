@@ -14,11 +14,11 @@ class PatientReadSerializer(serializers.ModelSerializer):
         model = Patient
         fields = (
             "id", "patient_code", "display_name", "date_of_birth", "age",
-            "global_identity_id", "created_at", "updated_at",
+            "global_identity_id", "version", "created_at", "updated_at",
         )
         read_only_fields = (
             "id", "patient_code", "age", "global_identity_id",
-            "created_at", "updated_at",
+            "version", "created_at", "updated_at",
         )
 
     def get_age(self, obj):
@@ -30,6 +30,7 @@ class PatientReadSerializer(serializers.ModelSerializer):
 
 
 class PatientWriteSerializer(serializers.ModelSerializer):
+    version = serializers.IntegerField(min_value=1, write_only=True, required=False)
     immutable_fields = frozenset({
         "id", "patient_code", "global_identity_id", "email",
         "created_at", "updated_at",
@@ -37,7 +38,7 @@ class PatientWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        fields = ("display_name", "date_of_birth")
+        fields = ("display_name", "date_of_birth", "version")
 
     def validate_date_of_birth(self, value: date | None):
         if value is None:
@@ -56,15 +57,19 @@ class PatientWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attempted_fields = self.immutable_fields.intersection(self.initial_data)
+        errors = {}
         if attempted_fields:
-            errors = {
+            errors.update({
                 field: (
                     "Use the identity verification endpoint to change email."
                     if field == "email"
                     else "This patient identity field cannot be changed."
                 )
                 for field in sorted(attempted_fields)
-            }
+            })
+        if self.instance is not None and "version" not in attrs:
+            errors["version"] = "The current patient version is required."
+        if errors:
             raise serializers.ValidationError(errors)
         return attrs
 
@@ -75,7 +80,7 @@ class PatientRegistrationSerializer(PatientWriteSerializer):
     email = serializers.EmailField(write_only=True, required=True)
 
     class Meta(PatientWriteSerializer.Meta):
-        fields = (*PatientWriteSerializer.Meta.fields, "email")
+        fields = ("display_name", "date_of_birth", "email")
         extra_kwargs = {
             "display_name": {"required": True, "allow_blank": False},
             "date_of_birth": {"required": True, "allow_null": False},

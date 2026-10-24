@@ -18,6 +18,7 @@ export default function PatientDashboard() {
   const [editErrors, setEditErrors] = useState({});
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
+  const [conflictPatient, setConflictPatient] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const nameInputRef = useRef(null);
   const dobInputRef = useRef(null);
@@ -39,6 +40,7 @@ export default function PatientDashboard() {
     setEditErrors({});
     setEditError('');
     setEditSuccess('');
+    setConflictPatient(null);
     setIsEditing(true);
   };
 
@@ -47,6 +49,7 @@ export default function PatientDashboard() {
     setIsEditing(false);
     setEditError('');
     setEditErrors({});
+    setConflictPatient(null);
   };
 
   const saveDetails = async (event) => {
@@ -63,12 +66,26 @@ export default function PatientDashboard() {
 
     setIsSaving(true);
     try {
-      const updatedPatient = await updatePatientDetails(org.id, patient.id, values);
+      const updatedPatient = await updatePatientDetails(org.id, patient.id, {
+        ...values,
+        version: patient.version,
+      });
       replacePatient(updatedPatient);
       setIsEditing(false);
+      setConflictPatient(null);
       setEditSuccess('Patient details updated.');
     } catch (requestError) {
       const data = requestError.response?.data;
+      if (
+        requestError.response?.status === 409
+        && data?.code === 'patient_version_conflict'
+        && data?.current
+      ) {
+        replacePatient(data.current);
+        setConflictPatient(data.current);
+        setEditError('');
+        return;
+      }
       const serverErrors = {
         display_name: Array.isArray(data?.display_name) ? data.display_name[0] : data?.display_name,
         date_of_birth: Array.isArray(data?.date_of_birth) ? data.date_of_birth[0] : data?.date_of_birth,
@@ -144,6 +161,15 @@ export default function PatientDashboard() {
                 {editErrors.date_of_birth && <span id="patient-edit-dob-error" className="patient-edit-error" role="alert">{editErrors.date_of_birth}</span>}
               </div>
               <p className="patient-edit-note">The patient ID cannot be changed. Age is recalculated automatically.</p>
+              {conflictPatient && (
+                <div className="patient-edit-conflict" role="alert">
+                  <strong>Newer patient details are already saved.</strong>
+                  <span>
+                    Latest record: {conflictPatient.display_name} · DOB {conflictPatient.date_of_birth || 'not recorded'}.
+                    {' '}Your entries are still in the form. Review them before saving again.
+                  </span>
+                </div>
+              )}
               {editError && <p className="patient-edit-error" role="alert">{editError}</p>}
               <div className="patient-edit-actions">
                 <button type="submit" disabled={isSaving}>

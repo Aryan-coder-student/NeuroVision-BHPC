@@ -35,6 +35,8 @@
 .patient-summary-card .patient-edit-note { margin:0;color:var(--text-label);font-size:11px; }
 .patient-summary-card .patient-edit-error { margin:0;color:var(--error);font-size:12px; }
 .patient-summary-card .patient-edit-success { margin-top:16px;padding:9px 11px;border:1px solid var(--outline-dim);color:var(--success);font-size:12px; }
+.patient-edit-conflict { display:grid;gap:5px;padding:11px 12px;border:1px solid color-mix(in srgb,var(--warning) 45%,transparent);background:color-mix(in srgb,var(--warning) 8%,transparent);color:var(--text-primary);font-size:12px;line-height:1.55; }
+.patient-edit-conflict strong { color:var(--warning); }
 .patient-edit-actions { display:flex;gap:10px;flex-wrap:wrap; }
 .patient-edit-actions button { display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid var(--outline);background:var(--bg-card-high);color:var(--text-bright);font:inherit;font-size:12px;font-weight:650; }
 .patient-edit-actions button:first-child { background:var(--accent-primary);color:var(--bg-void); }
