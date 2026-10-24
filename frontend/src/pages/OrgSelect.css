@@ -13,6 +13,34 @@
   width: 100%;
   max-width: 960px;
 }
+.org-select-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.org-select-patients-link {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--outline-dim);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.org-select-patients-link:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-high);
+  color: var(--text-bright);
+}
+.org-select-patients-link:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 3px;
+}
 .back-to-ws-btn {
   background: var(--accent-container);
   color: var(--accent-primary);
@@ -217,6 +245,7 @@
 }
 @media (max-width: 480px) {
   .form-grid { grid-template-columns: 1fr; }
+  .org-select-heading-row { flex-direction: column; }
 }
 
 .create-submit-btn {

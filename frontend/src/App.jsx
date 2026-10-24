@@ -24,6 +24,7 @@ import VerifyOTP        from './pages/VerifyOTP';
 import AppShell    from './components/AppShell';
 import PatientWorkspace from './components/PatientWorkspace';
 import PatientDashboard from './pages/PatientDashboard';
+import MyPatients from './pages/MyPatients';
 
 /* Global spin keyframe */
 const style = document.createElement('style');
@@ -102,6 +103,7 @@ function AppRoutes() {
       <Route path="/register"   element={<CentralOnly><GuestOnly><Register /></GuestOnly></CentralOnly>} />
       <Route path="/verify-otp" element={<CentralOnly><GuestOnly><VerifyOTP /></GuestOnly></CentralOnly>} />
       <Route path="/select-org" element={<RequireAuth><CentralOnly><OrgSelect /></CentralOnly></RequireAuth>} />
+      <Route path="/my-patients" element={<RequireAuth><CentralOnly><MyPatients /></CentralOnly></RequireAuth>} />
 
       {/* Protected app shell */}
       <Route element={<RequireOrg><AppShell /></RequireOrg>}>

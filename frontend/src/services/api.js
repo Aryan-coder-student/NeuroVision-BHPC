@@ -120,6 +120,18 @@ export async function fetchPatients(workspaceId, { signal } = {}) {
   return Array.isArray(res.data) ? res.data : res.data.results || [];
 }
 
+export async function fetchMyPatients({ workspaceId, search, page = 1, pageSize = 25, signal } = {}) {
+  const params = {
+    page,
+    page_size: pageSize,
+  };
+  if (workspaceId) params.workspace_id = workspaceId;
+  if (search) params.search = search;
+
+  const res = await djangoApi.get(`${API_BASE}/my-patients/`, { params, signal });
+  return res.data;
+}
+
 export async function createPatient(workspaceId, patient) {
   const res = await tenantRequest(workspaceId, {
     method: 'post',

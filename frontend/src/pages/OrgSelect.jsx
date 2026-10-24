@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
-import { Building2, MapPin, LogOut, ChevronRight, Plus, Loader, X, Globe, Mail, Phone } from 'lucide-react';
+import { Building2, MapPin, LogOut, ChevronRight, Plus, Loader, X, Globe, Mail, Users } from 'lucide-react';
 import './OrgSelect.css';
 
 export default function OrgSelect() {
@@ -51,11 +51,15 @@ export default function OrgSelect() {
   return (
     <div className="org-select-page">
       <div className="org-select-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="org-select-heading-row">
           <div>
             <div className="org-select-greeting">Welcome back</div>
             <div className="org-select-name">{user?.name}</div>
           </div>
+          <Link className="org-select-patients-link" to="/my-patients">
+            <Users size={15} aria-hidden="true" />
+            My Patients
+          </Link>
         </div>
         <div className="org-select-sub">
           <span className="label-uppercase">{user?.role}</span>

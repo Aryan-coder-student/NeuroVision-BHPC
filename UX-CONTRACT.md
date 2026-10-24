@@ -8,10 +8,13 @@
 | Form | Page form with shared field tokens | `DESIGN.md` form contract | Identity OTP and patient registration | Inline errors, first-invalid focus, duplicate-submit check |
 | Scrollbar | Global document theme | `frontend/src/index.css` | Stable gutter on tables/tabs | Strict audit and browser overflow check |
 | CRUD | Tenant patient API and registry | `clinical.views.PatientViewSet` | Admin writes, member reads | Tenant isolation integration tests |
+| Cross-workspace patient directory | Central My Patients route | `tenant.patient_views.MyPatientsView` | Search, workspace filter, pagination | Active-membership integration tests |
 
 ## Scope invariants
 
 - Organization selection happens before patient selection.
+- The central `/my-patients` directory is available before organization selection and aggregates only active member workspaces.
+- Opening a central patient verifies and selects that patient’s workspace before handing off to the existing patient detail route.
 - Segmentation, VQA, scan history, and reports require a patient ID in the URL: `/patients/:patientId/...`.
 - The backend resolves that patient inside the selected tenant schema. A patient ID from another tenant returns unavailable and must not fall back to another record.
 - Switching patient or organization creates a new workspace context. In-memory VQA and segmentation state is not reused across that boundary.
