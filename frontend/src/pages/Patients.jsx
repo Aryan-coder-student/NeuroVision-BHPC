@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Loader2, Mail, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, Loader2, Mail, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import PatientEmailVerification from '../components/PatientEmailVerification';
 import { useAuth } from '../context/auth-context';
-import { createPatient, fetchPatients, requestPatientGrant, verifyPatientGrant } from '../services/api';
-import { validatePatientRegistration, validPatientOtp } from './patient-form';
+import { createPatient, fetchPatients } from '../services/api';
+import { localDateInputValue, validatePatientRegistration } from './patient-form';
 import './Patients.css';
 
 const EMPTY_FORM = { display_name: '', date_of_birth: '', email: '' };
@@ -22,6 +23,8 @@ function formatCreatedAt(value) {
 export default function Patients() {
   const { org } = useAuth();
   const [patients, setPatients] = useState([]);
+  const [patientCount, setPatientCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
@@ -30,24 +33,20 @@ export default function Patients() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(null);
-  const [otp, setOtp] = useState('');
-  const [verificationError, setVerificationError] = useState('');
-  const [verificationNotice, setVerificationNotice] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const displayNameRef = useRef(null);
   const dobRef = useRef(null);
   const emailRef = useRef(null);
-  const otpRef = useRef(null);
   const isAdmin = org?.role === 'ADMIN';
   const activeVerification = pendingVerification?.workspaceId === org?.id ? pendingVerification : null;
 
-  const loadPatients = useCallback(async (signal) => {
+  const loadPatients = useCallback(async (signal, requestedPage = 1) => {
     setIsLoading(true);
     setLoadError('');
     try {
-      const records = await fetchPatients(org.id, { signal });
-      setPatients(records);
+      const result = await fetchPatients(org.id, { page: requestedPage, signal });
+      setPatients(result.results || []);
+      setPatientCount(result.count || 0);
+      setPage(requestedPage);
     } catch (error) {
       if (error.code !== 'ERR_CANCELED') {
         setLoadError('Patient records could not be loaded. Check your connection and try again.');
@@ -99,15 +98,13 @@ export default function Patients() {
     setIsSaving(true);
     try {
       const patient = await createPatient(org.id, validation.values);
-      setPatients(current => [patient, ...current]);
+      setPage(1);
+      void loadPatients(undefined, 1);
       setPendingVerification({
         patient, email: validation.values.email, workspaceId: org.id,
         ...patient.identity_verification,
       });
       setForm(EMPTY_FORM);
-      setOtp('');
-      setVerificationError('');
-      setVerificationNotice('');
       setSuccessMessage('');
     } catch (error) {
       const response = error.response?.data;
@@ -130,63 +127,17 @@ export default function Patients() {
     }
   };
 
-
-  const verifyEmail = async (event) => {
-    event.preventDefault();
-    if (!activeVerification || isVerifying || isResending) return;
-    if (!validPatientOtp(otp)) {
-      setVerificationError('Enter the six-digit verification code.');
-      otpRef.current?.focus();
-      return;
-    }
-    if (!activeVerification.challenge_id) {
-      setVerificationError('Request a new verification code to continue.');
-      return;
-    }
-
-    setIsVerifying(true);
-    setVerificationError('');
-    setVerificationNotice('');
-    try {
-      await verifyPatientGrant(org.id, activeVerification.patient.id, activeVerification.challenge_id, otp);
-      setPendingVerification(null);
-      setOtp('');
-      setSuccessMessage(activeVerification.patient.display_name + ' (ID ' + activeVerification.patient.patient_code + ') is registered and their email is verified.');
-      void loadPatients();
-    } catch (error) {
-      setVerificationError(error.response?.data?.detail || 'The code could not be verified. Check it and try again.');
-      otpRef.current?.focus();
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const resendCode = async () => {
-    if (!activeVerification || isVerifying || isResending) return;
-    setIsResending(true);
-    setVerificationError('');
-    setVerificationNotice('');
-    try {
-      const challenge = await requestPatientGrant(org.id, activeVerification.patient.id, activeVerification.email);
-      setPendingVerification(current => ({ ...current, ...challenge }));
-      setOtp('');
-      setVerificationNotice('A new code was sent. Please check the patient’s email.');
-      otpRef.current?.focus();
-    } catch (error) {
-      setVerificationError(error.response?.data?.detail || 'Could not resend the code. Try again.');
-    } finally {
-      setIsResending(false);
-    }
-  };
-
   const finishLater = () => {
-    if (!activeVerification || isVerifying || isResending) return;
+    if (!activeVerification) return;
     setSuccessMessage('Patient ID ' + activeVerification.patient.patient_code + ' was created. Email is not verified yet; resume from the patient dashboard.');
     setPendingVerification(null);
-    setOtp('');
-    setVerificationError('');
-    setVerificationNotice('');
     displayNameRef.current?.focus();
+  };
+
+  const finishVerification = () => {
+    setSuccessMessage(activeVerification.patient.display_name + ' (ID ' + activeVerification.patient.patient_code + ') is registered and their email is verified.');
+    setPendingVerification(null);
+    void loadPatients(undefined, page);
   };
 
   return (
@@ -197,9 +148,9 @@ export default function Patients() {
           <h1 id="patients-title">Patients</h1>
           <p>{org?.name} · Tenant-isolated patient identities</p>
         </div>
-        <div className="patients-count" aria-label={`${patients.length} patient records`}>
+        <div className="patients-count" aria-label={`${patientCount} patient records`}>
           <Users size={16} aria-hidden="true" />
-          <strong>{patients.length}</strong>
+          <strong>{patientCount}</strong>
           <span>records</span>
         </div>
       </header>
@@ -245,6 +196,7 @@ export default function Patients() {
           )}
 
           {!loadError && !isLoading && patients.length > 0 && (
+            <>
             <div className="patients-table-wrap">
               <table className="patients-table">
                 <thead>
@@ -274,6 +226,12 @@ export default function Patients() {
                 </tbody>
               </table>
             </div>
+            <nav className="patients-pagination" aria-label="Patient registry pages">
+              <button type="button" disabled={isLoading || page === 1} onClick={() => loadPatients(undefined, page - 1)}>Previous</button>
+              <span>Page {page} of {Math.max(1, Math.ceil(patientCount / 25))}</span>
+              <button type="button" disabled={isLoading || page * 25 >= patientCount} onClick={() => loadPatients(undefined, page + 1)}>Next</button>
+            </nav>
+            </>
           )}
         </div>
 
@@ -298,46 +256,15 @@ export default function Patients() {
                   <span>{activeVerification.patient.display_name}{activeVerification.patient.age == null ? '' : ' · ' + activeVerification.patient.age + ' years'}</span>
                   <span className="patients-verification-label">Email verification pending</span>
                 </div>
-                <form className="patients-form" onSubmit={verifyEmail} noValidate>
-                  <div className="patients-field">
-                    <label htmlFor="patient-otp">6-digit verification code</label>
-                    <input
-                      ref={otpRef}
-                      id="patient-otp"
-                      name="otp"
-                      className="patients-otp-input"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      autoComplete="one-time-code"
-                      value={otp}
-                      onChange={event => { setOtp(event.target.value.replace(/\D/g, '')); setVerificationError(''); }}
-                      aria-invalid={Boolean(verificationError)}
-                      aria-describedby="patient-otp-help"
-                      placeholder="000000"
-                      disabled={isVerifying || isResending}
-                    />
-                    <span id="patient-otp-help" className="patients-field-help">
-                      Sent to {activeVerification.masked_email || 'the patient’s email'}.
-                      The code expires in 10 minutes.
-                    </span>
-                  </div>
-                  {verificationError && <div className="patients-feedback error" role="alert">{verificationError}</div>}
-                  {verificationNotice && <div className="patients-feedback success" role="status">{verificationNotice}</div>}
-                  <button type="submit" className="patients-submit" disabled={isVerifying || isResending || !validPatientOtp(otp)} aria-busy={isVerifying}>
-                    {isVerifying ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <CheckCircle2 size={15} aria-hidden="true" />}
-                    <span>{isVerifying ? 'Verifying…' : 'Verify email'}</span>
-                  </button>
-                </form>
-                <div className="patients-verification-actions">
-                  <button type="button" className="patients-secondary-action" disabled={isVerifying || isResending} onClick={resendCode}>
-                    {isResending ? 'Sending…' : 'Resend code'}
-                  </button>
-                  <button type="button" className="patients-secondary-action" disabled={isVerifying || isResending} onClick={finishLater}>
-                    Finish later
-                  </button>
-                </div>
+                <PatientEmailVerification
+                  key={activeVerification.challenge_id}
+                  workspaceId={org.id}
+                  patientId={activeVerification.patient.id}
+                  initialChallenge={activeVerification}
+                  initialEmail={activeVerification.email}
+                  onVerified={finishVerification}
+                  onFinishLater={finishLater}
+                />
                 <p className="patients-field-help">If you leave this page, verification can be restarted from the patient dashboard. Resending is rate-limited.</p>
               </div>
             ) : (
@@ -367,7 +294,7 @@ export default function Patients() {
                     id="patient-date-of-birth"
                     name="date_of_birth"
                     type="date"
-                    max={new Date().toISOString().slice(0, 10)}
+                    max={localDateInputValue()}
                     value={form.date_of_birth}
                     onChange={updateField}
                     aria-invalid={Boolean(fieldErrors.date_of_birth)}

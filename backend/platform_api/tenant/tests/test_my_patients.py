@@ -112,3 +112,27 @@ class MyPatientsTests(TenantTestCase):
         response = self.client.get("/api/v1/my-patients/")
 
         self.assertEqual(response.status_code, 401)
+
+    def test_paginates_without_returning_every_patient(self):
+        for index in range(30):
+            self.create_patient(
+                self.first_workspace,
+                f"NORTH-{index + 10:03d}",
+                f"North Patient {index + 10}",
+            )
+
+        first_page = self.client.get("/api/v1/my-patients/", {"page_size": 10})
+        second_page = self.client.get(
+            "/api/v1/my-patients/",
+            {"page": 2, "page_size": 10},
+        )
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(first_page.data["count"], 32)
+        self.assertEqual(len(first_page.data["results"]), 10)
+        self.assertEqual(len(second_page.data["results"]), 10)
+        self.assertTrue(
+            {row["id"] for row in first_page.data["results"]}.isdisjoint(
+                row["id"] for row in second_page.data["results"]
+            )
+        )

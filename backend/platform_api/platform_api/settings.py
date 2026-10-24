@@ -226,6 +226,7 @@ else:
 EMAIL_BACKEND = settings.EMAIL_BACKEND
 EMAIL_HOST = settings.email_host
 EMAIL_PORT = settings.email_port
+EMAIL_TIMEOUT = 10
 EMAIL_USE_TLS = settings.email_use_tls
 EMAIL_USE_SSL = settings.email_use_ssl
 EMAIL_HOST_USER = settings.EMAIL_HOST_USER

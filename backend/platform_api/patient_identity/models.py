@@ -38,6 +38,11 @@ class PatientAccessGrant(models.Model):
 class PatientGrantChallenge(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     grant = models.ForeignKey(PatientAccessGrant, on_delete=models.CASCADE, related_name="challenges")
+    identity = models.ForeignKey(
+        PatientIdentity,
+        on_delete=models.CASCADE,
+        related_name="grant_challenges",
+    )
     code_hash = models.CharField(max_length=128)
     expires_at = models.DateTimeField()
     attempts = models.PositiveSmallIntegerField(default=0)

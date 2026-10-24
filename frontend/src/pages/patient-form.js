@@ -7,10 +7,17 @@ function validDateOfBirth(value, today) {
   const parsed = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return false;
   const reference = new Date(`${today}T00:00:00Z`);
-  return value <= today && reference.getUTCFullYear() - parsed.getUTCFullYear() <= 130;
+  const oldestYear = reference.getUTCFullYear() - 130;
+  const oldestDay = Math.min(
+    reference.getUTCDate(),
+    new Date(Date.UTC(oldestYear, reference.getUTCMonth() + 1, 0)).getUTCDate(),
+  );
+  const oldest = new Date(Date.UTC(oldestYear, reference.getUTCMonth(), oldestDay))
+    .toISOString().slice(0, 10);
+  return value >= oldest && value <= today;
 }
 
-export function validatePatientRegistration(input, today = new Date().toISOString().slice(0, 10)) {
+export function validatePatientRegistration(input, today = localDateInputValue()) {
   const values = {
     display_name: (input.display_name ?? '').trim(),
     date_of_birth: (input.date_of_birth ?? '').trim(),
@@ -37,6 +44,13 @@ export function validatePatientRegistration(input, today = new Date().toISOStrin
   }
 
   return { values, errors };
+}
+
+export function localDateInputValue(value = new Date()) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function validPatientOtp(value) {

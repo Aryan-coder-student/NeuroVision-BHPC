@@ -1,5 +1,5 @@
 """Patient registration contract: tenant-scoped records and existing public OTP grants."""
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.core import mail
@@ -115,6 +115,11 @@ class PatientRegistrationTests(TenantTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("date_of_birth", response.data)
 
+    def test_rejects_null_birth_date_without_server_error(self):
+        response = self.register(date_of_birth=None)
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("date_of_birth", response.data)
+
     def test_does_not_save_patient_if_otp_delivery_fails(self):
         with patch("patient_identity.services.email_service.send", return_value=False):
             response = self.register()
@@ -170,3 +175,57 @@ class PatientRegistrationTests(TenantTestCase):
             )
             self.assertEqual(result.status_code, 400, result.data)
             self.assertIn(invalid_field, result.data)
+
+    def test_old_code_cannot_verify_a_replaced_pending_email(self):
+        response = self.register(email="first@example.com")
+        patient_id = response.data["id"]
+        old_challenge_id = response.data["identity_verification"]["challenge_id"]
+        old_code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
+        PatientGrantChallenge.objects.filter(id=old_challenge_id).update(
+            created_at=timezone.now() - timedelta(minutes=2)
+        )
+
+        request_url = f"{self.url}{patient_id}/identity-grant/request/"
+        replacement = self.client.post(
+            request_url,
+            {"email": "second@example.com"},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(replacement.status_code, 201, replacement.data)
+        new_code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
+        verify_url = f"{self.url}{patient_id}/identity-grant/verify/"
+
+        old_result = self.client.post(
+            verify_url,
+            {"challenge_id": old_challenge_id, "otp": old_code},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(old_result.status_code, 400)
+        new_result = self.client.post(
+            verify_url,
+            {"challenge_id": replacement.data["challenge_id"], "otp": new_code},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(new_result.status_code, 200, new_result.data)
+
+    def test_deleting_patient_removes_public_identity_grant(self):
+        response = self.register()
+        patient_id = response.data["id"]
+        detail_url = f"{self.url}{patient_id}/"
+
+        deleted = self.client.delete(
+            detail_url,
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(
+            PatientAccessGrant.objects.filter(
+                institution=self.workspace,
+                tenant_patient_id=patient_id,
+            ).exists()
+        )
+        self.assertEqual(PatientIdentity.objects.count(), 0)

@@ -6,18 +6,9 @@
 .patient-summary-card code { display:block; margin-top:5px; color:var(--accent-primary); }
 .patient-summary-card p,.identity-explainer { margin-top:16px; max-width:600px; color:var(--text-muted); font-size:12px; line-height:1.65; }
 .patient-actions { display:flex; gap:8px; margin-top:24px; flex-wrap:wrap; }
-.patient-actions a,.identity-card button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:38px; padding:9px 13px; border:1px solid var(--outline); background:var(--bg-card-high); color:var(--text-bright); font-size:12px; font-weight:600; }
+.patient-actions a { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:38px; padding:9px 13px; border:1px solid var(--outline); background:var(--bg-card-high); color:var(--text-bright); font-size:12px; font-weight:600; }
 .patient-actions a:hover { border-color:var(--accent-primary); }
 .identity-card h2 { font-size:17px; }
-.identity-card form { display:grid; gap:8px; margin-top:18px; }
-.identity-card label { color:var(--text-label); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; }
-.identity-card input { width:100%; border:1px solid var(--outline-dim); background:var(--bg-secondary); color:var(--text-bright); padding:10px 12px; outline:none; }
-.identity-card input:focus { border-color:var(--accent-primary); }
-.identity-card input[aria-invalid=true] { border-color:var(--error); }
-.identity-card button { margin-top:6px; border-color:var(--accent-primary); background:var(--accent-primary); color:var(--bg-void); }
-.identity-card button:disabled { cursor:not-allowed; opacity:.6; }
-.identity-help,.identity-error { font-size:11px; line-height:1.4; }
-.identity-help { color:var(--text-label); }.identity-error { color:var(--error); }
 .identity-success,.identity-readonly { display:flex; align-items:center; gap:8px; margin-top:18px; padding:12px; border:1px solid rgba(74,222,128,.35); background:rgba(74,222,128,.08); color:var(--success); font-size:12px; }
 .identity-readonly { border-color:var(--outline-dim); background:var(--bg-secondary); color:var(--text-muted); }
 .identity-future { margin-top:16px; border-top:1px solid var(--outline-dim); padding-top:13px; color:var(--text-label); font-size:10px; }

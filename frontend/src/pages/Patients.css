@@ -132,6 +132,30 @@
   scrollbar-gutter: stable;
 }
 
+.patients-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 50px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--outline-dim);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.patients-pagination button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--outline-dim);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.patients-pagination button:hover:not(:disabled) { border-color: var(--accent-primary); }
+.patients-pagination button:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.patients-pagination button:disabled { cursor: not-allowed; opacity: .5; }
+
 .patients-table {
   width: 100%;
   min-width: 590px;
@@ -471,39 +495,11 @@
   margin-top: 6px;
   color: var(--warning);
 }
-.patients-verification .patients-form { margin-top: 18px; }
 .patients-field input[type="date"] {
   color-scheme: dark;
   min-height: 44px;
   font-family: inherit;
 }
-.patients-otp-input { letter-spacing: .2em; font-variant-numeric: tabular-nums; }
-.patients-verification-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-.patients-secondary-action {
-  min-height: 42px;
-  flex: 1 1 125px;
-  padding: 8px 12px;
-  border: 1px solid var(--outline);
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-}
-.patients-secondary-action:hover:not(:disabled) {
-  background: var(--bg-card-high);
-  border-color: var(--accent-primary);
-}
-.patients-secondary-action:focus-visible {
-  outline: 2px solid var(--accent-blue);
-  outline-offset: 2px;
-}
-.patients-secondary-action:disabled { opacity: .55; cursor: not-allowed; }
 .patients-verification > .patients-field-help { margin-top: 12px; }
 @media (max-width: 640px) {
   .patients-field input { min-height: 44px; font-size: 16px; }

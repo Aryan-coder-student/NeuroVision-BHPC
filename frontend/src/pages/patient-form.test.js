@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validatePatientRegistration, validPatientOtp } from './patient-form.js';
+import { localDateInputValue, validatePatientRegistration, validPatientOtp } from './patient-form.js';
 
 const TODAY = '2026-10-24';
 
@@ -57,9 +57,20 @@ test('patient form rejects invalid or future dates including impossible leap day
   }, TODAY).errors, {});
 });
 
+test('patient form enforces the exact 130-year boundary', () => {
+  const base = { display_name: 'Maya Rao', email: 'maya@example.com' };
+  assert.deepEqual(validatePatientRegistration({ ...base, date_of_birth: '1896-10-24' }, TODAY).errors, {});
+  assert.ok(validatePatientRegistration({ ...base, date_of_birth: '1896-10-23' }, TODAY).errors.date_of_birth);
+});
+
 test('patient OTP must be exactly six numeric digits', () => {
   assert.equal(validPatientOtp('012345'), true);
   for (const value of ['', '12345', '1234567', '12x456', ' 123456', '１２３４５６']) {
     assert.equal(validPatientOtp(value), false);
   }
+});
+
+test('date input limit uses the browser local calendar date', () => {
+  const justAfterMidnightInIndia = new Date('2026-10-24T18:45:00.000Z');
+  assert.equal(localDateInputValue(justAfterMidnightInIndia), '2026-10-25');
 });

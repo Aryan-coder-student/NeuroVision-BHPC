@@ -91,8 +91,8 @@ class PatientTenantIsolationTests(TenantTestCase):
 
         apollo = self.request("get", self.apollo)
         aiims = self.request("get", self.aiims)
-        self.assertEqual([p["display_name"] for p in apollo.data], ["Apollo Patient"])
-        self.assertEqual([p["display_name"] for p in aiims.data], ["AIIMS Patient"])
+        self.assertEqual([p["display_name"] for p in apollo.data["results"]], ["Apollo Patient"])
+        self.assertEqual([p["display_name"] for p in aiims.data["results"]], ["AIIMS Patient"])
 
         self.assertEqual(
             self.request("get", self.aiims, path=f"{self.url}{left.data['id']}/").status_code,
@@ -173,11 +173,11 @@ class PatientTenantIsolationTests(TenantTestCase):
         self.assertEqual(PatientIdentity.objects.count(), 1)
         self.assertEqual(PatientAccessGrant.objects.filter(status="ACTIVE").count(), 2)
         self.assertEqual(
-            [p["display_name"] for p in self.request("get", self.apollo).data],
+            [p["display_name"] for p in self.request("get", self.apollo).data["results"]],
             ["Apollo Record"],
         )
         self.assertEqual(
-            [p["display_name"] for p in self.request("get", self.aiims).data],
+            [p["display_name"] for p in self.request("get", self.aiims).data["results"]],
             ["AIIMS Record"],
         )
 

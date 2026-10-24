@@ -111,13 +111,14 @@ export async function tenantRequest(workspaceId, requestConfig) {
   return djangoApi.request({ ...requestConfig, url, headers });
 }
 
-export async function fetchPatients(workspaceId, { signal } = {}) {
+export async function fetchPatients(workspaceId, { page = 1, pageSize = 25, signal } = {}) {
   const res = await tenantRequest(workspaceId, {
     method: 'get',
     url: '/tenant/patients/',
+    params: { page, page_size: pageSize },
     signal,
   });
-  return Array.isArray(res.data) ? res.data : res.data.results || [];
+  return res.data;
 }
 
 export async function fetchMyPatients({ workspaceId, search, page = 1, pageSize = 25, signal } = {}) {
