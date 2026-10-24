@@ -1,9 +1,9 @@
 from calendar import monthrange
 from datetime import date
 
-from django.utils import timezone
 from rest_framework import serializers
 
+from .dates import patient_calendar_date
 from .models import Patient
 
 
@@ -14,30 +14,36 @@ class PatientReadSerializer(serializers.ModelSerializer):
         model = Patient
         fields = (
             "id", "patient_code", "display_name", "date_of_birth", "age",
-            "global_identity_id", "created_at", "updated_at",
+            "global_identity_id", "version", "created_at", "updated_at",
         )
         read_only_fields = (
             "id", "patient_code", "age", "global_identity_id",
-            "created_at", "updated_at",
+            "version", "created_at", "updated_at",
         )
 
     def get_age(self, obj):
         dob = obj.date_of_birth
         if dob is None:
             return None
-        today = timezone.localdate()
+        today = patient_calendar_date()
         return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
 
 class PatientWriteSerializer(serializers.ModelSerializer):
+    version = serializers.IntegerField(min_value=1, write_only=True, required=False)
+    immutable_fields = frozenset({
+        "id", "patient_code", "global_identity_id", "email",
+        "created_at", "updated_at",
+    })
+
     class Meta:
         model = Patient
-        fields = ("display_name", "date_of_birth")
+        fields = ("display_name", "date_of_birth", "version")
 
     def validate_date_of_birth(self, value: date | None):
         if value is None:
             raise serializers.ValidationError("Date of birth cannot be null.")
-        today = timezone.localdate()
+        today = patient_calendar_date()
         if value > today:
             raise serializers.ValidationError("Date of birth cannot be in the future.")
         oldest_allowed = date(
@@ -50,36 +56,35 @@ class PatientWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        if "patient_code" in self.initial_data:
-            raise serializers.ValidationError(
-                {"patient_code": "Patient IDs are generated automatically."}
-            )
-
-        if "email" in self.initial_data:
-            raise serializers.ValidationError(
-                {"email": "Use the identity verification endpoint to change email."}
-            )
+        attempted_fields = self.immutable_fields.intersection(self.initial_data)
+        errors = {}
+        if attempted_fields:
+            errors.update({
+                field: (
+                    "Use the identity verification endpoint to change email."
+                    if field == "email"
+                    else "This patient identity field cannot be changed."
+                )
+                for field in sorted(attempted_fields)
+            })
+        if self.instance is not None and "version" not in attrs:
+            errors["version"] = "The current patient version is required."
+        if errors:
+            raise serializers.ValidationError(errors)
         return attrs
 
 
 class PatientRegistrationSerializer(PatientWriteSerializer):
     # Email belongs to the encrypted public-schema identity registry, not the tenant record.
+    immutable_fields = PatientWriteSerializer.immutable_fields - {"email"}
     email = serializers.EmailField(write_only=True, required=True)
 
     class Meta(PatientWriteSerializer.Meta):
-        fields = (*PatientWriteSerializer.Meta.fields, "email")
+        fields = ("display_name", "date_of_birth", "email")
         extra_kwargs = {
             "display_name": {"required": True, "allow_blank": False},
             "date_of_birth": {"required": True, "allow_null": False},
         }
-
-    def validate(self, attrs):
-        if "patient_code" in self.initial_data:
-            raise serializers.ValidationError(
-                {"patient_code": "Patient IDs are generated automatically."}
-            )
-        return attrs
-
 
 class PatientGrantRequestSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)

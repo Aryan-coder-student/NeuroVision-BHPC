@@ -119,6 +119,14 @@ class PatientTenantIsolationTests(TenantTestCase):
             self.request("delete", self.apollo, path=f"{self.url}{response.data['id']}/").status_code,
             403,
         )
+        self.assertEqual(
+            self.request(
+                "patch", self.apollo,
+                path=f"{self.url}{response.data['id']}/",
+                data={"display_name": "Unauthorized edit"},
+            ).status_code,
+            403,
+        )
 
     def test_nonmember_cannot_read_or_create(self):
         self.authenticate(self.outsider)

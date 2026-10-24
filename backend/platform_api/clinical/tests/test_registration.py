@@ -10,7 +10,8 @@ from django_tenants.utils import tenant_context
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from clinical.models import Patient
+from clinical.dates import patient_calendar_date
+from clinical.models import Patient, PatientDemographicChange
 from patient_identity.models import PatientAccessGrant, PatientGrantChallenge, PatientIdentity
 from tenant.models import Institution
 from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase, create_user
@@ -69,8 +70,10 @@ class PatientRegistrationTests(TenantTestCase):
         self.assertRegex(response.data["patient_code"], r"^NV-[A-F0-9]{20}$")
         self.assertIsNotNone(response.data["id"])
         self.assertEqual(response.data["date_of_birth"], "2000-02-29")
+        self.assertEqual(response.data["version"], 1)
+        self.assertTrue(response.data["created_at"].endswith("Z"))
         dob = date(2000, 2, 29)
-        today = timezone.localdate()
+        today = patient_calendar_date()
         expected_age = today.year - dob.year - (
             (today.month, today.day) < (dob.month, dob.day)
         )
@@ -86,6 +89,7 @@ class PatientRegistrationTests(TenantTestCase):
             self.assertEqual(saved.patient_code, response.data["patient_code"])
             self.assertIsNone(saved.global_identity_id)
             self.assertEqual(saved.date_of_birth, dob)
+            self.assertEqual(saved.created_at.utcoffset(), timedelta(0))
 
     def test_rejects_client_supplied_patient_code(self):
         response = self.register(patient_code="P-MANUAL")
@@ -162,19 +166,24 @@ class PatientRegistrationTests(TenantTestCase):
         )
         self.assertEqual(replay.status_code, 400)
 
-    def test_cannot_patch_email_or_generated_code(self):
+    def test_cannot_patch_server_managed_fields(self):
         response = self.register()
         detail = f"{self.url}{response.data['id']}/"
-        for payload, invalid_field in (
-            ({"email": "other@example.com"}, "email"),
-            ({"patient_code": "P-REPLACED"}, "patient_code"),
-        ):
+        immutable_values = {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "patient_code": "FORGED-CODE",
+            "global_identity_id": "22222222-2222-2222-2222-222222222222",
+            "email": "replacement@example.com",
+            "created_at": "2020-01-01T00:00:00Z",
+            "updated_at": "2020-01-01T00:00:00Z",
+        }
+        for field, value in immutable_values.items():
             result = self.client.patch(
-                detail, payload, format="json",
+                detail, {field: value, "version": response.data["version"]}, format="json",
                 HTTP_X_WORKSPACE_ID=str(self.workspace.id),
             )
             self.assertEqual(result.status_code, 400, result.data)
-            self.assertIn(invalid_field, result.data)
+            self.assertIn(field, result.data)
 
     def test_old_code_cannot_verify_a_replaced_pending_email(self):
         response = self.register(email="first@example.com")
@@ -229,3 +238,161 @@ class PatientRegistrationTests(TenantTestCase):
             ).exists()
         )
         self.assertEqual(PatientIdentity.objects.count(), 0)
+
+    def test_admin_can_correct_name_and_dob_without_changing_identity(self):
+        response = self.register()
+        self.assertEqual(response.status_code, 201, response.data)
+        patient_id = response.data["id"]
+        initial_code = response.data["patient_code"]
+        initial_challenge = response.data["identity_verification"]["challenge_id"]
+
+        updated = self.client.patch(
+            f"{self.url}{patient_id}/",
+            {
+                "display_name": "Corrected Patient",
+                "date_of_birth": "1990-12-05",
+                "version": response.data["version"],
+            },
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(updated.status_code, 200, updated.data)
+        self.assertEqual(updated.data["display_name"], "Corrected Patient")
+        self.assertEqual(updated.data["date_of_birth"], "1990-12-05")
+        self.assertEqual(updated.data["version"], 2)
+        self.assertEqual(updated.data["patient_code"], initial_code)
+        self.assertEqual(str(updated.data["id"]), str(patient_id))
+        self.assertIn("age", updated.data)
+        detail = self.client.get(
+            f"{self.url}{patient_id}/",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.data["patient_code"], initial_code)
+        self.assertEqual(str(detail.data["id"]), str(patient_id))
+        self.assertEqual(detail.data["display_name"], "Corrected Patient")
+        self.assertNotIn("email", detail.data)
+        self.assertEqual(
+            str(PatientGrantChallenge.objects.get(id=initial_challenge).grant.tenant_patient_id),
+            str(patient_id),
+        )
+        self.assertEqual(PatientAccessGrant.objects.count(), 1)
+        with tenant_context(self.workspace):
+            change = PatientDemographicChange.objects.get(patient_id=patient_id)
+            self.assertEqual(change.actor_user_id, self.admin.id)
+            self.assertEqual(change.actor_username, self.admin.username)
+            self.assertEqual(change.from_version, 1)
+            self.assertEqual(change.to_version, 2)
+            self.assertEqual(change.changed_fields, ["display_name", "date_of_birth"])
+            self.assertEqual(change.previous_display_name, "Case Example")
+            self.assertEqual(change.new_display_name, "Corrected Patient")
+            self.assertEqual(change.previous_date_of_birth, date(2000, 2, 29))
+            self.assertEqual(change.new_date_of_birth, date(1990, 12, 5))
+            self.assertEqual(change.changed_at.utcoffset(), timedelta(0))
+            change.new_display_name = "Rewritten audit"
+            with self.assertRaises(TypeError):
+                change.save()
+            with self.assertRaises(TypeError):
+                PatientDemographicChange.objects.filter(pk=change.pk).update(
+                    new_display_name="Rewritten audit"
+                )
+
+    def test_patient_edit_rejects_invalid_demographics(self):
+        patient = self.register().data
+        url = f"{self.url}{patient['id']}/"
+        for payload in (
+            {"display_name": ""},
+            {"date_of_birth": "2999-01-01"},
+            {"date_of_birth": None},
+        ):
+            payload["version"] = patient["version"]
+            updated = self.client.patch(
+                url, payload, format="json",
+                HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+            )
+            self.assertEqual(updated.status_code, 400, updated.data)
+        detail = self.client.get(
+            url, HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(detail.data["display_name"], "Case Example")
+        self.assertEqual(detail.data["date_of_birth"], "2000-02-29")
+
+    def test_patient_edit_requires_a_version(self):
+        patient = self.register().data
+
+        response = self.client.patch(
+            f"{self.url}{patient['id']}/",
+            {"display_name": "Missing concurrency token"},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("version", response.data)
+
+    def test_stale_patient_edit_returns_current_record_without_overwriting(self):
+        patient = self.register().data
+        url = f"{self.url}{patient['id']}/"
+        first = self.client.patch(
+            url,
+            {"display_name": "First administrator", "version": patient["version"]},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(first.status_code, 200, first.data)
+
+        stale = self.client.patch(
+            url,
+            {"display_name": "Stale administrator", "version": patient["version"]},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+
+        self.assertEqual(stale.status_code, 409, stale.data)
+        self.assertEqual(stale.data["code"], "patient_version_conflict")
+        self.assertEqual(stale.data["current"]["display_name"], "First administrator")
+        self.assertEqual(stale.data["current"]["version"], first.data["version"])
+        with tenant_context(self.workspace):
+            saved = Patient.objects.get(pk=patient["id"])
+            self.assertEqual(saved.display_name, "First administrator")
+            self.assertEqual(saved.version, 2)
+            self.assertEqual(PatientDemographicChange.objects.count(), 1)
+
+    def test_noop_patient_edit_does_not_advance_version_or_create_audit_event(self):
+        patient = self.register().data
+
+        response = self.client.patch(
+            f"{self.url}{patient['id']}/",
+            {
+                "display_name": patient["display_name"],
+                "date_of_birth": patient["date_of_birth"],
+                "version": patient["version"],
+            },
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["version"], patient["version"])
+        with tenant_context(self.workspace):
+            self.assertFalse(PatientDemographicChange.objects.exists())
+
+    def test_demographic_audit_follows_existing_patient_deletion_lifecycle(self):
+        patient = self.register().data
+        url = f"{self.url}{patient['id']}/"
+        updated = self.client.patch(
+            url,
+            {"display_name": "Corrected before deletion", "version": patient["version"]},
+            format="json",
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+        self.assertEqual(updated.status_code, 200, updated.data)
+
+        deleted = self.client.delete(
+            url,
+            HTTP_X_WORKSPACE_ID=str(self.workspace.id),
+        )
+
+        self.assertEqual(deleted.status_code, 204)
+        with tenant_context(self.workspace):
+            self.assertFalse(PatientDemographicChange.objects.exists())

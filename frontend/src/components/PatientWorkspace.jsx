@@ -16,6 +16,10 @@ export default function PatientWorkspace() {
     setPatient(record);
   }, [org.id, patientId]);
 
+  const replacePatient = useCallback(record => {
+    setPatient(record);
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     fetchPatient(org.id, patientId, { signal: controller.signal })
@@ -67,7 +71,7 @@ export default function PatientWorkspace() {
         <NavLink to={`${base}/history`}><Activity size={14} /> History</NavLink>
         <NavLink to={`${base}/reports`}><Activity size={14} /> Reports</NavLink>
       </nav>
-      <Outlet context={{ patient, refreshPatient }} />
+      <Outlet context={{ patient, refreshPatient, replacePatient }} />
     </section>
   );
 }

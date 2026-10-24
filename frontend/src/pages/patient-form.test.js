@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import process from 'node:process';
 
-import { localDateInputValue, validatePatientRegistration, validPatientOtp } from './patient-form.js';
+import { validatePatientDetails, validatePatientRegistration, validPatientOtp } from './patient-form.js';
 
 const TODAY = '2026-10-24';
 
@@ -71,14 +70,29 @@ test('patient OTP must be exactly six numeric digits', () => {
   }
 });
 
-test('date input limit uses the browser local calendar date', (context) => {
-  const originalTimezone = process.env.TZ;
-  process.env.TZ = 'Asia/Kolkata';
-  context.after(() => {
-    if (originalTimezone === undefined) delete process.env.TZ;
-    else process.env.TZ = originalTimezone;
+test('patient edit validates name and DOB without requiring an email', () => {
+  assert.deepEqual(validatePatientDetails({
+    display_name: '  Corrected Patient  ',
+    date_of_birth: '2004-04-01',
+    patient_code: 'ATTEMPTED-OVERRIDE',
+    email: 'attacker@example.com',
+  }, TODAY), {
+    values: { display_name: 'Corrected Patient', date_of_birth: '2004-04-01' },
+    errors: {},
   });
+});
 
-  const justAfterMidnightInIndia = new Date('2026-10-24T18:45:00.000Z');
-  assert.equal(localDateInputValue(justAfterMidnightInIndia), '2026-10-25');
+test('patient edit refuses blank names and impossible dates', () => {
+  const invalid = validatePatientDetails({
+    display_name: '  ',
+    date_of_birth: '2027-01-01',
+  }, TODAY);
+  assert.equal(invalid.errors.display_name, 'Enter the patient name.');
+  assert.ok(invalid.errors.date_of_birth);
+
+  const validLeapDay = validatePatientDetails({
+    display_name: 'Patient',
+    date_of_birth: '2000-02-29',
+  }, TODAY);
+  assert.deepEqual(validLeapDay.errors, {});
 });

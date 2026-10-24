@@ -5,7 +5,7 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Select/Listbox | Native select | `DESIGN.md` and `premium-ui.json` | Platform-owned popup accepted | Keyboard selection and browser smoke test |
-| Date | Native date input | `DESIGN.md` and `premium-ui.json` | Platform calendar and locale accepted | Local-date boundary and browser smoke test |
+| Date | Native date input | `DESIGN.md` and `premium-ui.json` | Platform calendar and locale accepted | India calendar-date boundary and browser smoke test |
 | Form | Page form with shared field tokens | `DESIGN.md` form contract | Identity OTP and patient registration | Inline errors, first-invalid focus, duplicate-submit check |
 | Scrollbar | Global document theme | `frontend/src/index.css` | Stable gutter on tables/tabs | Strict audit and browser overflow check |
 | CRUD | Tenant patient API and registry | `clinical.views.PatientViewSet` | Admin writes, member reads | Tenant isolation integration tests |
@@ -13,6 +13,10 @@
 
 ## Scope invariants
 
+- Server timestamps are timezone-aware UTC instants. Patient-facing timestamps are rendered explicitly in `Asia/Kolkata`, independent of the browser timezone.
+- Date of birth is a calendar date (`YYYY-MM-DD`), not an instant; it is never timezone-converted. Its validation boundary uses the India calendar day.
+- Every patient read model carries a monotonically increasing version. Demographic updates submit the version they were based on; a stale update returns `409 Conflict` with the current record and never overwrites it.
+- Every material name/DOB correction atomically appends a tenant-scoped audit event containing the actor ID and username snapshot, changed fields, before/after values, record versions, and a UTC timestamp. No-op saves do not create events. Audit events are append-only and follow the patient record's existing deletion lifecycle.
 - Organization selection happens before patient selection.
 - The central `/my-patients` directory is available before organization selection and aggregates only active member workspaces.
 - Opening a central patient verifies and selects that patient’s workspace before handing off to the existing patient detail route.
