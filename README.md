@@ -1,89 +1,263 @@
-# 🧠 NeuroVision BHPC (Platform 2.0)
+<p align="center">
+  <img src="./docs/screenshots/neurovision-platform-preview.gif" width="100%" alt="NeuroVision Docker tour showing login, workspace, VQA, and 3D segmentation" />
+</p>
 
-[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
-[![Django 6.0](https://img.shields.io/badge/django-6.0-green.svg)](https://www.djangoproject.com/)
-[![React 19](https://img.shields.io/badge/react-19-61dafb.svg)](https://reactjs.org/)
-[![UV Managed](https://img.shields.io/badge/managed%20by-uv-purple.svg)](https://github.com/astral-sh/uv)
+<h1 align="center">NeuroVision</h1>
 
-NeuroVision is a next-generation clinical AI platform designed for precision neural analytics, featuring multi-tenant isolation and 3D brain tumor segmentation.
+<p align="center">
+  A tenant-isolated workspace for organizing brain-imaging research workflows.
+</p>
 
-## 🏗️ Core Architecture
+<p align="center">
+  <a href="https://github.com/Aryan-coder-student/NeuroVision-BHPC/actions/workflows/backend-ci.yml"><img src="https://github.com/Aryan-coder-student/NeuroVision-BHPC/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI status" /></a>
+  <a href="https://github.com/Aryan-coder-student/NeuroVision-BHPC/actions/workflows/frontend-ci.yml"><img src="https://github.com/Aryan-coder-student/NeuroVision-BHPC/actions/workflows/frontend-ci.yml/badge.svg" alt="Frontend CI status" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white" alt="Python 3.13" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white" alt="React 19" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white" alt="PostgreSQL 16" /></a>
+</p>
 
-- **Frontend (`/frontend`)**: React 19 + Vite + NiiVue (3D rendering). Deployed on **Vercel**.
-- **Backend (`/backend`)**: Django 6.0 + Django-Tenants. Optimized with **uv**. Designed for **Railway/Render**.
-- **Database**: Serverless Postgres on **Neon.tech**.
+> **Research use only.** NeuroVision is not a certified medical device and must not be used to make clinical decisions.
 
----
+<p align="center"><sub>Local Docker preview with illustrative sample records only.</sub></p>
 
-## 🚀 Local Development Setup
+## Overview
 
-We use **`localtest.me`** for local development to support wildcard subdomains (`tenant1.localtest.me`) and shared cookies.
+NeuroVision brings patient records, organization-scoped access, and brain-imaging research tools into one workspace. It is designed for teams that need patient context to remain visible while moving between registry, segmentation, visual question answering, history, and reporting workflows.
 
-### 1. Prerequisites
-- [uv](https://github.com/astral-sh/uv) (Python package manager)
-- Node.js & npm
+The platform uses schema-based multi-tenancy: each institution has an isolated database schema, and every tenant request is checked against the authenticated user's active membership before data is accessed.
 
-### 2. Environment Variables
-Create `.env` files in both directories:
+## Platform capabilities
 
-**`backend/platform_api/.env`**:
-```env
-DEBUG=True
-SECRET_KEY=your-secret-key
-ENCRYPTION_KEY=your-32-byte-fernet-key
-DATABASE_URL=postgresql://user:pass@host/db
-TENANT_BASE_DOMAIN=localtest.me
+| Area | Included today |
+| --- | --- |
+| Identity and access | Registration, email OTP verification, cookie-based JWT authentication, CSRF protection, and workspace membership checks |
+| Organization workspaces | Institution selection, tenant-aware routing, role-sensitive patient access, and cross-workspace patient discovery for authorized users |
+| Patient registry | Patient registration, generated identifiers, date-of-birth validation, identity-grant workflow, pagination, search, and tenant-scoped records |
+| Imaging workspace | Patient-scoped segmentation viewer, visual question answering, history, reports, model registry, data contribution, and feedback surfaces |
+| Delivery | Docker development stack, Render blueprint, and GitHub Actions checks for backend lint/tests, frontend verification, and container security |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User[Authorized user] --> Web[React + Vite frontend]
+    Web -->|Central API requests| Public[Django public schema]
+    Web -->|Workspace header + session| Guard[Membership and tenant middleware]
+    Guard --> TenantA[Institution A schema]
+    Guard --> TenantB[Institution B schema]
+    TenantA --> DB[(PostgreSQL)]
+    TenantB --> DB
+    Public --> DB
 ```
 
-**`frontend/.env`**:
-```env
-VITE_API_URL=http://localtest.me:8000/api/v1
+| Layer | Technology | Responsibility |
+| --- | --- | --- |
+| Frontend | React 19, Vite, React Router, NiiVue | Browser application, workspace navigation, and imaging interfaces |
+| API | Django 6, Django REST Framework | Authentication, API endpoints, patient workflows, and validation |
+| Tenancy | django-tenants + PostgreSQL schemas | Institution isolation and member-authorized tenant resolution |
+| Data | PostgreSQL 16 | Public identity data and isolated institution data |
+| Delivery | Docker, Render, Vercel-compatible static build | Local services and production deployment paths |
+
+## Repository layout
+
+```text
+.
+├── backend/
+│   ├── platform_api/
+│   │   ├── clinical/       # Patient records and identity-grant workflows
+│   │   ├── tenant/         # Institutions, memberships, and tenant resolution
+│   │   ├── users/          # Registration, OTP, and authentication
+│   │   └── platform_api/   # Django settings and API routing
+│   └── Dockerfile
+├── frontend/
+│   ├── src/components/     # Shared application shell and patient context
+│   ├── src/pages/          # Research workspace screens
+│   └── src/services/       # API and tenant URL boundaries
+├── docker-compose.yml
+├── render.yaml
+└── UX-CONTRACT.md          # Product and interaction constraints
 ```
 
-### 3. One-Command Setup
-Run the unified setup script from the project root:
+## Quick start
+
+### Prerequisites
+
+- Docker Desktop and Docker Compose, or:
+  - Python 3.13 with [uv](https://docs.astral.sh/uv/)
+  - Node.js 22 and npm
+  - PostgreSQL 16
+
+### 1. Configure the environment
+
+Create the Docker Compose environment file from the tracked example:
+
 ```bash
-chmod +x setup.sh
+cp backend/.env.example backend/.env
+```
+
+For Docker Compose, use this local database URL in `backend/.env`:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@db:5432/neurovision
+```
+
+Keep the remaining values from the example, and replace development secrets before any shared deployment. The frontend defaults to the local central API; copy its example if you need to override it:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+For a direct Django run instead of Docker Compose, the backend settings loader reads its environment file from `backend/platform_api/.env`:
+
+```bash
+cp backend/.env.example backend/platform_api/.env
+```
+
+### 2. Start the stack
+
+```bash
+docker compose up --build
+```
+
+The application will be available at:
+
+- Frontend: `http://localtest.me:5174`
+- API: `http://localtest.me:8000/api/v1`
+- MailHog inbox: `http://localhost:8025`
+
+The backend entrypoint applies tenant migrations, collects static files, and initializes the public platform tenant. `localtest.me` resolves to `127.0.0.1`, allowing local wildcard subdomain and cookie behavior to match the tenant model.
+
+To stop the services while retaining the database volume:
+
+```bash
+docker compose down
+```
+
+### Run without Docker
+
+Set `DATABASE_URL` in `backend/.env` to a running local PostgreSQL database, then install and initialize each application:
+
+```bash
 ./setup.sh
 ```
 
----
+Run the backend and frontend in separate terminals:
 
-## ☁️ Deployment Guide
+```bash
+cd backend/platform_api
+uv run python manage.py runserver
+```
 
-### 1. Database (Neon)
-1. Create a project on [Neon.tech](https://neon.tech).
-2. Copy the connection string to your backend `.env`.
-3. Run migrations and initialize the platform:
-   ```bash
-   uv run python manage.py migrate_schemas
-   uv run python manage.py init_platform
-   ```
+```bash
+cd frontend
+npm run dev
+```
 
-### 2. Frontend (Vercel)
-1. Connect your repo to Vercel.
-2. **Root Directory**: `frontend`
-3. **Framework Preset**: `Vite`
-4. **Build Command**: `npm run build`
-5. **Output Directory**: `dist`
-6. **Env Vars**: Add `VITE_API_URL` pointing to your live backend.
+## Development commands
 
-### 3. Backend (Railway / Render)
-1. Connect your repo.
-2. **Root Directory**: `backend`
-3. **Build Command**: `uv sync` (or use provided Dockerfile)
-4. **Start Command**: `gunicorn platform_api.wsgi`
-5. **Env Vars**: Add `DATABASE_URL`, `ENCRYPTION_KEY`, and `DEBUG=False`.
+Run these from the indicated directory.
 
----
+| Area | Command | Purpose |
+| --- | --- | --- |
+| Backend | `uvx ruff==0.15.12 check .` | Lint Python source |
+| Backend | `uv run python manage.py test users.auth.tests tenant.tests clinical.tests --noinput` | Run backend test suite |
+| Frontend | `npm run lint` | Lint frontend source |
+| Frontend | `npm test` | Run frontend unit tests |
+| Frontend | `npm run build` | Create the production bundle |
 
-## 🛠️ Key Management Commands
+## Design patterns and engineering boundaries
 
-| Command | Purpose |
-| :--- | :--- |
-| `python manage.py init_platform` | Creates the public tenant and domain. |
-| `python manage.py migrate_schemas` | Runs migrations for both shared and tenant apps. |
-| `python manage.py create_tenant` | Manually creates a new clinical institution schema. |
+NeuroVision is a modular monolith with explicit boundaries around identity, tenancy, clinical records, and browser state. The project favors small, visible patterns over framework-heavy abstractions.
 
----
-*NeuroVision BHPC — Precision Neural Analytics for the Modern Clinic.*
+| Pattern | Where it is applied | Why it matters |
+| --- | --- | --- |
+| Feature-oriented modular monolith | `users`, `tenant`, `clinical`, and patient-identity modules | Keeps related models, API rules, and tests together while retaining a single deployable service. |
+| Application service layer | `users.auth.service.UserService` and `clinical.services` | Moves multi-step business workflows out of views so they are testable, transactional where required, and reusable. |
+| Read/write representation split (CQRS-lite) | `PatientReadSerializer`, `PatientWriteSerializer`, and `PatientRegistrationSerializer` | Separates API output from allowed mutations; generated identifiers, identity links, and timestamps cannot be silently written by clients. |
+| Schema-per-tenant isolation | `django-tenants` institutions and PostgreSQL schemas | Keeps each institution's clinical records physically separated at the database layer. |
+| Policy-enforcement middleware | `WorkspaceTenantMiddleware` | Authenticates the request and verifies active workspace membership before switching PostgreSQL tenant context. |
+| Compensating transaction | Patient registration and identity-grant workflow | Removes the newly created patient and public identity-grant artifacts if the OTP grant cannot be started, avoiding partial onboarding state. |
+| Explicit client state ownership | `AuthProvider` for session/workspace state and `PatientWorkspace` for patient scope | Gives each state concern one owner and prevents a selected workspace or patient from being inferred implicitly. |
+| UTC storage and presentation policy | Django-aware timestamps; patient calendar rules | Stores instants in UTC and keeps date-only patient fields as calendar values, with user-facing date presentation following the documented India timezone convention. |
+
+### AI workflow integration decisions (VQA and segmentation)
+
+The current VQA and segmentation screens prove the interaction model, but their direct service calls and sample assets are not the production integration boundary. The following patterns are the agreed target for introducing real patient studies, model services, and durable results.
+
+| Pattern | Decision | Boundary it protects |
+| --- | --- | --- |
+| Provider pattern | Define a `SegmentationProvider` and `VQAProvider` capability contract. A provider accepts a validated, patient-scoped job and returns normalized progress and result data; local, self-hosted, or managed inference can implement the same contract. | Keeps React and clinical workflows independent of where models run. |
+| Adapter pattern | Wrap every model vendor or transport behind an adapter, such as `NiiVueAdapter`, `FlaskSegmentationAdapter`, or `HuggingFaceVQAAdapter`. Adapters translate request shapes, authentication, retries, and provider-specific responses into the internal contract. | Prevents vendor payloads and SDKs from leaking into pages, serializers, or persisted clinical records. |
+| Builder pattern | Use an immutable `ImagingJobBuilder` to assemble a request from verified patient/workspace context, study asset references, selected model/version, modality, and task-specific options. The builder validates required inputs before work is submitted. | Eliminates ad-hoc request objects and prevents the browser from supplying untrusted patient or storage context. |
+| Strategy and factory | Select a provider/model strategy from the requested capability, modality, institution policy, and model-registry availability. A factory resolves the approved implementation; UI model labels never map directly to executable endpoints. | Makes model replacement, staged rollout, and per-institution policy possible without page changes. |
+| Command and job state machine | Submit segmentation and long-running VQA operations as durable jobs with explicit `queued`, `running`, `completed`, `failed`, and `cancelled` states. The command carries a correlation ID and is idempotent. | Avoids duplicate inference, browser-timeout ambiguity, and lost work during refreshes or retries. |
+| Repository pattern | Persist `Study`, `ImagingJob`, `ModelRun`, and immutable result metadata through repository interfaces owned by the clinical domain. Binary imaging files remain in approved object storage; the database stores references and provenance. | Keeps storage, retrieval, and retention rules out of API views and model adapters. |
+| Result/provenance envelope | Return a shared result envelope containing job ID, patient ID, study reference, model name/version, input checksum, timing, warnings, and result payload. No generated finding becomes a clinical record without an explicit review workflow. | Preserves traceability and keeps research output distinct from clinician-authored records. |
+| React context provider | Add an `ImagingSessionProvider` beneath the existing `PatientWorkspace`. It owns the selected study, model choice, job status, and normalized result while the VQA and segmentation views remain presentation-focused. | Ensures every imaging action stays patient-scoped and avoids prop drilling or duplicated request state. |
+
+The resulting request flow is:
+
+```mermaid
+sequenceDiagram
+    participant UI as Patient-scoped UI
+    participant Builder as ImagingJobBuilder
+    participant Service as Imaging application service
+    participant Factory as Provider factory
+    participant Adapter as Vendor adapter
+    participant Store as Job/result repository
+
+    UI->>Builder: verified study + model selection
+    Builder->>Service: validated immutable job
+    Service->>Store: persist queued job and provenance
+    Service->>Factory: resolve approved provider strategy
+    Factory->>Adapter: invoke normalized provider contract
+    Adapter-->>Service: normalized progress/result
+    Service->>Store: persist terminal state and metadata
+    Service-->>UI: canonical job/result state
+```
+
+This design deliberately keeps direct third-party inference URLs, raw browser file paths, and demo-image assumptions out of the final clinical data path.
+
+## API and tenant model
+
+The central API is exposed under `/api/v1`:
+
+```text
+/api/v1/auth/             Authentication, OTP, profile, and CSRF endpoints
+/api/v1/workspaces/       Institution discovery and management
+/api/v1/my-patients/      Authorized cross-workspace patient discovery
+/api/v1/tenant/context/   Current workspace context
+/api/v1/tenant/patients/  Tenant-scoped patient records and identity grants
+```
+
+Tenant-scoped routes require an authenticated user and an `X-Workspace-Id` that resolves to one of that user's active memberships. Requests that are unauthenticated, missing workspace context, or target an unauthorized workspace are rejected before tenant data is selected.
+
+## Deployment
+
+`render.yaml` provides a Render blueprint for the Dockerized Django backend and static Vite frontend. Set deployment secrets in the hosting provider rather than committing them:
+
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `ENCRYPTION_KEY`
+- `TENANT_BASE_DOMAIN`
+- `VITE_API_URL`
+
+The frontend can also be deployed as a Vite static application on Vercel-compatible platforms. Use `frontend` as the project root, `npm run build` as the build command, and `dist` as the output directory.
+
+## Security and data boundaries
+
+- Institution data is separated by PostgreSQL schema.
+- Tenant selection is constrained by authenticated, active membership.
+- Authentication uses HTTP-only cookies with CSRF enforcement for unsafe requests.
+- Patient identity linking is an explicit OTP-verified flow.
+- Production deployments must use provider-managed secrets, TLS, and a production database; development values in `.env.example` are not safe defaults for production.
+
+Report security issues privately. Do not include credentials, patient data, or sensitive reproduction material in public issues.
+
+## Project status
+
+NeuroVision is actively evolving as a brain-imaging research platform. The codebase includes research-facing imaging workflows alongside core patient and workspace operations; persistent clinical reporting is still in development.
+
+## License
+
+No license file is currently included in this repository. Add an explicit license before redistributing or accepting external contributions under defined terms.
