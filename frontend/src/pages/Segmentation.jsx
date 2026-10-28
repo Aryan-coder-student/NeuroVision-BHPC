@@ -3,27 +3,11 @@ import { useOutletContext } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
 import { runSegmentation, fetchAvailableModels } from '../services/api';
 import {
-  Upload, FolderOpen, ScanLine, FileText,
+  ScanLine, FileText,
   Loader, Brain, AlertTriangle, CheckCircle2, FlaskConical
 } from 'lucide-react';
+import { SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView } from './segmentation-demo';
 import './Segmentation.css';
-
-const SAMPLE_SEGMENTATION = Object.freeze({
-  source: 'sample',
-  tumor_type: 'BraTS tumor regions',
-  grade: 'Reference mask',
-  volume_cm3: 57.3,
-  surface_area: null,
-  location: 'De-identified research volume',
-  confidence: null,
-  processing_s: null,
-  model_version: 'BraTS 2021 reference mask',
-});
-
-const SAMPLE_VOLUMES = Object.freeze([
-  { url: '/data/BraTS2021_00000/BraTS2021_00000_t1ce.nii.gz' },
-  { url: '/data/BraTS2021_00000/BraTS2021_00000_seg.nii.gz', colormap: 'red', opacity: 0.5 },
-]);
 
 function formatMetric(value, unit) {
   return value == null ? 'Not available' : `${value}${unit}`;
@@ -32,15 +16,17 @@ function formatMetric(value, unit) {
 export default function Segmentation() {
   const { patient } = useOutletContext();
   const [patientFolder, setPatientFolder] = useState('');
+  const [source, setSource] = useState('sample');
+  const [sampleView, setSampleView] = useState('overlay');
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState('');
-  const [dragging, setDragging] = useState(false);
   const [models, setModels]     = useState([]);
   const [selModel, setSelModel] = useState('');
   const [viewerStatus, setViewerStatus] = useState('idle');
   const [sampleLoadRequest, setSampleLoadRequest] = useState(0);
   const canvasRef = useRef(null);
+  const niivueRef = useRef(null);
   const isSample = result?.source === 'sample';
 
   useEffect(() => {
@@ -59,18 +45,17 @@ export default function Segmentation() {
 
     let active = true;
     const nv = new Niivue({ backColor: [0.023, 0.055, 0.125, 1] });
+    niivueRef.current = nv;
 
     const loadSampleVolumes = async () => {
       setViewerStatus('loading');
       try {
         await nv.attachToCanvas(canvasRef.current);
         if (!active) return;
-        for (const volume of SAMPLE_VOLUMES) {
-          await nv.addVolumeFromUrl(volume);
-          if (!active) return;
-        }
-        nv.setSliceType(nv.sliceTypeRender);
-        if (active) setViewerStatus('ready');
+        await nv.loadVolumes(SAMPLE_VOLUMES);
+        if (!active) return;
+        applySampleView(nv, 'overlay');
+        setViewerStatus('ready');
       } catch {
         if (active) setViewerStatus('error');
       }
@@ -79,20 +64,40 @@ export default function Segmentation() {
     loadSampleVolumes();
     return () => {
       active = false;
+      if (niivueRef.current === nv) niivueRef.current = null;
       nv.cleanup();
     };
   }, [isSample, sampleLoadRequest]);
+
+  useEffect(() => {
+    if (isSample && viewerStatus === 'ready' && niivueRef.current) {
+      applySampleView(niivueRef.current, sampleView);
+    }
+  }, [isSample, viewerStatus, sampleView]);
+
+  const handleSourceChange = (nextSource) => {
+    if (loading) return;
+    setSource(nextSource);
+    setResult(null);
+    setError('');
+    setViewerStatus('idle');
+  };
 
   const handleLoadSample = () => {
     setLoading(false);
     setError('');
     setViewerStatus('loading');
+    setSampleView('overlay');
     setResult(SAMPLE_SEGMENTATION);
     setSampleLoadRequest(request => request + 1);
   };
 
   const handleRun = async () => {
-    if (!patientFolder.trim()) return;
+    if (source === 'sample') {
+      handleLoadSample();
+      return;
+    }
+    if (!patientFolder.trim() || loading) return;
     setLoading(true); setError(''); setResult(null); setViewerStatus('idle');
     try {
       const data = await runSegmentation(patientFolder, selModel);
