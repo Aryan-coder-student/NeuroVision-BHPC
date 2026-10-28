@@ -52,7 +52,7 @@ export default function Segmentation() {
       try {
         await nv.attachToCanvas(canvasRef.current);
         if (!active) return;
-        await nv.loadVolumes(SAMPLE_VOLUMES);
+        await nv.loadVolumes(SAMPLE_VOLUMES.map(volume => ({ ...volume })));
         if (!active) return;
         applySampleView(nv, 'overlay');
         setViewerStatus('ready');
@@ -146,7 +146,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
             3D Segmentation Workspace
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {patient.patient_code} · Upload MRI data for this patient only
+            {patient.patient_code} · {source === 'sample' ? 'Research reference data, not linked to this patient' : 'Experimental patient inference'}
           </div>
         </div>
         <span className="sample-availability"><FlaskConical size={14} /> BraTS 2021 reference dataset</span>
@@ -221,7 +221,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
 
         {/* ── Center: Viewer ── */}
         <div className="seg-panel" style={{ position: 'relative' }}>
-          <div className="seg-panel-header"><Brain size={13} /> 3D Visualization</div>
+          <div className="seg-panel-header"><Brain size={13} /> MRI and Segmentation Viewer</div>
           <div className="viewer-area">
             {loading && (
               <div className="viewer-loading">
