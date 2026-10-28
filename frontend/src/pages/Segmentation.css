@@ -261,3 +261,86 @@
  .viewer-result-badge{max-width:calc(100% - 28px);overflow-wrap:anywhere;}
 }
 @media(max-width:450px){.sample-seg-btn{width:100%;}.seg-workspace>.seg-panel:nth-child(2) .viewer-area{min-height:275px;height:74vw;}.seg-panel-body{padding:13px;}}
+
+/* Reference-demo controls; the clinical inference path stays separate. */
+.sample-availability {
+  color: var(--text-muted);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.seg-source-picker {
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+  min-width: 0;
+}
+.seg-source-picker legend { margin-bottom: 8px; }
+.seg-source-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  border: 1px solid var(--outline-dim);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.seg-source-option.selected {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-high);
+  color: var(--text-bright);
+}
+.seg-source-option input { accent-color: var(--accent-primary); margin: 0; }
+.seg-source-option:focus-within { outline: 2px solid var(--accent-blue); outline-offset: 1px; }
+.seg-source-option:has(input:disabled) { opacity: 0.5; cursor: wait; }
+.seg-service-note {
+  color: var(--text-label);
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.seg-path-display {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viewer-toolbar {
+  position: absolute;
+  bottom: 42px;
+  left: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.viewer-mode-btn {
+  background: rgba(5, 24, 60, 0.9);
+  border: 1px solid var(--outline);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  min-height: 32px;
+  padding: 6px 9px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.viewer-mode-btn:hover,
+.viewer-mode-btn.active {
+  color: var(--text-bright);
+  border-color: var(--accent-primary);
+  background: var(--bg-card-high);
+}
+.viewer-mode-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+@media(max-width:450px) {
+  .sample-availability { font-size: 11px; }
+  .viewer-mode-btn { font-size: 10px; padding: 5px 6px; }
+  .viewer-model-note { font-size: 10px; }
+}
