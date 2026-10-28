@@ -149,58 +149,63 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
             {patient.patient_code} · Upload MRI data for this patient only
           </div>
         </div>
-        <button className="sample-seg-btn" type="button" onClick={handleLoadSample} disabled={loading}>
-          <FlaskConical size={14} /> Load 3D sample
-        </button>
+        <span className="sample-availability"><FlaskConical size={14} /> BraTS 2021 reference dataset</span>
       </div>
 
       <div className="seg-workspace">
         {/* ── Left: Upload Panel ── */}
         <div className="seg-panel">
-          <div className="seg-panel-header"><Upload size={13} /> Patient Data</div>
+          <div className="seg-panel-header"><ScanLine size={13} /> Data Source</div>
           <div className="seg-panel-body">
-            <div className="field-row">
-              <label className="field-label">Patient Folder Path</label>
-              <input
-                className="field-input"
-                placeholder="Local scan folder or study identifier"
-                value={patientFolder}
-                onChange={e => setPatientFolder(e.target.value)}
-              />
-            </div>
+            <fieldset className="seg-source-picker">
+              <legend className="field-label">Data source</legend>
+              <label className={`seg-source-option ${source === 'sample' ? 'selected' : ''}`}>
+                <input type="radio" name="segmentation-source" checked={source === 'sample'}
+                  onChange={() => handleSourceChange('sample')} disabled={loading} />
+                BraTS 2021 sample
+              </label>
+              <label className={`seg-source-option ${source === 'patient' ? 'selected' : ''}`}>
+                <input type="radio" name="segmentation-source" checked={source === 'patient'}
+                  onChange={() => handleSourceChange('patient')} disabled={loading} />
+                Patient study (experimental)
+              </label>
+            </fieldset>
 
-            <div
-              className={`upload-zone ${dragging ? 'drag-over' : ''}`}
-              onDragOver={e => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={e => { e.preventDefault(); setDragging(false); }}
-            >
-              <div className="upload-zone-icon"><FolderOpen size={28} /></div>
-              <div className="upload-zone-text">Drag NIfTI or DICOM folder</div>
-              <div className="upload-zone-hint">.nii · .nii.gz · .dcm</div>
-            </div>
-
-            {patientFolder && (
-              <div className="file-loaded">
-                <Brain size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {patientFolder}
-                </span>
+            {source === 'sample' ? (
+              <div className="sample-data-note" role="note">
+                Run to inspect the bundled T1CE MRI, tumor reference mask and 3D overlay.
+                This is a demonstration, not a model prediction or a patient scan.
               </div>
+            ) : (
+              <>
+                <div className="field-row">
+                  <label className="field-label" htmlFor="seg-patient-folder">Patient Folder Path</label>
+                  <input
+                    id="seg-patient-folder" className="field-input"
+                    placeholder="Path accessible to the inference service"
+                    value={patientFolder} onChange={e => setPatientFolder(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <p className="seg-service-note">
+                  Requires a locally running Flask segmentation service. The path is
+                  resolved by that service, not uploaded from the browser.
+                </p>
+                {patientFolder && (
+                  <div className="file-loaded">
+                    <Brain size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                    <span className="seg-path-display">{patientFolder}</span>
+                  </div>
+                )}
+                <div className="field-row" style={{ marginTop: 16 }}>
+                  <label className="field-label" htmlFor="seg-model">Model Selection</label>
+                  <select id="seg-model" className="field-input" value={selModel}
+                    onChange={e => setSelModel(e.target.value)} disabled={loading}>
+                    {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                </div>
+              </>
             )}
-
-            <div className="field-row" style={{ marginTop: 16 }}>
-              <label className="field-label">Model Selection</label>
-              <select 
-                className="field-input" 
-                value={selModel} 
-                onChange={e => setSelModel(e.target.value)}
-              >
-                {models.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
 
             {error && (
               <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--error-container)', color: 'var(--error)', fontSize: 12, display: 'flex', gap: 8 }}>
@@ -208,7 +213,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
               </div>
             )}
 
-            <button className="run-seg-btn" onClick={handleRun} disabled={!patientFolder.trim() || loading}>
+            <button type="button" className="run-seg-btn" onClick={handleRun} disabled={loading || (source === 'patient' && !patientFolder.trim())}>
               {loading ? <><Loader size={14} className="spin" /> Processing…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
             </button>
           </div>
@@ -229,12 +234,12 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
               <div className="viewer-placeholder">
                 <Brain size={48} style={{ margin: '0 auto 16px', opacity: 0.2 }} />
                 <div style={{ fontSize: 13 }}>No scan loaded</div>
-                <div style={{ fontSize: 12, color: 'var(--text-label)', marginTop: 6 }}>Upload a patient folder and run segmentation</div>
+                <div style={{ fontSize: 12, color: 'var(--text-label)', marginTop: 6 }}>{source === 'sample' ? 'Run to explore the bundled BraTS sample MRI and mask' : 'Enter a service-side study path to run inference'}</div>
               </div>
             )}
             {isSample && !loading && (
               <>
-                <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
+                <canvas ref={canvasRef} aria-label="Interactive sample MRI and reference tumor segmentation viewer" style={{ width: '100%', height: '100%', display: 'block' }} />
                 {viewerStatus === 'loading' && (
                   <div className="viewer-loading">
                     <Loader size={28} className="spin" />
@@ -250,13 +255,23 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
                 )}
                 {viewerStatus === 'ready' && (
                   <>
+                    <div className="viewer-toolbar" role="group" aria-label="Sample MRI visualization mode">
+                      {SAMPLE_VIEWS.map(view => (
+                        <button key={view.id} type="button"
+                          className={`viewer-mode-btn ${sampleView === view.id ? 'active' : ''}`}
+                          onClick={() => setSampleView(view.id)}
+                          aria-pressed={sampleView === view.id}>
+                          {view.label}
+                        </button>
+                      ))}
+                    </div>
                     <div className="viewer-result-badge">
-                      <div className="viewer-result-label">3D sample overlay</div>
+                      <div className="viewer-result-label">{sampleView === 'mri' ? 'Original T1CE MRI' : sampleView === 'mask' ? 'Reference tumor mask' : sampleView === 'render' ? '3D MRI + mask overlay' : 'MRI + reference mask'}</div>
                       <div className="viewer-result-title">{result.tumor_type}</div>
                       <div className="result-type-tag sample">{result.grade}</div>
                     </div>
                     <div className="viewer-model-note">
-                      <CheckCircle2 size={11} /> BraTS 2021 · de-identified research sample
+                      <CheckCircle2 size={11} /> BraTS 2021 reference annotation · no AI inference
                     </div>
                   </>
                 )}
@@ -274,7 +289,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
 
         {/* ── Right: Stats Panel ── */}
         <div className="seg-panel">
-          <div className="seg-panel-header"><FileText size={13} /> {isSample ? 'Sample Metrics' : 'Clinical Metrics'}</div>
+          <div className="seg-panel-header"><FileText size={13} /> {isSample ? 'Sample Metrics' : 'Inference Metrics'}</div>
           <div className="seg-panel-body">
             {!result ? (
               <div style={{ fontSize: 13, color: 'var(--text-label)', textAlign: 'center', marginTop: 32 }}>
