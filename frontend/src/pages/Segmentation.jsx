@@ -4,9 +4,30 @@ import { Niivue } from '@niivue/niivue';
 import { runSegmentation, fetchAvailableModels } from '../services/api';
 import {
   Upload, FolderOpen, ScanLine, FileText,
-  Loader, Brain, AlertTriangle, CheckCircle2
+  Loader, Brain, AlertTriangle, CheckCircle2, FlaskConical
 } from 'lucide-react';
 import './Segmentation.css';
+
+const SAMPLE_SEGMENTATION = Object.freeze({
+  source: 'sample',
+  tumor_type: 'BraTS tumor regions',
+  grade: 'Reference mask',
+  volume_cm3: 57.3,
+  surface_area: null,
+  location: 'De-identified research volume',
+  confidence: null,
+  processing_s: null,
+  model_version: 'BraTS 2021 reference mask',
+});
+
+const SAMPLE_VOLUMES = Object.freeze([
+  { url: '/data/BraTS2021_00000/BraTS2021_00000_t1ce.nii.gz' },
+  { url: '/data/BraTS2021_00000/BraTS2021_00000_seg.nii.gz', colormap: 'red', opacity: 0.5 },
+]);
+
+function formatMetric(value, unit) {
+  return value == null ? 'Not available' : `${value}${unit}`;
+}
 
 export default function Segmentation() {
   const { patient } = useOutletContext();
@@ -17,28 +38,62 @@ export default function Segmentation() {
   const [dragging, setDragging] = useState(false);
   const [models, setModels]     = useState([]);
   const [selModel, setSelModel] = useState('');
+  const [viewerStatus, setViewerStatus] = useState('idle');
+  const [sampleLoadRequest, setSampleLoadRequest] = useState(0);
   const canvasRef = useRef(null);
+  const isSample = result?.source === 'sample';
 
   useEffect(() => {
+    let active = true;
     fetchAvailableModels('segmentation').then(data => {
-      setModels(data);
-      if (data.length > 0) setSelModel(data[0].id);
+      if (active) {
+        setModels(data);
+        if (data.length > 0) setSelModel(data[0].id);
+      }
     });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    if (result && canvasRef.current) {
-      const nv = new Niivue({ backColor: [0.023, 0.055, 0.125, 1] }); // approx #060e20 to blend
-      nv.attachToCanvas(canvasRef.current);
-      nv.addVolumeFromUrl({ url: '/data/BraTS2021_00000/BraTS2021_00000_t1ce.nii.gz' }).then(() => {
-        nv.addVolumeFromUrl({ url: '/data/BraTS2021_00000/BraTS2021_00000_seg.nii.gz', colormap: 'red', opacity: 0.5 });
-      }).catch(e => console.error("Niivue loading error:", e));
-    }
-  }, [result]);
+    if (!isSample || !canvasRef.current) return undefined;
+
+    let active = true;
+    const nv = new Niivue({ backColor: [0.023, 0.055, 0.125, 1] });
+
+    const loadSampleVolumes = async () => {
+      setViewerStatus('loading');
+      try {
+        await nv.attachToCanvas(canvasRef.current);
+        if (!active) return;
+        for (const volume of SAMPLE_VOLUMES) {
+          await nv.addVolumeFromUrl(volume);
+          if (!active) return;
+        }
+        nv.setSliceType(nv.sliceTypeRender);
+        if (active) setViewerStatus('ready');
+      } catch {
+        if (active) setViewerStatus('error');
+      }
+    };
+
+    loadSampleVolumes();
+    return () => {
+      active = false;
+      nv.cleanup();
+    };
+  }, [isSample, sampleLoadRequest]);
+
+  const handleLoadSample = () => {
+    setLoading(false);
+    setError('');
+    setViewerStatus('loading');
+    setResult(SAMPLE_SEGMENTATION);
+    setSampleLoadRequest(request => request + 1);
+  };
 
   const handleRun = async () => {
     if (!patientFolder.trim()) return;
-    setLoading(true); setError(''); setResult(null);
+    setLoading(true); setError(''); setResult(null); setViewerStatus('idle');
     try {
       const data = await runSegmentation(patientFolder, selModel);
       setResult(data);
@@ -80,7 +135,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
 
   return (
     <>
-      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="seg-page-header">
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>
             3D Segmentation Workspace
@@ -89,6 +144,9 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
             {patient.patient_code} · Upload MRI data for this patient only
           </div>
         </div>
+        <button className="sample-seg-btn" type="button" onClick={handleLoadSample} disabled={loading}>
+          <FlaskConical size={14} /> Load 3D sample
+        </button>
       </div>
 
       <div className="seg-workspace">
@@ -169,26 +227,49 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
                 <div style={{ fontSize: 12, color: 'var(--text-label)', marginTop: 6 }}>Upload a patient folder and run segmentation</div>
               </div>
             )}
-            {result && !loading && (
+            {isSample && !loading && (
               <>
-                <div className="viewer-result-badge">
-                  <div style={{ fontSize: 10, color: 'var(--text-label)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>AI Segmentation Result</div>
-                  <div style={{ fontWeight: 700, color: 'var(--text-bright)', fontSize: 14 }}>{result.tumor_type}</div>
-                  <div className="result-type-tag">{result.grade}</div>
-                </div>
                 <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }}></canvas>
-                <div style={{ position: 'absolute', bottom: 14, right: 14, fontSize: 11, color: 'var(--text-label)' }}>
-                  <CheckCircle2 size={11} style={{ marginRight: 4, color: 'var(--success)' }} />
-                  Model: {result.model_version} · {result.processing_s}s
-                </div>
+                {viewerStatus === 'loading' && (
+                  <div className="viewer-loading">
+                    <Loader size={28} className="spin" />
+                    <div className="viewer-loading-copy">Loading sample MRI and mask…</div>
+                  </div>
+                )}
+                {viewerStatus === 'error' && (
+                  <div className="viewer-placeholder viewer-error" role="alert">
+                    <AlertTriangle size={30} />
+                    <div>Sample volume could not be loaded</div>
+                    <button className="sample-retry-btn" type="button" onClick={handleLoadSample}>Try again</button>
+                  </div>
+                )}
+                {viewerStatus === 'ready' && (
+                  <>
+                    <div className="viewer-result-badge">
+                      <div className="viewer-result-label">3D sample overlay</div>
+                      <div className="viewer-result-title">{result.tumor_type}</div>
+                      <div className="result-type-tag sample">{result.grade}</div>
+                    </div>
+                    <div className="viewer-model-note">
+                      <CheckCircle2 size={11} /> BraTS 2021 · de-identified research sample
+                    </div>
+                  </>
+                )}
               </>
+            )}
+            {result && !isSample && !loading && (
+              <div className="viewer-placeholder">
+                <CheckCircle2 size={36} className="viewer-success-icon" />
+                <div>Segmentation completed</div>
+                <div className="viewer-placeholder-detail">The service did not return a preview volume.</div>
+              </div>
             )}
           </div>
         </div>
 
         {/* ── Right: Stats Panel ── */}
         <div className="seg-panel">
-          <div className="seg-panel-header"><FileText size={13} /> Clinical Metrics</div>
+          <div className="seg-panel-header"><FileText size={13} /> {isSample ? 'Sample Metrics' : 'Clinical Metrics'}</div>
           <div className="seg-panel-body">
             {!result ? (
               <div style={{ fontSize: 13, color: 'var(--text-label)', textAlign: 'center', marginTop: 32 }}>
@@ -196,13 +277,18 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
               </div>
             ) : (
               <>
+                {isSample && (
+                  <div className="sample-data-note" role="note">
+                    Demo data only. This sample is not linked to {patient.patient_code} and is not saved as a clinical record.
+                  </div>
+                )}
                 <div className="stat-row">
-                  <div className="stat-key">Tumor Type</div>
+                  <div className="stat-key">{isSample ? 'Dataset content' : 'Tumor Type'}</div>
                   <div className="stat-val" style={{ fontSize: 12, maxWidth: 140, textAlign: 'right' }}>{result.tumor_type}</div>
                 </div>
                 <div className="stat-row">
-                  <div className="stat-key">Grade</div>
-                  <div className="stat-val" style={{ color: 'var(--error)' }}>{result.grade}</div>
+                  <div className="stat-key">{isSample ? 'Annotation' : 'Grade'}</div>
+                  <div className="stat-val" style={{ color: isSample ? 'var(--text-bright)' : 'var(--error)' }}>{result.grade}</div>
                 </div>
                 <div className="stat-row">
                   <div className="stat-key">Location</div>
@@ -210,25 +296,29 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
                 </div>
                 <div className="stat-row">
                   <div className="stat-key">Volume</div>
-                  <div className="stat-val">{result.volume_cm3 ?? result.volume} cm³</div>
+                  <div className="stat-val">{formatMetric(result.volume_cm3 ?? result.volume, ' cm³')}</div>
                 </div>
                 <div className="stat-row">
                   <div className="stat-key">Surface Area</div>
-                  <div className="stat-val">{result.surface_area} mm²</div>
+                  <div className="stat-val">{formatMetric(result.surface_area, ' mm²')}</div>
                 </div>
-                <div style={{ paddingTop: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span className="stat-key">AI Confidence</span>
-                    <span className="stat-val" style={{ color: 'var(--success)' }}>{result.confidence}%</span>
+                {result.confidence != null && (
+                  <div style={{ paddingTop: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span className="stat-key">AI Confidence</span>
+                      <span className="stat-val" style={{ color: 'var(--success)' }}>{result.confidence}%</span>
+                    </div>
+                    <div className="confidence-bar">
+                      <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
+                    </div>
                   </div>
-                  <div className="confidence-bar">
-                    <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
-                  </div>
-                </div>
+                )}
 
-                <button className="report-btn" onClick={generateReport}>
-                  <FileText size={14} /> Generate Pathology Report
-                </button>
+                {!isSample && (
+                  <button className="report-btn" onClick={generateReport}>
+                    <FileText size={14} /> Generate Pathology Report
+                  </button>
+                )}
               </>
             )}
           </div>
