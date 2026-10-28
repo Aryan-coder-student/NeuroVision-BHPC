@@ -180,6 +180,19 @@ NeuroVision is a modular monolith with explicit boundaries around identity, tena
 | Explicit client state ownership | `AuthProvider` for session/workspace state and `PatientWorkspace` for patient scope | Gives each state concern one owner and prevents a selected workspace or patient from being inferred implicitly. |
 | UTC storage and presentation policy | Django-aware timestamps; patient calendar rules | Stores instants in UTC and keeps date-only patient fields as calendar values, with user-facing date presentation following the documented India timezone convention. |
 
+### Segmentation sample walkthrough
+
+From a patient workspace, open **Segmentation**, leave **BraTS 2021 sample** selected,
+and press **Run AI Segmentation**. The bundled T1CE MRI and reference segmentation
+mask load in NiiVue. Use **MRI + mask**, **Original MRI**, **Segmentation mask**, or
+**3D overlay** to inspect the same volume without fetching it again.
+
+This is a research reference preview, **not AI inference**: no model prediction
+is made, no patient study is uploaded, and no patient result or report is saved.
+The separate **Patient study (experimental)** option still requires a locally
+running Flask `/predict` service accessible from the browser; that is not a
+production Django segmentation integration.
+
 ### AI workflow integration decisions (VQA and segmentation)
 
 The current VQA and segmentation screens prove the interaction model, but their direct service calls and sample assets are not the production integration boundary. The following patterns are the agreed target for introducing real patient studies, model services, and durable results.
