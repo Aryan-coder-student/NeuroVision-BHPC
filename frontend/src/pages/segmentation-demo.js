@@ -4,7 +4,6 @@ export const SAMPLE_SEGMENTATION = Object.freeze({
   source: 'sample',
   tumor_type: 'BraTS tumor regions',
   grade: 'Reference annotation (not AI-generated)',
-  volume_cm3: 57.3,
   surface_area: null,
   location: 'De-identified research volume',
   confidence: null,

@@ -6,7 +6,7 @@ services:
     repo: https://github.com/Aryan-coder-student/NeuroVision-BHPC
     branch: main
     rootDir: backend
-    plan: free
+    plan: free  # Ephemeral filesystem: report PNGs require a persistent disk/paid plan before production use
     envVars:
       - key: DEBUG
         value: "False"

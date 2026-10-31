@@ -5,6 +5,7 @@ __pycache__/
 .DS_Store
 db.sqlite3
 /media/
+/backend/platform_api/media/
 /static/
 .gemini/
 ai_test_script/

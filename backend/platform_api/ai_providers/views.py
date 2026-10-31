@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from clinical.models import Patient
+from clinical.reports import create_inference_report_token
 from tenant.permissions import HasVerifiedTenantMembership
 
 from .catalog import SUPPORTED_CAPABILITIES
@@ -96,4 +97,18 @@ class PatientInferenceView(TenantInferenceView):
             return _provider_error_response(
                 error, patient_id=patient.id, model_id=model_id
             )
-        return _inference_response(patient, result)
+        response = _inference_response(patient, result)
+        # Only successful real segmentation masks receive a signed, short-lived
+        # report proof. A demo, VQA response or provider failure gets none.
+        if (
+            self.registry_method == "run_segmentation"
+            and isinstance(result.payload, dict)
+            and result.payload.get("mask_nifti_base64")
+        ):
+            response.data["report_token"] = create_inference_report_token(
+                patient_id=patient.id, workspace_id=request.tenant.id,
+                actor_id=request.user.id,
+                model=result.model.as_public_dict(),
+                measurements=result.payload.get("region_volumes_cm3"),
+            )
+        return response

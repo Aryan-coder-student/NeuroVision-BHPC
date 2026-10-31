@@ -23,7 +23,7 @@
 - Segmentation, VQA, scan history, and reports require a patient ID in the URL: `/patients/:patientId/...`.
 - The backend resolves that patient inside the selected tenant schema. A patient ID from another tenant returns unavailable and must not fall back to another record.
 - Switching patient or organization creates a new workspace context. In-memory VQA and segmentation state is not reused across that boundary.
-- History and reports show an honest empty state until their patient-scoped persistence APIs exist; demo data is never presented as a clinical record.
+- History and reports list only signed, patient-scoped inference summaries with static PNG snapshots; BraTS reference demos are browser-only previews and never persisted as patient inference or clinical records.
 
 ## Identity grant
 
@@ -41,3 +41,22 @@
 - Forms use app-owned validation with inline errors and focus the first invalid field.
 - Loading, unavailable, empty, read-only, error, and verified states remain explicit in the owning panel.
 - Native select popup appearance is accepted for the current model pickers; the project does not claim authored popup geometry.
+
+
+#### Private report images
+- Segmentation report PNGs use Django `FileField`, not PostgreSQL binary values.
+- Media is stored under `reports/<workspace-name>-<uuid>/<patient-name>-<uuid>/<report-uuid>/3d-segmentation.png`; original upload filenames are never trusted.
+- Workspace/patient names in paths are sensitive. Keep the entire `MEDIA_ROOT` private; use authenticated tenant snapshot GET / staff-only admin preview, never a public media URL.
+- Development defaults to `backend/platform_api/media/`; on Render set `NEUROVISION_MEDIA_ROOT` to a persistent mounted disk path or the filesystem will be ephemeral.
+- Models Patient, ImagingStudy, SegmentationReport are registered read-only in tenant Django Admin to preserve API validation and audit rules.
+
+
+#### Hugging Face storage option (PR #35)
+- Reports use the same private Django FileField and authenticated snapshot endpoint
+  for both local filesystem and Hugging Face's S3-compatible bucket.
+- Configure `NEUROVISION_REPORT_STORAGE=huggingface`, namespace
+  `pahariaryan`, bucket `neuro-bucket`, and generated HF S3 key pair in
+  backend environment variables. Do not put secrets in code.
+- Bucket object keys follow the existing workspace/patient/report path.
+  No public URLs or anonymous reads; no real patient data on free research
+  hosting without compliance approval.

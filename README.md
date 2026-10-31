@@ -264,3 +264,96 @@ NeuroVision is actively evolving as a brain-imaging research platform. The codeb
 ## License
 
 No license file is currently included in this repository. Add an explicit license before redistributing or accepting external contributions under defined terms.
+
+
+### Private segmentation reports in Hugging Face Storage Buckets
+
+This PR supports two storage modes using one Django `FileField`:
+
+- `NEUROVISION_REPORT_STORAGE=filesystem`: local Docker development, with
+  `report_media` Docker volume; not durable on Render Free.
+- `NEUROVISION_REPORT_STORAGE=huggingface`: private S3-compatible
+  [pahariaryan/neuro-bucket](https://huggingface.co/buckets/pahariaryan/neuro-bucket).
+  The S3 endpoint is `https://s3.hf.co/pahariaryan`; the S3 API bucket name is
+  **`neuro-bucket`**, not `pahariaryan/neuro-bucket`.
+
+For the hosted demo, generate *S3 credentials* from a fine-grained Hugging Face
+write-capable access token scoped to this bucket. On Render backend environment,
+add `NEUROVISION_REPORT_STORAGE=huggingface`,
+`HUGGINGFACE_S3_NAMESPACE=pahariaryan`,
+`HUGGINGFACE_S3_BUCKET=neuro-bucket`,
+`HUGGINGFACE_S3_ACCESS_KEY_ID=HFAK...`, and
+`HUGGINGFACE_S3_SECRET_ACCESS_KEY=<secret>`. Never commit secrets, copy
+them into the React frontend, or paste them into issues. A regular Hugging Face
+token is **not** the S3 secret key. The gateway requires path-style addressing,
+region `us-east-1`, and request/response checksum mode `when_required`.
+
+Each report object is stored as
+`reports/<workspace-name>-<workspace-uuid>/<patient-name>-<patient-uuid>/<report-uuid>/3d-segmentation.png`
+in the **private bucket**. PostgreSQL stores only its relative object key and
+report metadata. Raw MRI and masks are never retained. All reads stream through
+the existing authenticated, tenant-scoped snapshot route; the object URL
+is never returned by Django and no public media route is created.
+Report deletion calls storage.delete after the transaction commits.
+
+**Privacy:** Workspace and patient names appear in the object key. Use only
+de-identified or synthetic/demo research data until PHI governance,
+retention, consent, applicable legal requirements and a signed data-processing
+agreement have been reviewed. For real patients, move to opaque-only object
+keys and an approved medical-data storage contract.
+
+**Deployment:** Render Free does not provide durable local media volumes.
+With the Hugging Face mode and secret env vars configured, uploads persist in
+the bucket across Render redeploys. Without keys the app deliberately rejects
+saves rather than falling back to unsafe ephemeral storage. Local development
+continues using the Docker named volume by default. Storage Gateway access
+still needs validation via an authenticated upload/read/delete smoke test against
+the actual private bucket.
+
+### Private segmentation report media (PR #35)
+
+Segmentation report snapshots are **files on the Django backend filesystem**, not
+binary columns in PostgreSQL. Only the file's relative path and report metadata
+live in tenant PostgreSQL. Saved images are grouped by readable, slugified names
+plus IDs (IDs prevent duplicate names from colliding):
+
+```text
+backend/platform_api/media/
+  reports/
+    <workspace-name>-<workspace-uuid>/
+      <patient-name>-<patient-uuid>/
+        <report-uuid>/
+          3d-segmentation.png
+```
+
+The upload's original filename is discarded. Names in these filesystem paths
+are still sensitive patient data; do not make this directory public or log its
+paths to third-party services. Filenames remain based on the names at report
+creation time if patient/workspace names are later changed.
+
+`NEUROVISION_MEDIA_ROOT` optionally selects the root directory; by default it
+is `backend/platform_api/media`. Docker Compose persists report images in the named `report_media` volume and
+sets `NEUROVISION_MEDIA_ROOT=/app/platform_api/media`.
+
+Only when using the **filesystem mode** on a deployed backend, **mount a persistent
+volume and set `NEUROVISION_MEDIA_ROOT` to its mount path**, e.g.
+`/var/data/neurovision-media` on a disk-equipped Render service. Without a
+persistent mounted disk, redeploys/instance replacement can permanently lose
+the PNGs even though PostgreSQL retains report metadata. Multiple instances
+must share the same private storage. A future object-storage backend can be
+plugged into the file storage abstraction if needed.
+
+No `/media/` public route is registered. The private storage backend refuses
+direct `.url` access. The web UI fetches images via the existing authenticated,
+tenant-scoped report snapshot endpoint, and tenant Django Admin offers a staff-only
+preview. The admin deliberately does **not** permit adding/editing inferred reports,
+which must pass signed inference-proof checks. Database deletions clean up report
+files after the transaction commits. Original MRI and interactive NIfTI masks
+remain transient.
+
+The existing `render.yaml` backend uses `plan: free`, **which has no configured
+persistent disk**; this PR intentionally does not upgrade or bill a paid Render
+plan. To preserve reports in Render production, either configure the Hugging Face
+private S3 bucket as described above (recommended for the synthetic demo),
+or switch to a disk-capable plan and mount a persistent disk for filesystem mode.
+Never use ephemeral Render Free filesystem storage for durable reports.

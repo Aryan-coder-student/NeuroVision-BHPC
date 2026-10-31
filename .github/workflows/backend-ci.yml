@@ -18,8 +18,10 @@ jobs:
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Set up Python 3.13
         run: uv python install 3.13
+      - name: Check pinned dependency lock
+        run: uv lock --check
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen
       - name: Run Ruff
         run: uvx ruff==0.15.12 check .
 
@@ -55,7 +57,7 @@ jobs:
       - name: Set up Python 3.13
         run: uv python install 3.13
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen
         working-directory: backend
       
       - name: Run Tests

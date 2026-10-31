@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
@@ -164,6 +165,20 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Private report PNGs, never served as static files or through public media URLs.
+# In production point this to a persistent mounted disk (e.g. Render Disk).
+MEDIA_ROOT = Path(os.environ.get("NEUROVISION_MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
+
+# Only segmentation report PNGs use this private storage; MRI volumes remain transient.
+# Keep filesystem as the safe local/test default; set 'huggingface' after provisioning
+# bucket-scoped S3 credentials on Render.
+NEUROVISION_REPORT_STORAGE = os.environ.get("NEUROVISION_REPORT_STORAGE", "filesystem").lower()
+HUGGINGFACE_S3_NAMESPACE = os.environ.get("HUGGINGFACE_S3_NAMESPACE", "pahariaryan")
+HUGGINGFACE_S3_BUCKET = os.environ.get("HUGGINGFACE_S3_BUCKET", "neuro-bucket")
+HUGGINGFACE_S3_ACCESS_KEY_ID = os.environ.get("HUGGINGFACE_S3_ACCESS_KEY_ID", "")
+HUGGINGFACE_S3_SECRET_ACCESS_KEY = os.environ.get("HUGGINGFACE_S3_SECRET_ACCESS_KEY", "")
+
+
 # WhiteNoise storage for compressed files
 STORAGES = {
     "default": {
@@ -276,6 +291,7 @@ AI_MODEL_CATALOG = (
     },
 )
 
+REPORT_SNAPSHOT_MAX_BYTES = 3 * 1024 * 1024
 AI_INFERENCE_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 # Experimental synchronous upload limit: 4 * 32 MiB maximum.
 # Larger studies require private object storage and asynchronous inference.

@@ -148,6 +148,35 @@ class InferenceAPITests(TenantTestCase):
         self.assertEqual(forwarded.modalities["t1ce"].data, b"nifti-data")
 
     @patch("ai_providers.views.get_provider_registry")
+    def test_real_mask_response_provides_signed_report_proof_only_for_segmentation(self, registry):
+        from clinical.reports import verify_inference_report_token
+
+        registry.return_value.run_segmentation.return_value = InferenceResult(
+            model=SEGMENTATION_MODEL,
+            payload={"mask_nifti_base64": "ZGF0YQ==", "region_volumes_cm3": {"edema": 5.5}},
+        )
+        response = self.request(
+            "post",
+            f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
+            data={
+                "model_id": "3d_unet_v2",
+                **{
+                    key: SimpleUploadedFile(f"scan_{key}.nii.gz", b"nifti-data")
+                    for key in ("t1", "t1ce", "t2", "flair")
+                },
+            },
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        proof = verify_inference_report_token(
+            response.data["report_token"],
+            patient_id=self.patient.id, workspace_id=self.workspace.id,
+            actor_id=self.member.id,
+        )
+        self.assertEqual(proof["measurements_cm3"], {"edema": 5.5})
+        self.assertNotIn("mask_nifti_base64", proof)
+
+    @patch("ai_providers.views.get_provider_registry")
     def test_member_can_route_vqa_without_persisting_the_image(self, get_registry):
         registry = get_registry.return_value
         registry.run_vqa.return_value = InferenceResult(
@@ -173,6 +202,7 @@ class InferenceAPITests(TenantTestCase):
 
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.data["model"]["id"], "blip_med_v1")
+        self.assertNotIn("report_token", response.data)
         self.assertEqual(response.data["result"]["answer"], "A lesion is visible.")
         inference_request = registry.run_vqa.call_args.args[1]
         self.assertEqual(inference_request.image_bytes, b"jpeg-bytes")

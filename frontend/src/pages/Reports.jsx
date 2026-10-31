@@ -1,5 +1,10 @@
-import { Link, useLocation, useOutletContext } from 'react-router-dom';
-import { FileText, ShieldCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useOutletContext, useSearchParams } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
+
+import { fetchSegmentationReport, fetchSegmentationSnapshot } from '../services/api';
+import { formatIndiaDateTime } from '../utils/date-time';
+import SavedReportList from './SavedReportList';
 
 const PANEL = {
   marginTop: 20, border: '1px solid var(--outline-dim)',
@@ -11,86 +16,123 @@ const ROW = {
   fontSize: 13,
 };
 
-export default function Reports() {
-  const { patient } = useOutletContext();
-  const { state } = useLocation();
-  const incoming = state?.segmentationReport;
-  const report = incoming?.source === 'ai-inference' &&
-    incoming?.patient_id === patient.id ? incoming : null;
-  const volumes = report?.measurements && typeof report.measurements === 'object' &&
-    !Array.isArray(report.measurements)
-    ? Object.entries(report.measurements).filter(([, value]) =>
-      typeof value === 'number' && Number.isFinite(value) && value >= 0
-    )
+function MeasurementRows({ measurements }) {
+  const values = measurements && typeof measurements === 'object' && !Array.isArray(measurements)
+    ? Object.entries(measurements).filter(([, value]) => typeof value === 'number' && Number.isFinite(value) && value >= 0)
     : [];
+  if (!values.length) {
+    return <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Validated physical region volumes are not available for this result.</p>;
+  }
+  return (
+    <dl>
+      {values.map(([name, value]) => (
+        <div key={name} style={ROW}><dt>{name.replaceAll('_', ' ')}</dt><dd>{value} cm³</dd></div>
+      ))}
+    </dl>
+  );
+}
 
+function SavedReportDetail({ patient, workspaceId, reportId }) {
+  const [result, setResult] = useState({ report: null, snapshotUrl: '', error: '', loaded: false });
+  useEffect(() => {
+    let active = true;
+    let url = '';
+    Promise.all([
+      fetchSegmentationReport(workspaceId, patient.id, reportId),
+      fetchSegmentationSnapshot(workspaceId, patient.id, reportId),
+    ]).then(([report, png]) => {
+      if (!active) return;
+      url = URL.createObjectURL(png);
+      setResult({ report, snapshotUrl: url, error: '', loaded: true });
+    }).catch(() => {
+      if (active) setResult({ report: null, snapshotUrl: '', error: 'This report is unavailable in the selected patient workspace.', loaded: true });
+    });
+    return () => { active = false; if (url) URL.revokeObjectURL(url); };
+  }, [workspaceId, patient.id, reportId]);
+
+  if (!result.loaded) return <div style={PANEL} role="status">Loading saved research report and image…</div>;
+  if (result.error) return <div style={PANEL} role="alert">{result.error}</div>;
+  const { report, snapshotUrl } = result;
+  return (
+    <article style={PANEL} aria-label="Saved segmentation report">
+      <h2 style={{ fontSize: 17, color: 'var(--text-bright)' }}>Saved AI segmentation report</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
+        Research only · {formatIndiaDateTime(report.created_at)} · Not a clinical diagnosis
+      </p>
+      <img src={snapshotUrl} alt="Saved 3D segmentation snapshot from the actual inference viewer"
+        style={{ display: 'block', maxWidth: '100%', maxHeight: 460, margin: '18px auto', objectFit: 'contain' }} />
+      <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+        Static PNG of the segmentation view. Original MRI and interactive 3D mask are not stored.
+      </p>
+      <dl>
+        <div style={ROW}><dt>Patient</dt><dd>{patient.patient_code}</dd></div>
+        <div style={ROW}><dt>Model</dt><dd>{report.model_name}</dd></div>
+        <div style={ROW}><dt>Model version</dt><dd>{report.model_version}</dd></div>
+        <div style={ROW}><dt>Imaging study</dt><dd>{report.imaging_study_id ? 'Linked metadata record' : 'Not linked'}</dd></div>
+      </dl>
+      <h3 style={{ fontSize: 14, marginTop: 20, color: 'var(--text-bright)' }}>Model region measurements</h3>
+      <MeasurementRows measurements={report.measurements_cm3} />
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 15 }}>
+        <ShieldCheck size={14} /> Saved with server-signed inference provenance. No clinical interpretation is generated.
+      </p>
+    </article>
+  );
+}
+
+export default function Reports() {
+  const { patient, workspaceId } = useOutletContext();
+  const { state } = useLocation();
+  const [params] = useSearchParams();
+  const reportId = params.get('report_id');
+  const sample = state?.sampleReport?.source === 'sample_reference'
+    && state.sampleReport.patient_id === patient.id
+    && /^data:image\/png;base64,/.test(state.sampleReport.snapshot_data_url || '');
+  const incoming = state?.segmentationReport;
+  const temporary = !reportId && !sample && incoming?.source === 'ai-inference'
+    && incoming?.patient_id === patient.id ? incoming : null;
   return (
     <section aria-labelledby="reports-title">
-      <h1 id="reports-title" style={{ fontSize: 22, color: 'var(--text-bright)' }}>
-        Research reports
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-        Reports for {patient.patient_code} · {patient.display_name} only.
+      <h1 id="reports-title" style={{ fontSize: 22, color: 'var(--text-bright)' }}>Research reports</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 5 }}>
+        Saved inference reports and sample previews for {patient.patient_code} · {patient.display_name}.
       </p>
-      {report ? (
-        <div style={PANEL}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-            <FileText size={20} style={{ color: 'var(--accent-primary)' }} />
-            <h2 style={{ color: 'var(--text-bright)', fontSize: 17 }}>
-              AI segmentation summary
-            </h2>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.7 }}>
-            Temporary browser-only research preview of the actual inference response.
-            Not a saved medical report, pathology diagnosis, or clinical interpretation.
-            The predicted mask stays in the 3D renderer and is not attached or downloadable here.
-          </p>
-          <dl style={{ margin: '18px 0' }}>
-            <div style={ROW}><dt>Patient ID</dt><dd>{patient.patient_code}</dd></div>
-            <div style={ROW}><dt>Input MRI modalities</dt><dd>{report.modality_count} / 4</dd></div>
-            <div style={ROW}><dt>Model</dt><dd>{report.model?.name || 'Not available'}</dd></div>
-            <div style={ROW}><dt>Model version</dt><dd>{report.model?.version || 'Not available'}</dd></div>
-            <div style={ROW}><dt>Result source</dt><dd>AI model response (research only)</dd></div>
-            {volumes.map(([region, value]) => (
-              <div style={ROW} key={region}>
-                <dt>{region.replaceAll('_', ' ')}</dt>
-                <dd>{value} cm³</dd>
-              </div>
-            ))}
-          </dl>
-          {!volumes.length && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-              The model did not return validated region-volume measurements.
-            </p>
-          )}
-          <p style={{ display: 'flex', gap: 7, color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.6 }}>
-            <ShieldCheck size={15} /> No generated mask file is offered for download.
-            This preview is not saved to patient history or report storage.
-          </p>
-          <Link to={`/patients/${patient.id}/segmentation`} style={{
-            display: 'inline-block', color: 'var(--accent-primary)',
-            textDecoration: 'underline', marginTop: 18, fontSize: 13,
-          }}>
-            Return to segmentation
-          </Link>
-        </div>
-      ) : (
-        <div style={{ ...PANEL, minHeight: 220, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-          <div>
-            <FileText size={24} style={{ color: 'var(--text-label)', marginBottom: 10 }} />
-            <h2 style={{ color: 'var(--text-bright)', fontSize: 15 }}>No saved reports</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '6px 0 14px' }}>
-              Report storage is not connected yet. After a real segmentation run,
-              you can view a temporary research summary here without downloading a mask.
-            </p>
-            <Link to={`/patients/${patient.id}/segmentation`} style={{
-              color: 'var(--accent-primary)', textDecoration: 'underline',
-            }}>
-              Open segmentation workspace
-            </Link>
-          </div>
-        </div>
+      {reportId && (
+        <SavedReportDetail key={`${workspaceId}:${patient.id}:${reportId}`}
+          workspaceId={workspaceId} patient={patient} reportId={reportId} />
       )}
+      {!reportId && sample && (
+        <article style={PANEL}>
+          <h2 style={{ color: 'var(--text-bright)', fontSize: 17 }}>BraTS 2021 reference sample — report preview</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
+            Dataset annotation, NOT an AI prediction or a patient-specific medical result.
+            This image is captured from the built-in NiiVue 3D viewer.
+          </p>
+          <img src={state.sampleReport.snapshot_data_url}
+            alt="3D BraTS sample MRI and reference annotation snapshot"
+            style={{ display: 'block', width: '100%', maxHeight: 460, objectFit: 'contain', margin: '18px auto' }} />
+          <dl>
+            <div style={ROW}><dt>Dataset</dt><dd>BraTS 2021 reference volume</dd></div>
+            <div style={ROW}><dt>Mask</dt><dd>Reference annotation (not AI generated)</dd></div>
+            <div style={ROW}><dt>Model measurements</dt><dd>Not available — no inference performed</dd></div>
+          </dl>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            This demo report exists only for this browser navigation. It is not stored in PostgreSQL or patient history.
+          </p>
+        </article>
+      )}
+      {temporary && (
+        <article style={PANEL}>
+          <h2 style={{ color: 'var(--text-bright)', fontSize: 16 }}>Temporary inference summary</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Unsaved browser-only metadata. Return to the viewer and choose “Save research report with 3D image” to retain a screenshot.
+          </p>
+          <div style={ROW}><dt>Model</dt><dd>{temporary.model?.name || 'Unknown'}</dd></div>
+          <MeasurementRows measurements={temporary.measurements} />
+          <Link to={`/patients/${patient.id}/segmentation`}>Back to segmentation</Link>
+        </article>
+      )}
+      <h2 style={{ fontSize: 16, color: 'var(--text-bright)', marginTop: 26 }}>Saved reports</h2>
+      <SavedReportList key={`${workspaceId}:${patient.id}`} workspaceId={workspaceId} patient={patient} />
     </section>
   );
 }
