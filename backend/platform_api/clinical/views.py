@@ -116,7 +116,7 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=("get", "post"), url_path="imaging-studies")
     def imaging_studies(self, request, pk=None):
-        """Validate four uploads and retain metadata only; admins write, members read."""
+        """Validate four uploads and retain metadata only for the workspace owner."""
         patient = self.get_object()
         if request.method == "GET":
             page = self.paginate_queryset(patient.imaging_studies.all())

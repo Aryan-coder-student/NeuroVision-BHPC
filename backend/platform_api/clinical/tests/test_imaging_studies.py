@@ -19,23 +19,28 @@ class ImagingStudyAPITests(TenantTestCase):
     def setUp(self):
         connection.set_schema_to_public()
         self.client = APIClient()
-        self.admin, _ = create_user(username="imaging_admin", email="imaging-admin@example.com", is_otp_verified=True)
+        self.owner, _ = create_user(username="imaging_owner", email="imaging-owner@example.com", is_otp_verified=True)
         self.member, _ = create_user(username="imaging_member", email="imaging-member@example.com", is_otp_verified=True)
         self.outsider, _ = create_user(username="imaging_outsider", email="imaging-outsider@example.com", is_otp_verified=True)
         self.workspace = Institution.objects.create(
-            name="Imaging Workspace", slug="imaging-workspace", schema_name="imaging_workspace"
+            name="Imaging Workspace", slug="imaging-workspace",
+            schema_name="imaging_workspace", owner=self.owner,
         )
         self.other_workspace = Institution.objects.create(
             name="Other Imaging Workspace", slug="other-imaging", schema_name="other_imaging"
         )
-        InstitutionMembership.objects.create(user=self.admin, institution=self.workspace, role=InstitutionMembership.Role.ADMIN, is_active=True)
-        InstitutionMembership.objects.create(user=self.member, institution=self.workspace, role=InstitutionMembership.Role.MEMBER, is_active=True)
+        InstitutionMembership.objects.create(
+            user=self.owner, institution=self.workspace, is_active=True,
+        )
+        InstitutionMembership.objects.create(
+            user=self.member, institution=self.workspace, is_active=True,
+        )
         with schema_context(self.workspace.schema_name):
             self.patient = Patient.objects.create(display_name="Imaging Patient")
             self.second_patient = Patient.objects.create(display_name="Second Patient")
         with schema_context(self.other_workspace.schema_name):
             self.other_patient = Patient.objects.create(display_name="Other Institution Patient")
-        self.authenticate(self.admin)
+        self.authenticate(self.owner)
         self.url = f"/api/v1/tenant/patients/{self.patient.id}/imaging-studies/"
 
     def tearDown(self):
@@ -61,7 +66,7 @@ class ImagingStudyAPITests(TenantTestCase):
             HTTP_X_WORKSPACE_ID=str((workspace or self.workspace).id),
         )
 
-    def test_admin_uploads_four_files_but_stores_only_metadata(self):
+    def test_owner_uploads_four_files_but_stores_only_metadata(self):
         response = self.request("post", data=self.uploads(), fmt="multipart")
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data["patient_id"], str(self.patient.id))
@@ -70,7 +75,7 @@ class ImagingStudyAPITests(TenantTestCase):
         self.assertNotIn("files", response.data)
         with schema_context(self.workspace.schema_name):
             study = ImagingStudy.objects.get(pk=response.data["id"])
-            self.assertEqual(study.created_by_user_id, self.admin.id)
+            self.assertEqual(study.created_by_user_id, self.owner.id)
             self.assertEqual(study.patient_id, self.patient.id)
             self.assertEqual(set(study.modality_sizes_bytes.values()), {len(b"research-nifti-bytes")})
             self.assertNotIn("scan_t1", str(study.__dict__))
@@ -95,10 +100,10 @@ class ImagingStudyAPITests(TenantTestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    def test_members_can_read_but_only_admin_can_record_studies(self):
+    def test_active_nonowner_member_cannot_read_or_record_studies(self):
         self.authenticate(self.member)
-        self.assertEqual(self.request("get").status_code, 200)
-        self.assertEqual(self.request("post", data=self.uploads(), fmt="multipart").status_code, 403)
+        self.assertEqual(self.request("get").status_code, 404)
+        self.assertEqual(self.request("post", data=self.uploads(), fmt="multipart").status_code, 404)
         with schema_context(self.workspace.schema_name):
             self.assertEqual(ImagingStudy.objects.count(), 0)
 

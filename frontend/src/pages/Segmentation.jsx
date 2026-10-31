@@ -143,7 +143,7 @@ export default function Segmentation() {
     setPreview({ type: 'local', files: folder.files });
   };
 
-  const canRecordStudy = Boolean(org) && (org.role == null || org.role === 'ADMIN');
+  const canRecordStudy = Boolean(org);
 
   const recordStudy = async () => {
     if (!complete || recording || recordedStudy || !canRecordStudy) return;
