@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 import { Niivue } from '@niivue/niivue';
 import {
@@ -9,12 +9,14 @@ import {
   SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
 } from './segmentation-demo';
 import { MRI_MODALITIES, resolveBraTSFolder, formatFileSize } from './segmentation-files';
-import { runSegmentation, fetchAvailableModels, recordImagingStudy } from '../services/api';
+import { runSegmentation, fetchAvailableModels, recordImagingStudy, saveSegmentationReport } from '../services/api';
+import { blobToDataURL, captureViewerPng } from './report-image';
 import { configuredModels } from '../services/model-catalog';
 import './Segmentation.css';
 
 export default function Segmentation() {
   const { patient, workspaceId } = useOutletContext();
+  const navigate = useNavigate();
   const { org } = useAuth();
   const [source, setSource] = useState('sample');
   const [folder, setFolder] = useState({ files: {}, error: '', folderName: '' });
@@ -24,6 +26,7 @@ export default function Segmentation() {
   const [running, setRunning] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordedStudy, setRecordedStudy] = useState(null);
+  const [savingReport, setSavingReport] = useState(false);
   const [inferenceResult, setInferenceResult] = useState(null);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useState('overlay');
@@ -112,6 +115,7 @@ export default function Segmentation() {
     setPreview(null);
     setInferenceResult(null);
     setRecordedStudy(null);
+    setSavingReport(false);
     setViewerStatus('idle');
     setViewMode(next === 'sample' ? 'overlay' : 'mri');
     setError('');
@@ -124,6 +128,7 @@ export default function Segmentation() {
     setFolder(selected);
     setInferenceResult(null);
     setRecordedStudy(null);
+    setSavingReport(false);
     setPreview(null);
     setViewerStatus('idle');
     setError('');
@@ -166,6 +171,59 @@ export default function Segmentation() {
     }
   };
 
+  const capture3D = async () => {
+    if (viewerStatus !== 'ready' || !niivueRef.current || !hasMask) {
+      throw new Error('Open the reference or generated segmentation in the viewer first.');
+    }
+    const nv = niivueRef.current;
+    applySampleView(nv, 'render', true);
+    try {
+      return await captureViewerPng(canvasRef.current, nv);
+    } finally {
+      applySampleView(nv, viewMode, true);
+    }
+  };
+
+  const previewSampleReport = async () => {
+    if (!isSample || savingReport) return;
+    setSavingReport(true);
+    setError('');
+    try {
+      const image = await blobToDataURL(await capture3D());
+      navigate(`/patients/${patient.id}/reports`, {
+        state: {
+          sampleReport: {
+            source: 'sample_reference',
+            patient_id: patient.id,
+            snapshot_data_url: image,
+          },
+        },
+      });
+    } catch (captureError) {
+      setError(captureError.message || 'Could not create the sample report preview.');
+    } finally {
+      setSavingReport(false);
+    }
+  };
+
+  const saveRealReport = async () => {
+    if (!inferenceResult?.reportToken || preview?.type !== 'predicted' || savingReport) return;
+    setSavingReport(true);
+    setError('');
+    try {
+      const snapshot = await capture3D();
+      const report = await saveSegmentationReport(
+        workspaceId, patient.id, inferenceResult.reportToken, snapshot, recordedStudy?.id,
+      );
+      navigate(`/patients/${patient.id}/reports?report_id=${report.id}`);
+    } catch (requestError) {
+      const detail = requestError.response?.data?.detail;
+      setError(detail || requestError.message || 'The report could not be saved.');
+    } finally {
+      setSavingReport(false);
+    }
+  };
+
   const runAI = async () => {
     if (!complete || !modelId || running || recording) return;
     const sequence = ++inferenceSequenceRef.current;
@@ -180,7 +238,7 @@ export default function Segmentation() {
       const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
       if (!bytes.length) throw new Error('Model returned an empty segmentation mask.');
       const mask = new Blob([bytes], { type: 'application/octet-stream' });
-      setInferenceResult({ model: response.model, measurements: response.result.region_volumes_cm3 || null });
+      setInferenceResult({ model: response.model, measurements: response.result.region_volumes_cm3 || null, reportToken: response.report_token || null });
       setViewMode('overlay');
       setPreview({ type: 'predicted', files: folder.files, mask });
     } catch (requestError) {
@@ -340,6 +398,10 @@ export default function Segmentation() {
               <div className="stat-row"><span className="stat-key">Mask</span><span className="stat-val">Reference annotation</span></div>
               <div className="stat-row"><span className="stat-key">Illustrative volume</span><span className="stat-val">{SAMPLE_SEGMENTATION.volume_cm3} cm³</span></div>
               <p className="seg-service-note">Reference mask is displayed in the renderer only. It is not offered as a downloadable file.</p>
+              <button className="run-seg-btn" type="button" disabled={viewerStatus !== 'ready' || savingReport} onClick={previewSampleReport}>
+                <FileOutput size={14} /> {savingReport ? 'Capturing 3D preview…' : 'Preview sample report with 3D image'}
+              </button>
+              <p className="seg-service-note">The sample report is a temporary reference preview. No patient inference, clinical findings or database record is created.</p>
             </> : <>
               <div className="stat-row"><span className="stat-key">Input status</span><span className="stat-val">{complete ? '4 / 4 ready' : 'Awaiting BraTS folder'}</span></div>
               <div className="stat-row"><span className="stat-key">Segmentation output</span>
@@ -354,6 +416,12 @@ export default function Segmentation() {
                   <span className="stat-val">{volume} cm³</span>
                 </div>
               ))}
+              {inferenceResult?.reportToken && (
+                <button type="button" className="run-seg-btn"
+                  disabled={viewerStatus !== 'ready' || savingReport} onClick={saveRealReport}>
+                  <FileOutput size={14} /> {savingReport ? 'Saving PNG report…' : 'Save research report with 3D image'}
+                </button>
+              )}
               {inferenceResult && (
                 <Link
                   className="run-seg-btn"
@@ -372,7 +440,7 @@ export default function Segmentation() {
                   <FileOutput size={14} /> View research report summary
                 </Link>
               )}
-              <p className="seg-service-note">Predicted masks appear in the renderer only. The report page can preview model metadata and measured volumes for this browser session; no mask download or saved report is provided.</p>
+              <p className="seg-service-note">Predicted masks remain in the viewer only. A report with a static PNG can be saved after successful backend inference; MRI and interactive mask files are not retained.</p>
             </>}
           </div>
         </div>
