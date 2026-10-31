@@ -305,3 +305,19 @@ export function setTenantDomain() {
 }
 
 // All API requests stay on the single configured backend origin.
+
+
+/** Tenant-scoped metadata-only contribution requests. No scan bytes are transferred. */
+export async function createDatasetContribution(workspaceId, details) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post', url: '/tenant/contributions/', data: details,
+  });
+  return res.data;
+}
+
+export async function fetchDatasetContributions(workspaceId) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get', url: '/tenant/contributions/',
+  });
+  return res.data;
+}

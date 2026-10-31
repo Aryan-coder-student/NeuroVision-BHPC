@@ -120,3 +120,42 @@ class SegmentationReport(models.Model):
         indexes = [
             models.Index(fields=["patient", "-created_at"], name="clinical_re_patient_6394aa_idx"),
         ]
+
+
+class DatasetContribution(models.Model):
+    """Tenant-local review request only. No scan bytes, files or PHI are accepted."""
+
+    class Origin(models.TextChoices):
+        PUBLIC = "public", "Public dataset"
+        SYNTHETIC = "synthetic", "Synthetic research data"
+        DEIDENTIFIED = "deidentified", "De-identified research data"
+
+    class Status(models.TextChoices):
+        PENDING = "pending_review", "Pending review"
+        APPROVED = "metadata_approved", "Metadata reviewed"
+        REJECTED = "rejected", "Rejected"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submitted_by_user_id = models.UUIDField(editable=False)
+    title = models.CharField(max_length=160)
+    modality = models.CharField(max_length=32, choices=[
+        ("mri_t1", "MRI T1"), ("mri_t1ce", "MRI T1CE"),
+        ("mri_t2", "MRI T2"), ("mri_flair", "MRI FLAIR"),
+        ("multi_modal", "Multiple MRI modalities"), ("other", "Other"),
+    ])
+    origin = models.CharField(max_length=20, choices=Origin.choices)
+    description = models.TextField(max_length=1000)
+    license_info = models.CharField(max_length=160)
+    source_url = models.URLField(max_length=500, blank=True)
+    sample_count = models.PositiveIntegerField(default=1)
+    no_phi_attestation = models.BooleanField(default=False, editable=False)
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.PENDING, editable=False
+    )
+    review_note = models.TextField(blank=True, max_length=1000)
+    reviewed_by_user_id = models.UUIDField(null=True, blank=True, editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
