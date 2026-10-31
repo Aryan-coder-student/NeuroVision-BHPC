@@ -67,3 +67,19 @@ class PatientDemographicChange(models.Model):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Patient demographic audit records are append-only.")
+
+
+class ImagingStudy(models.Model):
+    """Validated MRI upload metadata, never the original scans or segmentation masks."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(
+        Patient, on_delete=models.CASCADE, related_name="imaging_studies"
+    )
+    created_by_user_id = models.UUIDField(editable=False)
+    modality_sizes_bytes = models.JSONField(default=dict, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["patient", "-created_at"])]
