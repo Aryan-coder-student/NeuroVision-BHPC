@@ -13,11 +13,21 @@ from .models import ImagingStudy, Patient, SegmentationReport
 class TenantClinicalAdmin(admin.ModelAdmin):
     """Clinical models do not exist in the public PostgreSQL schema."""
 
+    @staticmethod
+    def _is_workspace_owner(request):
+        tenant = getattr(connection, "tenant", None)
+        return (
+            tenant is not None
+            and connection.schema_name != settings.PUBLIC_SCHEMA_NAME
+            and tenant.schema_name == connection.schema_name
+            and tenant.owner_id == request.user.pk
+        )
+
     def has_module_permission(self, request):
-        return connection.schema_name != settings.PUBLIC_SCHEMA_NAME and super().has_module_permission(request)
+        return self._is_workspace_owner(request) and super().has_module_permission(request)
 
     def has_view_permission(self, request, obj=None):
-        return connection.schema_name != settings.PUBLIC_SCHEMA_NAME and super().has_view_permission(request, obj=obj)
+        return self._is_workspace_owner(request) and super().has_view_permission(request, obj=obj)
 
     def has_add_permission(self, request):
         return False  # Patient identity and research reports are created via APIs.
