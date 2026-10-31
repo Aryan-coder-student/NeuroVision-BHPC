@@ -27,6 +27,7 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
             name="Integration Hospital",
             slug="integration-hospital",
             schema_name="integration_hospital",
+            owner=self.user,
         )
         InstitutionMembership.objects.create(
             user=self.user, institution=self.institution, is_active=True,
@@ -88,6 +89,18 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def test_active_nonowner_membership_is_denied(self):
+        InstitutionMembership.objects.create(
+            user=self.other_user, institution=self.institution, is_active=True,
+        )
+        self.authenticate(self.other_user)
+        denied = self.client.get(
+            "/api/v1/tenant/context/",
+            HTTP_X_WORKSPACE_ID=str(self.institution.id),
+        )
+        self.assertEqual(denied.status_code, 404)
+        self.assertEqual(self.client.get("/api/v1/workspaces/").data, [])
+
     def test_tenant_context_needs_workspace_id(self):
         self.authenticate(self.user)
         response = self.client.get("/api/v1/tenant/context/")
@@ -133,6 +146,7 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
             name="Second Hospital",
             slug="second-hospital",
             schema_name="second_hospital",
+            owner=self.user,
         )
         InstitutionMembership.objects.create(
             user=self.user, institution=second, is_active=True,

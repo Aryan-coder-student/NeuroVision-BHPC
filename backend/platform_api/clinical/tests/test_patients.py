@@ -38,10 +38,10 @@ class PatientTenantIsolationTests(TenantTestCase):
             is_otp_verified=True,
         )
         self.apollo = Institution.objects.create(
-            name="Apollo Test", slug="apollo-test", schema_name="apollo_test"
+            name="Apollo Test", slug="apollo-test", schema_name="apollo_test", owner=self.admin
         )
         self.aiims = Institution.objects.create(
-            name="AIIMS Test", slug="aiims-test", schema_name="aiims_test"
+            name="AIIMS Test", slug="aiims-test", schema_name="aiims_test", owner=self.admin
         )
         for institution in (self.apollo, self.aiims):
             InstitutionMembership.objects.create(
@@ -103,8 +103,8 @@ class PatientTenantIsolationTests(TenantTestCase):
         with schema_context(self.aiims.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
 
-    def test_any_active_workspace_user_can_create_edit_and_delete(self):
-        self.authenticate(self.member)
+    def test_workspace_owner_can_create_edit_and_delete(self):
+        self.authenticate(self.admin)
         created = self.request("post", self.apollo, data={
             "display_name": "Editable Patient",
         })
@@ -123,6 +123,13 @@ class PatientTenantIsolationTests(TenantTestCase):
             204,
         )
         self.assertEqual(self.request("get", self.apollo).data["results"], [])
+
+    def test_active_nonowner_member_cannot_access_patient_records(self):
+        self.authenticate(self.member)
+        self.assertEqual(self.request("get", self.apollo).status_code, 404)
+        self.assertEqual(self.request("post", self.apollo, data={
+            "display_name": "Denied",
+        }).status_code, 404)
 
     def test_nonmember_cannot_read_or_create(self):
         self.authenticate(self.outsider)
@@ -185,13 +192,13 @@ class PatientTenantIsolationTests(TenantTestCase):
             ["AIIMS Record"],
         )
 
-    def test_any_active_workspace_user_can_verify_patient_email(self):
+    def test_workspace_owner_can_verify_patient_email(self):
         self.authenticate(self.admin)
         patient = self.request("post", self.apollo, data={
             "display_name": "Status Patient",
         }).data
         code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
-        self.authenticate(self.member)
+        self.authenticate(self.admin)
         path = f"{self.url}{patient['id']}/identity-grant/"
         status_response = self.request("get", self.apollo, path=path)
         self.assertEqual(status_response.status_code, 200)

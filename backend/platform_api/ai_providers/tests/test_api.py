@@ -61,11 +61,13 @@ class InferenceAPITests(TenantTestCase):
             name="Inference Workspace",
             slug="inference-workspace",
             schema_name="inference_workspace",
+            owner=self.member,
         )
         self.other_workspace = Institution.objects.create(
             name="Other Workspace",
             slug="other-workspace",
             schema_name="other_workspace",
+            owner=self.outsider,
         )
         InstitutionMembership.objects.create(
             user=self.member,
