@@ -5,7 +5,6 @@ import zlib
 from pathlib import Path
 
 from django.contrib import admin
-from django.core.files.storage import FileSystemStorage
 from uuid import uuid4
 
 from django.core import signing
