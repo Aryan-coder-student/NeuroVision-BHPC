@@ -4,6 +4,7 @@ import { Niivue } from '@niivue/niivue';
 import { AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
 
 import { SAMPLE_VIEWS, applySampleView } from './segmentation-demo';
+import { startReferenceViewer } from './sample-viewer';
 import { BRATS_SAMPLE_REPORT } from './sample-report';
 import './SampleReport.css';
 
@@ -26,31 +27,26 @@ export default function SampleReport({ patientId }) {
 
   useEffect(() => {
     if (!canvasRef.current) return undefined;
-    let active = true;
     const nv = new Niivue({
       backColor: [0.023, 0.055, 0.125, 1],
       dragAndDropEnabled: false,
     });
     viewerRef.current = nv;
-    const load = async () => {
-      setStatus('loading');
-      try {
-        await nv.attachToCanvas(canvasRef.current);
-        if (!active) return;
-        await nv.loadVolumes(BRATS_SAMPLE_REPORT.volumes.map(volume => ({ ...volume })));
-        if (!active) return;
-        applySampleView(nv, 'render');
-        setViewMode('render');
+    setStatus('loading');
+    const controller = startReferenceViewer({
+      viewer: nv,
+      canvas: canvasRef.current,
+      volumes: BRATS_SAMPLE_REPORT.volumes,
+      onReady: initialMode => {
+        setViewMode(initialMode);
         setStatus('ready');
-      } catch {
-        if (active) setStatus('error');
-      }
-    };
-    load();
+      },
+      onError: () => setStatus('error'),
+    });
+
     return () => {
-      active = false;
       if (viewerRef.current === nv) viewerRef.current = null;
-      nv.cleanup();
+      controller.dispose();
     };
   }, [retry]);
 
@@ -77,6 +73,7 @@ export default function SampleReport({ patientId }) {
         <section aria-label="BraTS reference MRI 3D viewer" className="brats-report-visual">
           <div className="brats-report-canvas">
             <canvas
+              key={retry}
               ref={canvasRef}
               aria-label="Interactive 3D render of the bundled BraTS reference MRI and segmentation mask"
             />
