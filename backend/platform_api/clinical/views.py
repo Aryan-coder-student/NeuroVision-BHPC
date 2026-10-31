@@ -1,6 +1,9 @@
+from uuid import UUID
+
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
@@ -159,7 +162,11 @@ class PatientViewSet(viewsets.ModelViewSet):
     )
     def imaging_study_detail(self, request, pk=None, study_id=None):
         patient = self.get_object()
-        study = get_object_or_404(patient.imaging_studies, pk=study_id)
+        try:
+            normalized_study_id = UUID(study_id)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise NotFound("Imaging study not found.") from error
+        study = get_object_or_404(patient.imaging_studies, pk=normalized_study_id)
         return Response(ImagingStudyReadSerializer(study).data)
 
     def perform_destroy(self, instance):

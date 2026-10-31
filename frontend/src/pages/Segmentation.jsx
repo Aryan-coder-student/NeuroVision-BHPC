@@ -143,8 +143,10 @@ export default function Segmentation() {
     setPreview({ type: 'local', files: folder.files });
   };
 
+  const canRecordStudy = Boolean(org) && (org.role == null || org.role === 'ADMIN');
+
   const recordStudy = async () => {
-    if (!complete || recording || recordedStudy || org?.role !== 'ADMIN') return;
+    if (!complete || recording || recordedStudy || !canRecordStudy) return;
     const sequence = inferenceSequenceRef.current;
     setRecording(true);
     setError('');
@@ -264,7 +266,7 @@ export default function Segmentation() {
                 <button className="run-seg-btn" type="button" disabled={!complete || running} onClick={showFolder}>
                   <Brain size={14} /> Preview selected MRI
                 </button>
-                {org?.role === 'ADMIN' && (
+                {canRecordStudy && (
                   <button className="run-seg-btn" type="button"
                     disabled={!complete || recording || Boolean(recordedStudy)} onClick={recordStudy}>
                     {recording ? 'Validating MRI upload…' : recordedStudy ? 'Study metadata recorded' : 'Record imaging study metadata'}

@@ -90,6 +90,11 @@ class ImagingStudyAPITests(TenantTestCase):
         self.assertEqual(self.request("get", path=f"{other}{first.data['id']}/").status_code, 404)
         self.assertEqual(self.request("get", path=f"{self.url}{uuid4()}/").status_code, 404)
 
+    def test_malformed_study_id_returns_not_found(self):
+        response = self.request("get", path=f"{self.url}{'-' * 36}/")
+
+        self.assertEqual(response.status_code, 404)
+
     def test_members_can_read_but_only_admin_can_record_studies(self):
         self.authenticate(self.member)
         self.assertEqual(self.request("get").status_code, 200)
