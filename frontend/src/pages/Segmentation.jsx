@@ -6,7 +6,7 @@ import {
   AlertTriangle, Brain, CheckCircle2, FileOutput, FlaskConical, FolderOpen, ScanLine, Loader,
 } from 'lucide-react';
 import {
-  SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
+  SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
 } from './segmentation-demo';
 import { MRI_MODALITIES, resolveBraTSFolder, formatFileSize } from './segmentation-files';
 import { runSegmentation, fetchAvailableModels, recordImagingStudy, saveSegmentationReport } from '../services/api';
@@ -396,7 +396,7 @@ export default function Segmentation() {
               <div className="sample-data-note" role="note">This mask comes from the BraTS reference dataset, not AI inference.</div>
               <div className="stat-row"><span className="stat-key">Input</span><span className="stat-val">Sample T1CE</span></div>
               <div className="stat-row"><span className="stat-key">Mask</span><span className="stat-val">Reference annotation</span></div>
-              <div className="stat-row"><span className="stat-key">Illustrative volume</span><span className="stat-val">{SAMPLE_SEGMENTATION.volume_cm3} cm³</span></div>
+              <div className="stat-row"><span className="stat-key">Volume measurements</span><span className="stat-val">Not calculated for reference demo</span></div>
               <p className="seg-service-note">Reference mask is displayed in the renderer only. It is not offered as a downloadable file.</p>
               <button className="run-seg-btn" type="button" disabled={viewerStatus !== 'ready' || savingReport} onClick={previewSampleReport}>
                 <FileOutput size={14} /> {savingReport ? 'Capturing 3D preview…' : 'Preview sample report with 3D image'}

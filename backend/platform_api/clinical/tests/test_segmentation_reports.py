@@ -162,6 +162,17 @@ class SegmentationReportAPITests(TenantTestCase):
         )
         self.assertEqual(self.request("post", data=self.upload(token=expired), fmt="multipart").status_code, 400)
 
+    def test_measurements_drop_nonfinite_negative_and_boolean_fields(self):
+        from clinical.reports import clean_measurements
+
+        self.assertEqual(
+            clean_measurements({
+                "edema": 2, "enhancing": float("nan"), "necrotic": -1,
+                "yes_no": True, "background": float("inf"),
+            }),
+            {"edema": 2.0},
+        )
+
     def test_no_saved_reports_seeded_from_demo_or_study(self):
         self.assertEqual(self.request("get").data["results"], [])
         with schema_context(self.workspace.schema_name):

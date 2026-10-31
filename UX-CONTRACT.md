@@ -23,7 +23,7 @@
 - Segmentation, VQA, scan history, and reports require a patient ID in the URL: `/patients/:patientId/...`.
 - The backend resolves that patient inside the selected tenant schema. A patient ID from another tenant returns unavailable and must not fall back to another record.
 - Switching patient or organization creates a new workspace context. In-memory VQA and segmentation state is not reused across that boundary.
-- History and reports show an honest empty state until their patient-scoped persistence APIs exist; demo data is never presented as a clinical record.
+- History and reports list only signed, patient-scoped inference summaries with static PNG snapshots; BraTS reference demos are browser-only previews and never persisted as patient inference or clinical records.
 
 ## Identity grant
 
