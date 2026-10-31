@@ -84,7 +84,7 @@ export default function AppShell() {
             <div className="sidebar-avatar">{initials}</div>
             <div>
               <div className="sidebar-user-name">{user?.name}</div>
-              <div className="sidebar-user-role">{user?.role}</div>
+              <div className="sidebar-user-role">Workspace owner</div>
             </div>
           </div>
           <button className="sidebar-logout-btn" onClick={() => { logout(); navigate('/login'); }}>

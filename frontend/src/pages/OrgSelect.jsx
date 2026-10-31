@@ -62,7 +62,7 @@ export default function OrgSelect() {
           </Link>
         </div>
         <div className="org-select-sub">
-          <span className="label-uppercase">Workspace user</span>
+          <span className="label-uppercase">Workspace owner</span>
           &nbsp;·&nbsp;Select your clinical workspace
         </div>
       </div>
