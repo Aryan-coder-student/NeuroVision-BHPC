@@ -307,10 +307,10 @@ export function setTenantDomain() {
 // All API requests stay on the single configured backend origin.
 
 
-/** Tenant-scoped metadata-only contribution requests. No scan bytes are transferred. */
-export async function createDatasetContribution(workspaceId, details) {
+/** Upload bounded de-identified MRI data to private tenant-scoped bucket storage. */
+export async function createDatasetContribution(workspaceId, formData) {
   const res = await tenantRequest(workspaceId, {
-    method: 'post', url: '/tenant/contributions/', data: details,
+    method: 'post', url: '/tenant/contributions/', data: formData,
   });
   return res.data;
 }
