@@ -2,6 +2,8 @@ import uuid
 
 from django.db import models
 
+from .storage import PrivateReportStorage, report_snapshot_upload_to
+
 
 def generate_patient_code():
     """Opaque, non-sequential public identifier. The UUID remains the primary key."""
@@ -105,7 +107,12 @@ class SegmentationReport(models.Model):
     model_name = models.CharField(max_length=160)
     model_version = models.CharField(max_length=80)
     measurements_cm3 = models.JSONField(default=dict)
-    snapshot_png = models.BinaryField(editable=False)
+    snapshot_image = models.FileField(
+        upload_to=report_snapshot_upload_to,
+        storage=PrivateReportStorage(),
+        max_length=512,
+        editable=False,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

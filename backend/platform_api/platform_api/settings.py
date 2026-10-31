@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
@@ -163,6 +164,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Private report PNGs, never served as static files or through public media URLs.
+# In production point this to a persistent mounted disk (e.g. Render Disk).
+MEDIA_ROOT = Path(os.environ.get("NEUROVISION_MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
+
 
 # WhiteNoise storage for compressed files
 STORAGES = {

@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse
+from django.http import FileResponse, Http404
 
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
@@ -166,7 +166,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         """Saved reports contain verified AI metadata and a static PNG, not scans."""
         patient = self.get_object()
         if request.method == "GET":
-            items = patient.segmentation_reports.defer("snapshot_png")
+            items = patient.segmentation_reports.all()
             page = self.paginate_queryset(items)
             if page is not None:
                 return self.get_paginated_response(
@@ -198,8 +198,20 @@ class PatientViewSet(viewsets.ModelViewSet):
                     model_name=proof["model_name"][:160],
                     model_version=proof["model_version"][:80],
                     measurements_cm3=proof["measurements_cm3"],
-                    snapshot_png=input_data["snapshot"].read(),
+                    snapshot_image="",
                 )
+                # Reserve the unique inference nonce in PostgreSQL BEFORE
+                # writing a file, so replay requests cannot create new files.
+                try:
+                    report.snapshot_image.save(
+                        "3d-segmentation.png", input_data["snapshot"], save=True,
+                    )
+                except Exception:
+                    # File storage is not transactional. Remove an orphan on
+                    # failed write/update, even when the DB transaction rolls back.
+                    if report.snapshot_image.name:
+                        report.snapshot_image.delete(save=False)
+                    raise
         except IntegrityError:
             return Response(
                 {"detail": "This inference result has already been saved."},
@@ -235,7 +247,16 @@ class PatientViewSet(viewsets.ModelViewSet):
     def segmentation_report_snapshot(self, request, pk=None, report_id=None):
         patient = self.get_object()
         report = self._get_segmentation_report(patient, report_id)
-        response = HttpResponse(bytes(report.snapshot_png), content_type="image/png")
+        try:
+            if not report.snapshot_image:
+                raise Http404("Report image is unavailable.")
+            response = FileResponse(
+                report.snapshot_image.open("rb"),
+                content_type="image/png",
+                as_attachment=False,
+            )
+        except (FileNotFoundError, OSError, ValueError) as error:
+            raise Http404("Report image is unavailable.") from error
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response

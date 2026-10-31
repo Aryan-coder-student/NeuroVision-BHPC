@@ -1,6 +1,7 @@
 import uuid
 
 import django.db.models.deletion
+import clinical.storage
 from django.db import migrations, models
 
 
@@ -18,7 +19,11 @@ class Migration(migrations.Migration):
                 ("model_name", models.CharField(max_length=160)),
                 ("model_version", models.CharField(max_length=80)),
                 ("measurements_cm3", models.JSONField(default=dict)),
-                ("snapshot_png", models.BinaryField(editable=False)),
+                ("snapshot_image", models.FileField(
+                    editable=False, max_length=512,
+                    storage=clinical.storage.PrivateReportStorage(),
+                    upload_to=clinical.storage.report_snapshot_upload_to,
+                )),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("imaging_study", models.ForeignKey(
                     to="clinical.imagingstudy", related_name="segmentation_reports",
