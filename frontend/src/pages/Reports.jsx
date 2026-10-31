@@ -5,6 +5,8 @@ import { ShieldCheck } from 'lucide-react';
 import { fetchSegmentationReport, fetchSegmentationSnapshot } from '../services/api';
 import { formatIndiaDateTime } from '../utils/date-time';
 import SavedReportList from './SavedReportList';
+import SampleReport from './SampleReport';
+import { isBratsSampleReport, sampleReportPath } from './sample-report';
 
 const PANEL = {
   marginTop: 20, border: '1px solid var(--outline-dim)',
@@ -84,9 +86,7 @@ export default function Reports() {
   const { state } = useLocation();
   const [params] = useSearchParams();
   const reportId = params.get('report_id');
-  const sample = state?.sampleReport?.source === 'sample_reference'
-    && state.sampleReport.patient_id === patient.id
-    && /^data:image\/png;base64,/.test(state.sampleReport.snapshot_data_url || '');
+  const sample = !reportId && isBratsSampleReport(params.get('sample'));
   const incoming = state?.segmentationReport;
   const temporary = !reportId && !sample && incoming?.source === 'ai-inference'
     && incoming?.patient_id === patient.id ? incoming : null;
@@ -100,26 +100,20 @@ export default function Reports() {
         <SavedReportDetail key={`${workspaceId}:${patient.id}:${reportId}`}
           workspaceId={workspaceId} patient={patient} reportId={reportId} />
       )}
-      {!reportId && sample && (
-        <article style={PANEL}>
-          <h2 style={{ color: 'var(--text-bright)', fontSize: 17 }}>BraTS 2021 reference sample — report preview</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
-            Dataset annotation, NOT an AI prediction or a patient-specific medical result.
-            This image is captured from the built-in NiiVue 3D viewer.
+      {!reportId && (
+        <div style={{ ...PANEL, marginTop: 18 }}>
+          <strong style={{ color: 'var(--text-bright)', fontSize: 14 }}>BraTS 2021 sample report</strong>
+          <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '7px 0 10px' }}>
+            Open the real reference MRI and segmentation mask with a 3D viewer.
+            This is a research demonstration, not a patient inference report.
           </p>
-          <img src={state.sampleReport.snapshot_data_url}
-            alt="3D BraTS sample MRI and reference annotation snapshot"
-            style={{ display: 'block', width: '100%', maxHeight: 460, objectFit: 'contain', margin: '18px auto' }} />
-          <dl>
-            <div style={ROW}><dt>Dataset</dt><dd>BraTS 2021 reference volume</dd></div>
-            <div style={ROW}><dt>Mask</dt><dd>Reference annotation (not AI generated)</dd></div>
-            <div style={ROW}><dt>Model measurements</dt><dd>Not available — no inference performed</dd></div>
-          </dl>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            This demo report exists only for this browser navigation. It is not stored in PostgreSQL or patient history.
-          </p>
-        </article>
+          <Link to={sample ? `/patients/${patient.id}/reports` : sampleReportPath(patient.id)}
+            style={{ color: 'var(--accent-primary)', fontSize: 13 }}>
+            {sample ? 'Close sample report' : 'View sample report'}
+          </Link>
+        </div>
       )}
+      {sample && <SampleReport key="brats2021_00000" patientId={patient.id} />}
       {temporary && (
         <article style={PANEL}>
           <h2 style={{ color: 'var(--text-bright)', fontSize: 16 }}>Temporary inference summary</h2>
@@ -131,7 +125,7 @@ export default function Reports() {
           <Link to={`/patients/${patient.id}/segmentation`}>Back to segmentation</Link>
         </article>
       )}
-      <h2 style={{ fontSize: 16, color: 'var(--text-bright)', marginTop: 26 }}>Saved reports</h2>
+      <h2 style={{ fontSize: 16, color: 'var(--text-bright)', marginTop: 26 }}>Saved AI inference reports</h2>
       <SavedReportList key={`${workspaceId}:${patient.id}`} workspaceId={workspaceId} patient={patient} />
     </section>
   );
