@@ -16,6 +16,10 @@ class Institution(TenantMixin):
         UNIVERSITY = "UNIVERSITY", "University Department"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        "users.User", on_delete=models.PROTECT,
+        related_name="owned_institutions", null=True, blank=True,
+    )
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=100, unique=True)
     inst_type = models.CharField(

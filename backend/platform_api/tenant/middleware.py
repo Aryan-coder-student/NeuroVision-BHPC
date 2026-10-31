@@ -59,7 +59,8 @@ class WorkspaceTenantMiddleware(TenantMainMiddleware):
 
         # Membership is checked in the public schema before switching search_path.
         membership = InstitutionMembership.objects.filter(
-            user=user, institution_id=workspace_id, is_active=True
+            user=user, institution_id=workspace_id,
+            institution__owner_id=user.id, is_active=True
         ).select_related("institution").first()
         if membership is None:
             return JsonResponse({"detail": "Workspace not found."}, status=404)
