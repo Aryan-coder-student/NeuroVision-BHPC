@@ -51,14 +51,14 @@ export function resolveBraTSFolder(fileList) {
     if (!modality) continue; // Ignore README files and pre-existing annotations; never use them as inference input.
     const error = getNiftiFileError(file);
     if (error) return { files: {}, error: `${file.name}: ${error}`, folderName: root };
+    if (byModality[modality]) {
+      return { files: {}, error: `Multiple ${modality.toUpperCase()} MRI files found. Keep one per modality.`, folderName: root };
+    }
     const prefix = file.name.replace(/[_-](?:t1ce|t1|t2|flair)\.nii(?:\.gz)?$/i, '').toLowerCase();
     if (studyPrefix !== null && studyPrefix !== prefix) {
       return { files: {}, error: 'The MRI modalities belong to different study filenames. Select four volumes from one BraTS study.', folderName: root };
     }
     studyPrefix = prefix;
-    if (byModality[modality]) {
-      return { files: {}, error: `Multiple ${modality.toUpperCase()} MRI files found. Keep one per modality.`, folderName: root };
-    }
     byModality[modality] = file;
   }
   const missing = MRI_MODALITIES.filter(({ id }) => !byModality[id]).map(({ label }) => label);
