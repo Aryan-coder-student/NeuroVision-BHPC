@@ -63,7 +63,7 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 400)
 
-    def test_tenant_context_returns_verified_schema_and_role(self):
+    def test_tenant_context_returns_verified_schema_without_roles(self):
         self.authenticate(self.user)
         response = self.client.get(
             "/api/v1/tenant/context/",
@@ -72,7 +72,13 @@ class SharedWorkspaceIntegrationTests(TenantTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["schema_name"], self.institution.schema_name)
         self.assertEqual(response.data["id"], str(self.institution.id))
-        self.assertEqual(response.data["role"], InstitutionMembership.Role.MEMBER)
+        self.assertNotIn("role", response.data)
+
+    def test_membership_model_no_longer_has_admin_member_role(self):
+        from django.core.exceptions import FieldDoesNotExist
+
+        with self.assertRaises(FieldDoesNotExist):
+            InstitutionMembership._meta.get_field("role")
 
     def test_nonmember_cannot_read_tenant_context(self):
         self.authenticate(self.other_user)
