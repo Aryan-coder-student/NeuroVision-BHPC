@@ -1,6 +1,8 @@
 from django.test import SimpleTestCase, override_settings
 
-from ai_providers.segmentation.contracts import SegmentationProvider, SegmentationRequest
+from ai_providers.segmentation.contracts import (
+    NiftiVolume, SegmentationProvider, SegmentationRequest,
+)
 from ai_providers.vqa.contracts import VQAProvider, VQARequest
 from ai_providers.exceptions import ModelNotFound, ProviderNotConfigured
 from ai_providers.registry import ProviderRegistry
@@ -48,7 +50,7 @@ class FakeSegmentationProvider(SegmentationProvider):
         self.configuration = configuration
 
     def segment(self, request, model):
-        return {"study_reference": request.study_reference, "version": model.version}
+        return {"modalities": sorted(request.modalities), "version": model.version}
 
 
 class FakeVQAProvider(VQAProvider):
@@ -79,10 +81,13 @@ class ProviderRegistryTests(SimpleTestCase):
 
     def test_segmentation_routes_through_configured_adapter(self):
         result = self.registry.run_segmentation(
-            "3d_unet_v2", SegmentationRequest(study_reference="study/demo")
+            "3d_unet_v2", SegmentationRequest(modalities={
+                key: NiftiVolume(name=f"scan_{key}.nii.gz", data=b"test")
+                for key in ("t1", "t1ce", "t2", "flair")
+            })
         )
 
-        self.assertEqual(result.payload, {"study_reference": "study/demo", "version": "2.1"})
+        self.assertEqual(result.payload, {"modalities": ["flair", "t1", "t1ce", "t2"], "version": "2.1"})
         self.assertEqual(result.model.id, "3d_unet_v2")
 
     def test_vqa_routes_through_configured_adapter(self):
@@ -102,7 +107,10 @@ class ProviderRegistryTests(SimpleTestCase):
     def test_unknown_model_is_rejected(self):
         with self.assertRaises(ModelNotFound):
             self.registry.run_segmentation(
-                "unknown", SegmentationRequest(study_reference="study/demo")
+                "unknown", SegmentationRequest(modalities={
+                key: NiftiVolume(name=f"scan_{key}.nii.gz", data=b"test")
+                for key in ("t1", "t1ce", "t2", "flair")
+            })
             )
 
     @override_settings(
@@ -115,7 +123,10 @@ class ProviderRegistryTests(SimpleTestCase):
         self.assertFalse(model.is_configured)
         with self.assertRaises(ProviderNotConfigured):
             registry.run_segmentation(
-                "3d_unet_v2", SegmentationRequest(study_reference="study/demo")
+                "3d_unet_v2", SegmentationRequest(modalities={
+                key: NiftiVolume(name=f"scan_{key}.nii.gz", data=b"test")
+                for key in ("t1", "t1ce", "t2", "flair")
+            })
             )
 
     @override_settings(

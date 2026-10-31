@@ -1,3 +1,4 @@
+import base64
 from unittest.mock import MagicMock
 
 from django.test import SimpleTestCase
@@ -6,7 +7,7 @@ from ai_providers.segmentation.adapters import MonaiSegmentationAdapter
 from ai_providers.vqa.adapters import BlipVQAAdapter
 from ai_providers.catalog import ModelDefinition
 from ai_providers.contracts import ProviderConfiguration
-from ai_providers.segmentation.contracts import SegmentationRequest
+from ai_providers.segmentation.contracts import NiftiVolume, SegmentationRequest
 from ai_providers.vqa.contracts import VQARequest
 from ai_providers.exceptions import ProviderProtocolError
 
@@ -33,9 +34,12 @@ VQA_MODEL = ModelDefinition(
 
 
 class ProviderAdapterTests(SimpleTestCase):
-    def test_monai_adapter_preserves_existing_flask_contract(self):
+    def test_monai_adapter_sends_all_modalities_and_receives_actual_mask(self):
         transport = MagicMock()
-        transport.post_json.return_value = {"volume_cm3": 12.3}
+        transport.post_multipart.return_value = {
+            "mask_nifti_base64": base64.b64encode(b"nifti-mask").decode("ascii"),
+            "region_volumes_cm3": {"whole_tumor": 12.3},
+        }
         adapter = MonaiSegmentationAdapter(
             ProviderConfiguration(
                 base_url="http://segmentation.test/",
@@ -46,16 +50,22 @@ class ProviderAdapterTests(SimpleTestCase):
         )
 
         result = adapter.segment(
-            SegmentationRequest(study_reference="/studies/patient-a"),
+            SegmentationRequest(modalities={
+                key: NiftiVolume(name=f"scan_{key}.nii.gz", data=b"nifti-bytes")
+                for key in ("t1", "t1ce", "t2", "flair")
+            }),
             SEGMENTATION_MODEL,
         )
 
-        self.assertEqual(result, {"volume_cm3": 12.3})
-        transport.post_json.assert_called_once_with(
-            "http://segmentation.test/predict",
-            payload={
-                "patient_folder": "/studies/patient-a",
+        self.assertEqual(result["region_volumes_cm3"], {"whole_tumor": 12.3})
+        transport.post_multipart.assert_called_once_with(
+            "http://segmentation.test/predict/files",
+            fields={
                 "model_version": "3d_unet_v2",
+                **{
+                    key: (f"scan_{key}.nii.gz", b"nifti-bytes", "application/octet-stream")
+                    for key in ("t1", "t1ce", "t2", "flair")
+                },
             },
             timeout_seconds=17,
             token="token",
@@ -108,3 +118,17 @@ class ProviderAdapterTests(SimpleTestCase):
 
         with self.assertRaises(ProviderProtocolError):
             adapter.answer(VQARequest(question="What is visible?"), VQA_MODEL)
+
+    def test_monai_adapter_rejects_path_only_result_without_mask(self):
+        transport = MagicMock()
+        transport.post_multipart.return_value = {"output_path": "/tmp/seg.nii.gz"}
+        adapter = MonaiSegmentationAdapter(
+            ProviderConfiguration(base_url="http://segmentation.test", timeout_seconds=20),
+            transport=transport,
+        )
+        request = SegmentationRequest(modalities={
+            key: NiftiVolume(name=f"scan_{key}.nii.gz", data=b"data")
+            for key in ("t1", "t1ce", "t2", "flair")
+        })
+        with self.assertRaises(ProviderProtocolError):
+            adapter.segment(request, SEGMENTATION_MODEL)

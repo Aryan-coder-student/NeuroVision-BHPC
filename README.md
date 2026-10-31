@@ -212,10 +212,10 @@ The Django provider registry exposes the existing MONAI 3D UNet and fine-tuned B
 | Pattern | Implementation | Boundary it protects |
 | --- | --- | --- |
 | Provider interfaces | `SegmentationProvider` and `VQAProvider` accept validated capability-specific requests. | Keeps Django views and React independent of inference transports. |
-| Provider adapters | `MonaiSegmentationAdapter` preserves the Flask contract; `BlipVQAAdapter` preserves the FastAPI multipart contract. | Contains provider URLs, tokens, timeouts, and vendor payloads server-side. |
+| Provider adapters | `MonaiSegmentationAdapter` targets a multipart file endpoint; `BlipVQAAdapter` preserves the FastAPI multipart contract. | Contains provider URLs, tokens, timeouts, and vendor payloads server-side. |
 | Model catalog and registry | The settings-backed catalog maps stable model IDs to versions and configured adapters. | Makes future providers additive without exposing invented models or browser-selected endpoints. |
 
-Inference responses are returned to the caller but are not persisted as clinical records. This change does not add MRI upload, report generation, background jobs, Celery, Redis, or another service.
+Inference responses are returned to the caller but are not persisted as clinical records. This change accepts **transient multipart MRI input** at the authenticated Django boundary, but does not persist imaging studies, model results, or reports. The upstream MONAI Flask `POST /predict/files` does **not exist in the current model repository**. Segmentation is disabled by default (`MONAI_SEGMENTATION_UPLOAD_ENABLED=False`) until the independent model service implements authenticated multipart inference that returns `mask_nifti_base64` (not a server filesystem path), with native MRI geometry and model provenance verified. The frontend's folder selector in PR #31 only previews inputs; no predictions are faked. No Celery, Redis or new infrastructure is introduced.
 
 ## API and tenant model
 
@@ -242,7 +242,7 @@ Tenant-scoped routes require an authenticated user and an `X-Workspace-Id` that 
 - `ENCRYPTION_KEY`
 - `TENANT_BASE_DOMAIN`
 - `VITE_API_URL`
-- `MONAI_SEGMENTATION_BASE_URL`, timeout, optional API token, and model version
+- `MONAI_SEGMENTATION_BASE_URL`, timeout, token, model version and `MONAI_SEGMENTATION_UPLOAD_ENABLED` flag (false until verified upstream support)
 - `BLIP_VQA_BASE_URL`, timeout, optional API token, and model version
 
 The frontend can also be deployed as a Vite static application on Vercel-compatible platforms. Use `frontend` as the project root, `npm run build` as the build command, and `dist` as the output directory.

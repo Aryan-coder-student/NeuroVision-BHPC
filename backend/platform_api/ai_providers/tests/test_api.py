@@ -123,7 +123,17 @@ class InferenceAPITests(TenantTestCase):
         response = self.request(
             "post",
             f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
-            data={"model_id": "3d_unet_v2", "study_reference": "/studies/patient-a"},
+            data={
+                "model_id": "3d_unet_v2",
+                **{
+                    key: SimpleUploadedFile(
+                        f"scan_{key}.nii.gz", b"nifti-data",
+                        content_type="application/octet-stream",
+                    )
+                    for key in ("t1", "t1ce", "t2", "flair")
+                },
+            },
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, 200, response.data)
@@ -131,6 +141,9 @@ class InferenceAPITests(TenantTestCase):
         self.assertEqual(response.data["model"]["version"], "2.1")
         self.assertEqual(response.data["result"], {"volume_cm3": 12.3})
         registry.run_segmentation.assert_called_once()
+        forwarded = registry.run_segmentation.call_args.args[1]
+        self.assertEqual(set(forwarded.modalities), {"t1", "t1ce", "t2", "flair"})
+        self.assertEqual(forwarded.modalities["t1ce"].data, b"nifti-data")
 
     @patch("ai_providers.views.get_provider_registry")
     def test_member_can_route_vqa_without_persisting_the_image(self, get_registry):
@@ -168,7 +181,17 @@ class InferenceAPITests(TenantTestCase):
         response = self.request(
             "post",
             f"/api/v1/tenant/patients/{self.other_patient.id}/inference/segmentation/",
-            data={"model_id": "3d_unet_v2", "study_reference": "/studies/other"},
+            data={
+                "model_id": "3d_unet_v2",
+                **{
+                    key: SimpleUploadedFile(
+                        f"scan_{key}.nii.gz", b"nifti-data",
+                        content_type="application/octet-stream",
+                    )
+                    for key in ("t1", "t1ce", "t2", "flair")
+                },
+            },
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, 404)
@@ -181,7 +204,17 @@ class InferenceAPITests(TenantTestCase):
         response = self.request(
             "post",
             f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
-            data={"model_id": "3d_unet_v2", "study_reference": "/studies/patient-a"},
+            data={
+                "model_id": "3d_unet_v2",
+                **{
+                    key: SimpleUploadedFile(
+                        f"scan_{key}.nii.gz", b"nifti-data",
+                        content_type="application/octet-stream",
+                    )
+                    for key in ("t1", "t1ce", "t2", "flair")
+                },
+            },
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, 504)
@@ -210,3 +243,27 @@ class InferenceAPITests(TenantTestCase):
 
         self.assertEqual(response.status_code, 400)
         get_registry.return_value.run_vqa.assert_not_called()
+
+    @patch("ai_providers.views.get_provider_registry")
+    def test_rejects_old_path_payload_without_running_segmentation(self, registry):
+        response = self.request(
+            "post",
+            f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
+            data={"model_id": "3d_unet_v2", "study_reference": "/any/private/path"},
+        )
+        self.assertEqual(response.status_code, 400)
+        registry.return_value.run_segmentation.assert_not_called()
+
+    @patch("ai_providers.views.get_provider_registry")
+    def test_rejects_invalid_or_missing_modalities(self, registry):
+        response = self.request(
+            "post",
+            f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
+            data={
+                "model_id": "3d_unet_v2",
+                "t1": SimpleUploadedFile("scan_t1.txt", b"wrong", content_type="text/plain"),
+            },
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        registry.return_value.run_segmentation.assert_not_called()

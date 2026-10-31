@@ -1,4 +1,8 @@
+import base64
+import binascii
+
 from ai_providers.catalog import ModelDefinition
+from ai_providers.exceptions import ProviderProtocolError
 from ai_providers.contracts import ProviderConfiguration
 from ai_providers.transport import ProviderHTTPTransport, provider_endpoint
 
@@ -31,9 +35,25 @@ class MonaiSegmentationAdapter(SegmentationProvider):
                 volume.data,
                 "application/octet-stream",
             )
-        return self._transport.post_multipart(
+        response = self._transport.post_multipart(
             provider_endpoint(self._configuration.base_url, "/predict/files"),
             fields=fields,
             timeout_seconds=self._configuration.timeout_seconds,
             token=self._configuration.token,
         )
+
+        # Only an actual NIfTI mask is a successful inference result.
+        # Do not treat a filesystem output_path as a generated preview.
+        encoded = response.get("mask_nifti_base64")
+        try:
+            if not isinstance(encoded, str) or not encoded:
+                raise ProviderProtocolError()
+            mask = base64.b64decode(encoded, validate=True)
+            if not mask or len(mask) > 128 * 1024 * 1024:
+                raise ProviderProtocolError()
+        except (binascii.Error, ValueError) as error:
+            raise ProviderProtocolError() from error
+        return {
+            "mask_nifti_base64": encoded,
+            "region_volumes_cm3": response.get("region_volumes_cm3"),
+        }
