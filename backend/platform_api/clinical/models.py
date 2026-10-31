@@ -150,7 +150,7 @@ class DatasetContribution(models.Model):
     sample_count = models.PositiveIntegerField(default=1)
     no_phi_attestation = models.BooleanField(default=False, editable=False)
     status = models.CharField(
-        max_length=24, choices=Status.choices, default=Status.PENDING, editable=False
+        max_length=24, choices=Status.choices, default=Status.PENDING
     )
     review_note = models.TextField(blank=True, max_length=1000)
     reviewed_by_user_id = models.UUIDField(null=True, blank=True, editable=False)

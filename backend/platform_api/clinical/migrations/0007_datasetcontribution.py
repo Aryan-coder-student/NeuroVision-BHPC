@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ("status", models.CharField(max_length=24, choices=[
                     ("pending_review", "Pending review"), ("metadata_approved", "Metadata reviewed"),
                     ("rejected", "Rejected"),
-                ], default="pending_review", editable=False)),
+                ], default="pending_review")),
                 ("review_note", models.TextField(blank=True, max_length=1000)),
                 ("reviewed_by_user_id", models.UUIDField(null=True, blank=True, editable=False)),
                 ("reviewed_at", models.DateTimeField(null=True, blank=True, editable=False)),
