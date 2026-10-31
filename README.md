@@ -190,46 +190,32 @@ mask load in NiiVue. Use **MRI + mask**, **Original MRI**, **Segmentation mask**
 This is a research reference preview, **not AI inference**: no model prediction
 is made, no patient study is uploaded, and no patient result or report is saved.
 The separate **Patient study (experimental)** option still requires a locally
-running Flask `/predict` service accessible from the browser; that is not a
-production Django segmentation integration.
+running Flask `/predict` service, but the browser now reaches it only through
+the tenant-authorized Django inference API.
 
-### AI workflow integration decisions (VQA and segmentation)
+### Separate inference capability modules
 
-The current VQA and segmentation screens prove the interaction model, but their direct service calls and sample assets are not the production integration boundary. The following patterns are the agreed target for introducing real patient studies, model services, and durable results.
+Backend inference modules live in `backend/platform_api/ai_providers/`:
 
-| Pattern | Decision | Boundary it protects |
+- `segmentation/` owns the MONAI 3D UNet request contract, serializer, adapter, and view.
+- `vqa/` owns the BLIP question + image contract, serializer, adapter, and view.
+
+Only model catalog/selection, transport, configuration, tenant permissions,
+response formatting and provider error handling are shared. Both task views
+inherit a single patient-scoped request lifecycle from `PatientInferenceView`.
+No second provider service or job queue is introduced by this refactor.
+
+### AI provider registry
+
+The Django provider registry exposes the existing MONAI 3D UNet and fine-tuned BLIP models through patient-scoped endpoints. The catalog reports configuration and version metadata only; it does not claim that a provider is live until an inference request succeeds.
+
+| Pattern | Implementation | Boundary it protects |
 | --- | --- | --- |
-| Provider pattern | Define a `SegmentationProvider` and `VQAProvider` capability contract. A provider accepts a validated, patient-scoped job and returns normalized progress and result data; local, self-hosted, or managed inference can implement the same contract. | Keeps React and clinical workflows independent of where models run. |
-| Adapter pattern | Wrap every model vendor or transport behind an adapter, such as `NiiVueAdapter`, `FlaskSegmentationAdapter`, or `HuggingFaceVQAAdapter`. Adapters translate request shapes, authentication, retries, and provider-specific responses into the internal contract. | Prevents vendor payloads and SDKs from leaking into pages, serializers, or persisted clinical records. |
-| Builder pattern | Use an immutable `ImagingJobBuilder` to assemble a request from verified patient/workspace context, study asset references, selected model/version, modality, and task-specific options. The builder validates required inputs before work is submitted. | Eliminates ad-hoc request objects and prevents the browser from supplying untrusted patient or storage context. |
-| Strategy and factory | Select a provider/model strategy from the requested capability, modality, institution policy, and model-registry availability. A factory resolves the approved implementation; UI model labels never map directly to executable endpoints. | Makes model replacement, staged rollout, and per-institution policy possible without page changes. |
-| Command and job state machine | Submit segmentation and long-running VQA operations as durable jobs with explicit `queued`, `running`, `completed`, `failed`, and `cancelled` states. The command carries a correlation ID and is idempotent. | Avoids duplicate inference, browser-timeout ambiguity, and lost work during refreshes or retries. |
-| Repository pattern | Persist `Study`, `ImagingJob`, `ModelRun`, and immutable result metadata through repository interfaces owned by the clinical domain. Binary imaging files remain in approved object storage; the database stores references and provenance. | Keeps storage, retrieval, and retention rules out of API views and model adapters. |
-| Result/provenance envelope | Return a shared result envelope containing job ID, patient ID, study reference, model name/version, input checksum, timing, warnings, and result payload. No generated finding becomes a clinical record without an explicit review workflow. | Preserves traceability and keeps research output distinct from clinician-authored records. |
-| React context provider | Add an `ImagingSessionProvider` beneath the existing `PatientWorkspace`. It owns the selected study, model choice, job status, and normalized result while the VQA and segmentation views remain presentation-focused. | Ensures every imaging action stays patient-scoped and avoids prop drilling or duplicated request state. |
+| Provider interfaces | `SegmentationProvider` and `VQAProvider` accept validated capability-specific requests. | Keeps Django views and React independent of inference transports. |
+| Provider adapters | `MonaiSegmentationAdapter` targets a multipart file endpoint; `BlipVQAAdapter` preserves the FastAPI multipart contract. | Contains provider URLs, tokens, timeouts, and vendor payloads server-side. |
+| Model catalog and registry | The settings-backed catalog maps stable model IDs to versions and configured adapters. | Makes future providers additive without exposing invented models or browser-selected endpoints. |
 
-The resulting request flow is:
-
-```mermaid
-sequenceDiagram
-    participant UI as Patient-scoped UI
-    participant Builder as ImagingJobBuilder
-    participant Service as Imaging application service
-    participant Factory as Provider factory
-    participant Adapter as Vendor adapter
-    participant Store as Job/result repository
-
-    UI->>Builder: verified study + model selection
-    Builder->>Service: validated immutable job
-    Service->>Store: persist queued job and provenance
-    Service->>Factory: resolve approved provider strategy
-    Factory->>Adapter: invoke normalized provider contract
-    Adapter-->>Service: normalized progress/result
-    Service->>Store: persist terminal state and metadata
-    Service-->>UI: canonical job/result state
-```
-
-This design deliberately keeps direct third-party inference URLs, raw browser file paths, and demo-image assumptions out of the final clinical data path.
+Inference responses are returned to the caller but are not persisted as clinical records. This change accepts **transient multipart MRI input** at the authenticated Django boundary, but does not persist imaging studies, model results, or reports. The upstream MONAI Flask `POST /predict/files` does **not exist in the current model repository**. Segmentation is disabled by default (`MONAI_SEGMENTATION_UPLOAD_ENABLED=False`) until the independent model service implements authenticated multipart inference that returns `mask_nifti_base64` (not a server filesystem path), with native MRI geometry and model provenance verified. The frontend's folder selector in PR #31 only previews inputs; no predictions are faked. No Celery, Redis or new infrastructure is introduced.
 
 ## API and tenant model
 
@@ -241,6 +227,8 @@ The central API is exposed under `/api/v1`:
 /api/v1/my-patients/      Authorized cross-workspace patient discovery
 /api/v1/tenant/context/   Current workspace context
 /api/v1/tenant/patients/  Tenant-scoped patient records and identity grants
+/api/v1/tenant/models/    Configured model catalog and version metadata
+/api/v1/tenant/patients/:id/inference/  Patient-authorized inference proxy
 ```
 
 Tenant-scoped routes require an authenticated user and an `X-Workspace-Id` that resolves to one of that user's active memberships. Requests that are unauthenticated, missing workspace context, or target an unauthorized workspace are rejected before tenant data is selected.
@@ -254,6 +242,8 @@ Tenant-scoped routes require an authenticated user and an `X-Workspace-Id` that 
 - `ENCRYPTION_KEY`
 - `TENANT_BASE_DOMAIN`
 - `VITE_API_URL`
+- `MONAI_SEGMENTATION_BASE_URL`, timeout, token, model version and `MONAI_SEGMENTATION_UPLOAD_ENABLED` flag (false until verified upstream support)
+- `BLIP_VQA_BASE_URL`, timeout, optional API token, and model version
 
 The frontend can also be deployed as a Vite static application on Vercel-compatible platforms. Use `frontend` as the project root, `npm run build` as the build command, and `dist` as the output directory.
 
