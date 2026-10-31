@@ -267,3 +267,25 @@ class InferenceAPITests(TenantTestCase):
         )
         self.assertEqual(response.status_code, 400)
         registry.return_value.run_segmentation.assert_not_called()
+
+    @patch("ai_providers.views.get_provider_registry")
+    def test_rejects_mislabeled_mri_modalities(self, registry):
+        volumes = {key: SimpleUploadedFile(f"scan_{key}.nii.gz", b"nifti-data") for key in ("t1", "t1ce", "t2", "flair")}
+        volumes["t1"] = SimpleUploadedFile("scan_t2.nii.gz", b"nifti-data")
+        response = self.request(
+            "post", f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
+            data={"model_id": "3d_unet_v2", **volumes}, format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        registry.return_value.run_segmentation.assert_not_called()
+
+    @patch("ai_providers.views.get_provider_registry")
+    def test_rejects_mixed_study_mri_modalities(self, registry):
+        volumes = {key: SimpleUploadedFile(f"studyA_{key}.nii.gz", b"nifti-data") for key in ("t1", "t1ce", "t2", "flair")}
+        volumes["flair"] = SimpleUploadedFile("studyB_flair.nii.gz", b"nifti-data")
+        response = self.request(
+            "post", f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
+            data={"model_id": "3d_unet_v2", **volumes}, format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        registry.return_value.run_segmentation.assert_not_called()
