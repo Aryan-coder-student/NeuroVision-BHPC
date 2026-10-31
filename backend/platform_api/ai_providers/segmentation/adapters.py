@@ -24,7 +24,7 @@ class MonaiSegmentationAdapter(SegmentationProvider):
         transport: ProviderHTTPTransport | None = None,
     ):
         self._configuration = configuration
-        self._transport = transport or ProviderHTTPTransport()
+        self._transport = transport if transport is not None else ProviderHTTPTransport()
 
     def segment(self, request: SegmentationRequest, model: ModelDefinition):
         fields: dict[str, object] = {"model_version": model.upstream_model_version}
