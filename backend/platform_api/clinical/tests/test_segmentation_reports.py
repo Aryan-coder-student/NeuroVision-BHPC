@@ -10,7 +10,7 @@ from uuid import uuid4
 from django.core import signing
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django_tenants.utils import schema_context
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -261,6 +261,28 @@ class SegmentationReportAPITests(TenantTestCase):
         self.assertEqual(self.request("get").data["results"], [])
         with schema_context(self.workspace.schema_name):
             self.assertFalse(SegmentationReport.objects.exists())
+
+    def test_tenant_admin_requires_staff_owner_for_image_access(self):
+        admin_view = admin.site._registry[SegmentationReport]
+        request = RequestFactory().get("/admin/clinical/segmentationreport/")
+        self.owner.is_staff = True
+        self.owner.is_superuser = True
+        self.owner.save(update_fields=["is_staff", "is_superuser"])
+        self.outsider.is_staff = True
+        self.outsider.is_superuser = True
+        self.outsider.save(update_fields=["is_staff", "is_superuser"])
+        request.user = self.owner
+        self.assertFalse(admin_view.has_module_permission(request))
+        self.assertFalse(admin_view.has_view_permission(request))
+
+        try:
+            connection.set_tenant(self.workspace)
+            self.assertTrue(admin_view.has_view_permission(request))
+            request.user = self.outsider
+            self.assertFalse(admin_view.has_module_permission(request))
+            self.assertFalse(admin_view.has_view_permission(request))
+        finally:
+            connection.set_schema_to_public()
 
     def test_nonowner_cannot_access_saved_report(self):
         created = self.request("post", data=self.upload(), fmt="multipart")
