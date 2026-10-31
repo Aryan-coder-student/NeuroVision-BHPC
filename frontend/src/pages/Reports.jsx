@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useOutletContext, useSearchParams } from 'react-router-dom';
-import { FileText, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 import { fetchSegmentationReport, fetchSegmentationSnapshot } from '../services/api';
 import { formatIndiaDateTime } from '../utils/date-time';
