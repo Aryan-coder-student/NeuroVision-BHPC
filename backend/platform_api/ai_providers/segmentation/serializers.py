@@ -14,10 +14,6 @@ class SegmentationInferenceSerializer(serializers.Serializer):
     flair = serializers.FileField()
 
     def validate(self, attrs):
-        if "study_reference" in self.initial_data or "patient_folder" in self.initial_data:
-            raise serializers.ValidationError(
-                "Filesystem paths are not accepted. Upload the four MRI modalities."
-            )
         for modality in MRI_MODALITIES:
             image = attrs[modality]
             if not re.search(r"(?:^|[_-])" + modality + r"\.nii(?:\.gz)?$", image.name, flags=re.IGNORECASE):
