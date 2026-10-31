@@ -345,7 +345,7 @@
   .viewer-model-note { font-size: 10px; }
 }
 
-/* Local file input/output workflow. Files never leave the browser in this PR. */
+/* BraTS folder intake: no path text entry and no output download. */
 .seg-file-row {
   border: 1px solid var(--outline-dim);
   padding: 11px 12px;
@@ -378,3 +378,13 @@
 .seg-inference-note { display: flex; gap: 9px; padding: 12px; margin-top: 12px; background: var(--bg-card-high); border: 1px solid var(--outline-dim); color: var(--text-muted); font-size: 11px; line-height: 1.6; }
 .seg-inference-note svg { flex-shrink: 0; color: var(--text-label); }
 .seg-inference-note strong { color: var(--text-bright); }
+
+.seg-instructions { padding: 12px; background: var(--bg-card-high); border: 1px solid var(--outline-dim); margin-bottom: 15px; font-size: 12px; color: var(--text-primary); line-height: 1.65; }
+.seg-instructions ol { padding-left: 19px; margin: 8px 0 0; color: var(--text-muted); }
+.seg-instructions code { color: var(--text-bright); overflow-wrap: anywhere; }
+.seg-folder-name { font-size: 12px; color: var(--text-muted); margin: 12px 0; overflow-wrap: anywhere; }
+.seg-modalities { margin: 12px 0; }
+.seg-modalities .seg-file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.seg-modalities .seg-file-row .field-label { min-width: 50px; font-weight: 700; color: var(--text-bright); }
+.seg-modalities .seg-file-row .seg-file-info { flex: 1; margin: 0; min-width: 0; }
+.seg-modalities .seg-file-row svg { color: var(--success); }
