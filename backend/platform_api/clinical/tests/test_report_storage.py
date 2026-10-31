@@ -55,6 +55,31 @@ class ReportStorageBackendTests(SimpleTestCase):
 
     @override_settings(
         NEUROVISION_REPORT_STORAGE="huggingface",
+        HUGGINGFACE_S3_NAMESPACE="pahariaryan",
+        HUGGINGFACE_S3_BUCKET="neuro-bucket",
+        HUGGINGFACE_S3_ACCESS_KEY_ID="HFAK_TEST_ONLY",
+        HUGGINGFACE_S3_SECRET_ACCESS_KEY="test-secret",
+    )
+    @patch("storages.backends.s3.S3Storage")
+    def test_remote_file_save_read_and_delete_keep_private_object_keys(self, remote):
+        from io import BytesIO
+
+        backend = remote.return_value
+        backend.exists.return_value = False
+        backend.save.side_effect = lambda key, data: key
+        backend.open.return_value = BytesIO(b"png-data")
+        storage = PrivateReportStorage()
+        key = "reports/workspace-id/patient-id/report-id/3d-segmentation.png"
+        saved = storage.save(key, ContentFile(b"png-data"))
+        self.assertEqual(saved, key)
+        self.assertEqual(storage.open(saved, "rb").read(), b"png-data")
+        storage.delete(saved)
+        backend.save.assert_called_once()
+        backend.open.assert_called_once_with(key, "rb")
+        backend.delete.assert_called_once_with(key)
+
+    @override_settings(
+        NEUROVISION_REPORT_STORAGE="huggingface",
         HUGGINGFACE_S3_ACCESS_KEY_ID="",
         HUGGINGFACE_S3_SECRET_ACCESS_KEY="",
     )
