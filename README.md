@@ -264,3 +264,42 @@ NeuroVision is actively evolving as a brain-imaging research platform. The codeb
 ## License
 
 No license file is currently included in this repository. Add an explicit license before redistributing or accepting external contributions under defined terms.
+
+
+### Private segmentation report media (PR #35)
+
+Segmentation report snapshots are **files on the Django backend filesystem**, not
+binary columns in PostgreSQL. Only the file's relative path and report metadata
+live in tenant PostgreSQL. Saved images are grouped by readable, slugified names
+plus IDs (IDs prevent duplicate names from colliding):
+
+```text
+backend/platform_api/media/
+  reports/
+    <workspace-name>-<workspace-uuid>/
+      <patient-name>-<patient-uuid>/
+        <report-uuid>/
+          3d-segmentation.png
+```
+
+The upload's original filename is discarded. Names in these filesystem paths
+are still sensitive patient data; do not make this directory public or log its
+paths to third-party services. Filenames remain based on the names at report
+creation time if patient/workspace names are later changed.
+
+`NEUROVISION_MEDIA_ROOT` optionally selects the root directory; by default it
+is `backend/platform_api/media`. For a deployed backend **mount a persistent
+volume and set `NEUROVISION_MEDIA_ROOT` to its mount path**, e.g.
+`/var/data/neurovision-media` on a disk-equipped Render service. Without a
+persistent mounted disk, redeploys/instance replacement can permanently lose
+the PNGs even though PostgreSQL retains report metadata. Multiple instances
+must share the same private storage. A future object-storage backend can be
+plugged into the file storage abstraction if needed.
+
+No `/media/` public route is registered. The private storage backend refuses
+direct `.url` access. The web UI fetches images via the existing authenticated,
+tenant-scoped report snapshot endpoint, and tenant Django Admin offers a staff-only
+preview. The admin deliberately does **not** permit adding/editing inferred reports,
+which must pass signed inference-proof checks. Database deletions clean up report
+files after the transaction commits. Original MRI and interactive NIfTI masks
+remain transient.

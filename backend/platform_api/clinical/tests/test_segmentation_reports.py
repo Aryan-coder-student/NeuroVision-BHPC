@@ -138,6 +138,28 @@ class SegmentationReportAPITests(TenantTestCase):
             self.assertEqual(len(instance.snapshot_image.name.encode()), len(instance.snapshot_image.name))
             self.assertFalse(hasattr(instance, "snapshot_png"))
 
+    def test_deleting_report_cleans_media_file_after_database_commit(self):
+        created = self.request("post", data=self.upload(), fmt="multipart")
+        self.assertEqual(created.status_code, 201, created.data)
+        with schema_context(self.workspace.schema_name):
+            report = SegmentationReport.objects.get(id=created.data["id"])
+            path = Path(report.snapshot_image.path)
+            self.assertTrue(path.exists())
+            with self.captureOnCommitCallbacks(execute=True):
+                report.delete()
+            self.assertFalse(path.exists())
+
+    def test_deleting_patient_cascades_to_report_and_media_cleanup(self):
+        created = self.request("post", data=self.upload(), fmt="multipart")
+        self.assertEqual(created.status_code, 201, created.data)
+        with schema_context(self.workspace.schema_name):
+            report = SegmentationReport.objects.get(id=created.data["id"])
+            path = Path(report.snapshot_image.path)
+            with self.captureOnCommitCallbacks(execute=True):
+                self.patient.delete()
+            self.assertFalse(path.exists())
+            self.assertFalse(SegmentationReport.objects.filter(id=created.data["id"]).exists())
+
     def test_replayed_report_does_not_leave_second_file(self):
         token = self.proof()
         first = self.request("post", data=self.upload(token=token), fmt="multipart")

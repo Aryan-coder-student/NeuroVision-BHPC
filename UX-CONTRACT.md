@@ -41,3 +41,11 @@
 - Forms use app-owned validation with inline errors and focus the first invalid field.
 - Loading, unavailable, empty, read-only, error, and verified states remain explicit in the owning panel.
 - Native select popup appearance is accepted for the current model pickers; the project does not claim authored popup geometry.
+
+
+#### Private report images
+- Segmentation report PNGs use Django `FileField`, not PostgreSQL binary values.
+- Media is stored under `reports/<workspace-name>-<uuid>/<patient-name>-<uuid>/<report-uuid>/3d-segmentation.png`; original upload filenames are never trusted.
+- Workspace/patient names in paths are sensitive. Keep the entire `MEDIA_ROOT` private; use authenticated tenant snapshot GET / staff-only admin preview, never a public media URL.
+- Development defaults to `backend/platform_api/media/`; on Render set `NEUROVISION_MEDIA_ROOT` to a persistent mounted disk path or the filesystem will be ephemeral.
+- Models Patient, ImagingStudy, SegmentationReport are registered read-only in tenant Django Admin to preserve API validation and audit rules.
