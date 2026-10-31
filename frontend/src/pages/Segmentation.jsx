@@ -144,9 +144,9 @@ export default function Segmentation() {
                 <div className="seg-instructions">
                   <strong>Prepare your MRI input folder</strong>
                   <ol>
-                    <li>Create a folder named <code>BraTS</code>.</li>
+                    <li>Inside your local <code>input/files</code> directory, create a folder named <code>BraTS</code> (<code>input/files/BraTS</code>).</li>
                     <li>Place the four NIfTI files inside: <code>*_t1.nii.gz</code>, <code>*_t1ce.nii.gz</code>, <code>*_t2.nii.gz</code>, <code>*_flair.nii.gz</code>.</li>
-                    <li>Select the entire folder below; the app identifies all four modalities automatically.</li>
+                    <li>Select the <code>BraTS</code> folder itself below (not individual files). The app extracts and checks T1, T1CE, T2 and FLAIR automatically; no filesystem path needs to be typed.</li>
                   </ol>
                 </div>
                 <label className="field-label" htmlFor="brats-folder">BraTS input folder</label>
