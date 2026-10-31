@@ -38,8 +38,10 @@ test('prevents confusing folder selection with a file path', () => {
   assert.match(resolveBraTSFolder(files).error, /entire folder/);
 });
 
-test('rejects modalities combined from different BraTS studies', () => {
-  const mixed = braTSFiles();
-  mixed[2] = file('BraTS2021_00001_t2.nii.gz');
-  assert.match(resolveBraTSFolder(mixed).error, /different study/);
+test('accepts four modalities with different filename prefixes', () => {
+  const files = braTSFiles();
+  files[2] = file('different_input_t2.nii.gz');
+  const result = resolveBraTSFolder(files);
+  assert.equal(result.error, '');
+  assert.equal(result.files.t2.name, 'different_input_t2.nii.gz');
 });
