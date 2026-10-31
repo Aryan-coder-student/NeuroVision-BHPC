@@ -30,7 +30,6 @@ export default function Patients() {
   const displayNameRef = useRef(null);
   const dobRef = useRef(null);
   const emailRef = useRef(null);
-  const isAdmin = org?.role === 'ADMIN';
   const activeVerification = pendingVerification?.workspaceId === org?.id ? pendingVerification : null;
 
   const loadPatients = useCallback(async (signal, requestedPage = 1) => {
@@ -78,7 +77,7 @@ export default function Patients() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!isAdmin || isSaving || activeVerification) return;
+    if (isSaving || activeVerification) return;
 
     const validation = validatePatientRegistration(form);
     setFieldErrors(validation.errors);
@@ -112,7 +111,7 @@ export default function Patients() {
         setFieldErrors(serverFieldErrors);
         focusFirstInvalidField(serverFieldErrors);
       } else if (error.response?.status === 403) {
-        setSubmitError('Only workspace administrators can register patients.');
+        setSubmitError('Access denied. Check your workspace session.');
       } else {
         setSubmitError(response?.detail || 'The patient could not be registered. Review the details and try again.');
       }
@@ -149,7 +148,7 @@ export default function Patients() {
         </div>
       </header>
 
-      <div className={`patients-layout ${isAdmin ? '' : 'patients-layout-readonly'}`}>
+      <div className="patients-layout">
         <div className="patients-panel patients-list-panel">
           <div className="patients-panel-heading">
             <div>
@@ -185,7 +184,7 @@ export default function Patients() {
             <div className="patients-empty">
               <Users size={22} aria-hidden="true" />
               <h3>No patients registered</h3>
-              <p>{isAdmin ? 'Use the registration form to add the first patient.' : 'A workspace administrator can add the first patient.'}</p>
+              <p>Use the registration form to add the first patient.</p>
             </div>
           )}
 
@@ -229,8 +228,7 @@ export default function Patients() {
           )}
         </div>
 
-        {isAdmin ? (
-          <aside className="patients-panel patients-form-panel" aria-labelledby="register-patient-title">
+        <aside className="patients-panel patients-form-panel" aria-labelledby="register-patient-title">
             <div className="patients-form-icon">{activeVerification ? <Mail size={18} /> : <UserPlus size={18} />}</div>
             <h2 id="register-patient-title">{activeVerification ? 'Verify patient email' : 'Register patient'}</h2>
             <p className="patients-form-intro">
@@ -333,15 +331,6 @@ export default function Patients() {
               <span>Patient records stay in this workspace. Email verification uses the existing encrypted identity service and does not share medical records.</span>
             </div>
           </aside>
-        ) : (
-          <aside className="patients-panel patients-readonly-note">
-            <ShieldCheck size={20} aria-hidden="true" />
-            <div>
-              <h2>Read-only access</h2>
-              <p>You can view this workspace’s patients. Registration is limited to workspace administrators.</p>
-            </div>
-          </aside>
-        )}
       </div>
     </section>
   );

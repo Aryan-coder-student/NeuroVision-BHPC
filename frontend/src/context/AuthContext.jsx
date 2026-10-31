@@ -18,8 +18,7 @@ export function AuthProvider({ children }) {
         if (cancelled || !profile.user) return;
         const verifiedUser = {
           ...profile.user,
-          name: profile.user.first_name || profile.user.email.split('@')[0],
-          role: 'Professional'
+          name: profile.user.first_name || profile.user.email.split('@')[0]
         };
         setUser(verifiedUser);
 
@@ -33,7 +32,7 @@ export function AuthProvider({ children }) {
               if (String(context.id) !== String(verified.id)) {
                 throw new Error('Workspace context mismatch');
               }
-              if (!cancelled) setOrg({ ...verified, role: context.role });
+              if (!cancelled) setOrg(verified);
             }
           } catch {
             setOrg(null);
@@ -88,8 +87,7 @@ export function AuthProvider({ children }) {
       
       const userProfile = {
         ...response.user,
-        name: response.user.first_name || email.split('@')[0],
-        role: 'Professional'
+        name: response.user.first_name || email.split('@')[0]
       };
       
       setTenantDomain(null);
@@ -118,8 +116,7 @@ export function AuthProvider({ children }) {
     if (!profile.user) throw new Error('Could not restore verified session');
     const verifiedUser = {
       ...profile.user,
-      name: profile.user.first_name || profile.user.email.split('@')[0],
-      role: 'Professional'
+      name: profile.user.first_name || profile.user.email.split('@')[0]
     };
     setUser(verifiedUser);
     setOrg(null);
@@ -147,7 +144,7 @@ export function AuthProvider({ children }) {
     if (String(verified.id) !== String(context.id)) {
       throw new Error('Workspace context mismatch');
     }
-    const selected = { ...verified, role: context.role };
+    const selected = verified;
     setOrg(selected);
     sessionStorage.setItem('nv_session', JSON.stringify({ org: { id: selected.id } }));
     setTenantDomain(null);
