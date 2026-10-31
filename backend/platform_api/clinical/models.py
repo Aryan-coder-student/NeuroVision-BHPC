@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 
 from .storage import PrivateReportStorage, report_snapshot_upload_to
+from .contribution_storage import contribution_upload_to
 
 
 def generate_patient_code():
@@ -123,7 +124,7 @@ class SegmentationReport(models.Model):
 
 
 class DatasetContribution(models.Model):
-    """Tenant-local review request only. No scan bytes, files or PHI are accepted."""
+    """Tenant-scoped upload record for de-identified research samples only."""
 
     class Origin(models.TextChoices):
         PUBLIC = "public", "Public dataset"
@@ -131,8 +132,8 @@ class DatasetContribution(models.Model):
         DEIDENTIFIED = "deidentified", "De-identified research data"
 
     class Status(models.TextChoices):
-        PENDING = "pending_review", "Pending review"
-        APPROVED = "metadata_approved", "Metadata reviewed"
+        PENDING = "uploaded", "Uploaded"
+        APPROVED = "approved", "Approved for research"
         REJECTED = "rejected", "Rejected"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -149,6 +150,9 @@ class DatasetContribution(models.Model):
     source_url = models.URLField(max_length=500, blank=True)
     sample_count = models.PositiveIntegerField(default=1)
     no_phi_attestation = models.BooleanField(default=False, editable=False)
+    format = models.CharField(max_length=16, choices=[("nifti", "Four NIfTI volumes"), ("dicom_zip", "DICOM ZIP archive")])
+    file_count = models.PositiveSmallIntegerField(default=0, editable=False)
+    total_bytes = models.PositiveBigIntegerField(default=0, editable=False)
     status = models.CharField(
         max_length=24, choices=Status.choices, default=Status.PENDING
     )
@@ -160,6 +164,32 @@ class DatasetContribution(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+
+class DatasetContributionFile(models.Model):
+    """Private object only; file name and cloud key never include patient identifiers."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contribution = models.ForeignKey(
+        DatasetContribution, related_name="uploads", on_delete=models.CASCADE
+    )
+    modality = models.CharField(max_length=24)
+    byte_size = models.PositiveBigIntegerField(editable=False)
+    object_file = models.FileField(
+        upload_to=contribution_upload_to,
+        storage=PrivateReportStorage(),
+        max_length=512,
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["modality"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contribution", "modality"],
+                name="unique_contribution_modality",
+            ),
+        ]
 
 class ModelFeedbackRecord(models.Model):
     """Tenant-local, user-authored research feedback; not a diagnostic ground truth."""

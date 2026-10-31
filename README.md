@@ -358,29 +358,51 @@ private S3 bucket as described above (recommended for the synthetic demo),
 or switch to a disk-capable plan and mount a persistent disk for filesystem mode.
 Never use ephemeral Render Free filesystem storage for durable reports.
 
+### Private research MRI contributions (PR #37)
 
-### Data Contribution and Model Feedback (PRs #37–38)
+The **Data Contribution** page uploads real research MRI data to a private
+Hugging Face Storage Bucket. Supported inputs (one submission per dataset):
 
-The Data Contribution page records **tenant-scoped metadata review requests** only.
-It is not a scan-upload service. The earlier mock upload success, claim of a
-5 GB limit, automatic PHI anonymization, and federated-training queue were not
-implemented; they are now removed. No dataset files, MRI scans or DICOM archives
-are accepted by the metadata endpoint. Each request records origin, usage rights,
-modality, sample count, description, a mandatory non-PHI attestation, and a
-review status. Tenant-authorized Django Admin can review the metadata.
+- **BraTS NIfTI:** T1, T1CE, T2 and FLAIR, each `.nii` or `.nii.gz`.
+- **DICOM ZIP:** one `.zip` containing 1–512 DICOM Part-10 `.dcm` files;
+  symlinks, traversal paths, encrypted members and excessive expanded sizes
+  are rejected.
 
-Model Feedback records real submissions in the tenant PostgreSQL schema and
-tracks review status. It validates the selected model ID against the registry,
-checks category compatibility, and can link a **saved segmentation report**
-in the same tenant when launched from the report page. Feedback does not verify
-clinical ground truth, automatically retrain models, or change model weights.
-User-entered text must not include patient-identifying information.
+Each uploaded object is currently limited to **32 MiB**, because uploads pass
+through the synchronous Render backend. For large datasets, implement
+resumable direct-to-bucket uploads separately. NIfTI headers and DICOM ZIP
+member signatures are validated, but **this does not de-identify scans or
+guarantee the absence of PHI**. Upload only synthetic/public or otherwise
+verified de-identified research volumes for which storage rights exist.
+The free HF bucket is not represented as an approved clinical PHI store.
 
-Backend routes:
-- `GET/POST /api/v1/tenant/contributions/`; `GET /.../contributions/<uuid>/`
-- `GET/POST /api/v1/tenant/model-feedback/`; `GET /.../model-feedback/<uuid>/`
+On the **Render backend** set:
+```env
+NEUROVISION_REPORT_STORAGE=huggingface
+HUGGINGFACE_S3_NAMESPACE=pahariaryan
+HUGGINGFACE_S3_BUCKET=neuro-bucket
+HUGGINGFACE_S3_ACCESS_KEY_ID=<HF generated S3 access key>
+HUGGINGFACE_S3_SECRET_ACCESS_KEY=<HF generated S3 secret>
+```
+Keep credentials private; never commit them or expose them in the frontend.
+The dataset object keys look like:
+`contributions/<workspace-uuid>/<contribution-uuid>/<modality>.nii.gz`
+or `contributions/<workspace-uuid>/<contribution-uuid>/dicom_archive.zip`.
+Incoming original filenames and patient identifiers do **not** enter object keys.
+The database stores the contribution's metadata and private object references,
+not MRI bytes. No public download URLs are exposed. The existing reports stay
+under a separate `reports/` prefix in the same private bucket.
 
-Both require owner-authorized tenant membership and `X-Workspace-ID`. A
-separate governed storage and scanning service, appropriate data processing
-agreements, retention controls, audit logs, and security review are prerequisites
-to accepting real medical dataset files.
+The submission is recorded as **uploaded** only after the private objects have
+been written; successful uploads are immediately listed in "My uploaded
+datasets". Admin review is optional for research-use governance and does not
+imply an ML training job or HIPAA compliance. If the bucket is not configured,
+the endpoint responds **503** rather than silently storing on Render's
+ephemeral disk. No GPU training pipeline is started.
+
+### Model feedback (PR #38)
+
+The Model Feedback page records real, tenant-local model/feature feedback,
+with verified model IDs, compatible feedback categories, optional saved report
+links, and tenant-owner review states. It does not retrain models automatically.
+Do not enter patient identifiers or protected health information.
