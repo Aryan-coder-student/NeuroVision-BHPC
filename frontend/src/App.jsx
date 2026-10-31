@@ -14,6 +14,7 @@ import Dashboard   from './pages/Dashboard';
 import Segmentation from './pages/Segmentation';
 import VQA         from './pages/VQA';
 import History     from './pages/History';
+import ImagingStudies from './pages/ImagingStudies';
 import Reports     from './pages/Reports';
 import Patients    from './pages/Patients';
 import DataContribution from './pages/DataContribution';
@@ -114,6 +115,7 @@ function AppRoutes() {
         <Route path="/patients/:patientId" element={<PatientWorkspace />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="imaging-studies" element={<ImagingStudies />} />
           <Route path="segmentation" element={<Segmentation />} />
           <Route path="vqa" element={<VQA />} />
           <Route path="history" element={<History />} />

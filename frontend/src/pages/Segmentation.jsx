@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../context/auth-context';
 import { Niivue } from '@niivue/niivue';
 import {
   AlertTriangle, Brain, CheckCircle2, FileOutput, FlaskConical, FolderOpen, ScanLine, Loader,
@@ -8,18 +9,21 @@ import {
   SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
 } from './segmentation-demo';
 import { MRI_MODALITIES, resolveBraTSFolder, formatFileSize } from './segmentation-files';
-import { runSegmentation, fetchAvailableModels } from '../services/api';
+import { runSegmentation, fetchAvailableModels, recordImagingStudy } from '../services/api';
 import { configuredModels } from '../services/model-catalog';
 import './Segmentation.css';
 
 export default function Segmentation() {
   const { patient, workspaceId } = useOutletContext();
+  const { org } = useAuth();
   const [source, setSource] = useState('sample');
   const [folder, setFolder] = useState({ files: {}, error: '', folderName: '' });
   const [models, setModels] = useState([]);
   const [modelId, setModelId] = useState('');
   const [catalogError, setCatalogError] = useState('');
   const [running, setRunning] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordedStudy, setRecordedStudy] = useState(null);
   const [inferenceResult, setInferenceResult] = useState(null);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useState('overlay');
@@ -107,6 +111,7 @@ export default function Segmentation() {
     setSource(next);
     setPreview(null);
     setInferenceResult(null);
+    setRecordedStudy(null);
     setViewerStatus('idle');
     setViewMode(next === 'sample' ? 'overlay' : 'mri');
     setError('');
@@ -118,6 +123,7 @@ export default function Segmentation() {
     const selected = resolveBraTSFolder(fileList);
     setFolder(selected);
     setInferenceResult(null);
+    setRecordedStudy(null);
     setPreview(null);
     setViewerStatus('idle');
     setError('');
@@ -137,8 +143,31 @@ export default function Segmentation() {
     setPreview({ type: 'local', files: folder.files });
   };
 
+  const canRecordStudy = Boolean(org);
+
+  const recordStudy = async () => {
+    if (!complete || recording || recordedStudy || !canRecordStudy) return;
+    const sequence = inferenceSequenceRef.current;
+    setRecording(true);
+    setError('');
+    try {
+      const study = await recordImagingStudy(workspaceId, patient.id, folder.files);
+      if (sequence === inferenceSequenceRef.current) setRecordedStudy(study);
+    } catch (requestError) {
+      if (sequence === inferenceSequenceRef.current) {
+        const details = requestError.response?.data;
+        const fieldError = ['t1', 't1ce', 't2', 'flair']
+          .map(key => details?.[key]?.[0])
+          .find(Boolean);
+        setError(fieldError || details?.detail || 'Could not validate and record this study.');
+      }
+    } finally {
+      setRecording(false);
+    }
+  };
+
   const runAI = async () => {
-    if (!complete || !modelId || running) return;
+    if (!complete || !modelId || running || recording) return;
     const sequence = ++inferenceSequenceRef.current;
     setRunning(true);
     setError('');
@@ -185,11 +214,11 @@ export default function Segmentation() {
             <fieldset className="seg-source-picker">
               <legend className="field-label">Data source</legend>
               <label className={`seg-source-option ${source === 'sample' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" checked={source === 'sample'} onChange={() => chooseSource('sample')} />
+                <input type="radio" name="segmentation-source" disabled={recording} checked={source === 'sample'} onChange={() => chooseSource('sample')} />
                 Built-in BraTS sample
               </label>
               <label className={`seg-source-option ${source === 'folder' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" checked={source === 'folder'} onChange={() => chooseSource('folder')} />
+                <input type="radio" name="segmentation-source" disabled={recording} checked={source === 'folder'} onChange={() => chooseSource('folder')} />
                 Select BraTS MRI folder
               </label>
             </fieldset>
@@ -218,6 +247,7 @@ export default function Segmentation() {
                   multiple
                   webkitdirectory=""
                   directory=""
+                  disabled={recording}
                   onChange={event => chooseFolder(event.target.files)}
                 />
                 {folder.error && <p className="seg-file-error" role="alert">{folder.error}</p>}
@@ -236,6 +266,22 @@ export default function Segmentation() {
                 <button className="run-seg-btn" type="button" disabled={!complete || running} onClick={showFolder}>
                   <Brain size={14} /> Preview selected MRI
                 </button>
+                {canRecordStudy && (
+                  <button className="run-seg-btn" type="button"
+                    disabled={!complete || recording || Boolean(recordedStudy)} onClick={recordStudy}>
+                    {recording ? 'Validating MRI upload…' : recordedStudy ? 'Study metadata recorded' : 'Record imaging study metadata'}
+                  </button>
+                )}
+                {recordedStudy && (
+                  <p className="seg-service-note" role="status">
+                    Study recorded. MRI files were validated but not stored.{' '}
+                    <Link to={`/patients/${patient.id}/imaging-studies`}>View imaging studies</Link>
+                  </p>
+                )}
+                <p className="seg-service-note">
+                  Recording a study sends the four volumes for basic server-side filename and size validation.
+                  Only file sizes and timestamp are retained; MRI bytes and filenames are not saved.
+                </p>
                 <div className="field-row" style={{ marginTop: 14 }}>
                   <label className="field-label" htmlFor="seg-model">AI segmentation model</label>
                   <select id="seg-model" className="field-input" value={modelId}
@@ -246,7 +292,7 @@ export default function Segmentation() {
                   </select>
                 </div>
                 <button className="run-seg-btn" type="button"
-                  disabled={!complete || !modelId || running} onClick={runAI}>
+                  disabled={!complete || !modelId || running || recording} onClick={runAI}>
                   {running ? <><Loader size={14} className="spin" /> Running segmentation…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
                 </button>
                 {catalogError && <p className="seg-service-note" role="status">{catalogError}</p>}

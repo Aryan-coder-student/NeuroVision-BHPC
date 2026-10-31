@@ -4,7 +4,7 @@ from datetime import date
 from rest_framework import serializers
 
 from .dates import patient_calendar_date
-from .models import Patient
+from .models import ImagingStudy, Patient
 
 
 class PatientReadSerializer(serializers.ModelSerializer):
@@ -93,3 +93,21 @@ class PatientGrantRequestSerializer(serializers.Serializer):
 class PatientGrantVerifySerializer(serializers.Serializer):
     challenge_id = serializers.UUIDField()
     otp = serializers.RegexField(r"^\d{6}$", max_length=6, min_length=6)
+
+
+class ImagingStudyReadSerializer(serializers.ModelSerializer):
+    """Metadata-only record: files, filenames and predictions are not persisted."""
+
+    patient_id = serializers.UUIDField(read_only=True)
+    storage_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ImagingStudy
+        fields = (
+            "id", "patient_id", "modality_sizes_bytes",
+            "storage_status", "created_at",
+        )
+        read_only_fields = fields
+
+    def get_storage_status(self, obj):
+        return "not_retained"

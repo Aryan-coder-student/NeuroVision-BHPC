@@ -1,27 +1,8 @@
-import re
-
-from django.conf import settings
+"""Inference requires the same validated four NIfTI uploads plus a model ID."""
 from rest_framework import serializers
 
-MRI_MODALITIES = ("t1", "t1ce", "t2", "flair")
+from clinical.mri import MRI_MODALITIES as MRI_MODALITIES, MRIUploadSerializer
 
 
-class SegmentationInferenceSerializer(serializers.Serializer):
+class SegmentationInferenceSerializer(MRIUploadSerializer):
     model_id = serializers.CharField(max_length=120)
-    t1 = serializers.FileField()
-    t1ce = serializers.FileField()
-    t2 = serializers.FileField()
-    flair = serializers.FileField()
-
-    def validate(self, attrs):
-        for modality in MRI_MODALITIES:
-            image = attrs[modality]
-            if not re.search(r"(?:^|[_-])" + modality + r"\.nii(?:\.gz)?$", image.name, flags=re.IGNORECASE):
-                raise serializers.ValidationError({
-                    modality: f"Expected a filename ending in _{modality}.nii or _{modality}.nii.gz."
-                })
-            if not 0 < image.size <= settings.AI_INFERENCE_MAX_MRI_FILE_BYTES:
-                raise serializers.ValidationError({
-                    modality: "MRI file is empty or exceeds the upload limit."
-                })
-        return attrs

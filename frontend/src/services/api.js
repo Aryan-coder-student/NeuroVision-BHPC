@@ -193,18 +193,42 @@ export async function createWorkspace(data) {
   return res.data;
 }
 
-/** Tenant-authorized 3D brain segmentation routed through Django. */
-export async function runSegmentation(workspaceId, patientId, modalityFiles, modelId) {
+/** Shared MRI upload packaging for existing inference and metadata-only intake. */
+function buildMRIFormData(modalityFiles, extraFields = {}) {
   const formData = new FormData();
-  formData.append('model_id', modelId);
+  Object.entries(extraFields).forEach(([key, value]) => formData.append(key, value));
   for (const key of ['t1', 't1ce', 't2', 'flair']) {
     if (!modalityFiles[key]) throw new Error(`Missing required MRI modality: ${key}`);
     formData.append(key, modalityFiles[key]);
   }
+  return formData;
+}
+
+/** Validate MRI files server-side and save only patient-scoped metadata. */
+export async function recordImagingStudy(workspaceId, patientId, modalityFiles) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/imaging-studies/`,
+    data: buildMRIFormData(modalityFiles),
+  });
+  return res.data;
+}
+
+export async function fetchImagingStudies(workspaceId, patientId, page = 1) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/imaging-studies/`,
+    params: { page },
+  });
+  return res.data;
+}
+
+/** Tenant-authorized 3D brain segmentation routed through Django. */
+export async function runSegmentation(workspaceId, patientId, modalityFiles, modelId) {
   const res = await tenantRequest(workspaceId, {
     method: 'post',
     url: `/tenant/patients/${patientId}/inference/segmentation/`,
-    data: formData,
+    data: buildMRIFormData(modalityFiles, { model_id: modelId }),
   });
   return res.data;
 }

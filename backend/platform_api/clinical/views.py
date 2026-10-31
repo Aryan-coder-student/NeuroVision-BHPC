@@ -1,11 +1,15 @@
+from uuid import UUID
+
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from tenant.permissions import HasVerifiedTenantMembership
 
-from .models import Patient
+from .models import ImagingStudy, Patient
 from .services import (
     PatientVersionConflict,
     correct_patient_demographics,
@@ -21,7 +25,9 @@ from patient_identity.services import (
     verify_email_grant,
 )
 
+from .mri import MRI_MODALITIES, MRIUploadSerializer
 from .serializers import (
+    ImagingStudyReadSerializer,
     PatientGrantRequestSerializer,
     PatientGrantVerifySerializer,
     PatientReadSerializer,
@@ -107,6 +113,48 @@ class PatientViewSet(viewsets.ModelViewSet):
             context=self.get_serializer_context(),
         ).data
         return Response(data)
+
+    @action(detail=True, methods=("get", "post"), url_path="imaging-studies")
+    def imaging_studies(self, request, pk=None):
+        """Validate four uploads and retain metadata only for the workspace owner."""
+        patient = self.get_object()
+        if request.method == "GET":
+            page = self.paginate_queryset(patient.imaging_studies.all())
+            if page is not None:
+                data = ImagingStudyReadSerializer(page, many=True).data
+                return self.get_paginated_response(data)
+            return Response(ImagingStudyReadSerializer(
+                patient.imaging_studies.all(), many=True
+            ).data)
+
+        serializer = MRIUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        study = ImagingStudy.objects.create(
+            patient=patient,
+            created_by_user_id=request.user.id,
+            modality_sizes_bytes={
+                modality: serializer.validated_data[modality].size
+                for modality in MRI_MODALITIES
+            },
+        )
+        return Response(
+            ImagingStudyReadSerializer(study).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=("get",),
+        url_path=r"imaging-studies/(?P<study_id>[0-9a-f-]{36})",
+    )
+    def imaging_study_detail(self, request, pk=None, study_id=None):
+        patient = self.get_object()
+        try:
+            normalized_study_id = UUID(study_id)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise NotFound("Imaging study not found.") from error
+        study = get_object_or_404(patient.imaging_studies, pk=normalized_study_id)
+        return Response(ImagingStudyReadSerializer(study).data)
 
     def perform_destroy(self, instance):
         delete_patient(patient=instance, institution=self.request.tenant)
