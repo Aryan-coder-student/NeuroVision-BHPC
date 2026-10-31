@@ -16,7 +16,7 @@ class BlipVQAAdapter(VQAProvider):
         transport: ProviderHTTPTransport | None = None,
     ):
         self._configuration = configuration
-        self._transport = transport or ProviderHTTPTransport()
+        self._transport = transport if transport is not None else ProviderHTTPTransport()
 
     def answer(self, request: VQARequest, model: ModelDefinition):
         fields: dict[str, object] = {
