@@ -280,12 +280,21 @@ class InferenceAPITests(TenantTestCase):
         registry.return_value.run_segmentation.assert_not_called()
 
     @patch("ai_providers.views.get_provider_registry")
-    def test_rejects_mixed_study_mri_modalities(self, registry):
-        volumes = {key: SimpleUploadedFile(f"studyA_{key}.nii.gz", b"nifti-data") for key in ("t1", "t1ce", "t2", "flair")}
-        volumes["flair"] = SimpleUploadedFile("studyB_flair.nii.gz", b"nifti-data")
+    def test_accepts_distinct_filename_prefixes_for_four_modalities(self, get_registry):
+        get_registry.return_value.run_segmentation.return_value = InferenceResult(
+            model=SEGMENTATION_MODEL,
+            payload={"mask_nifti_base64": "ZGF0YQ=="},
+        )
+        volumes = {
+            key: SimpleUploadedFile(f"studyA_{key}.nii.gz", b"nifti-data")
+            for key in ("t1", "t1ce", "t2", "flair")
+        }
+        volumes["flair"] = SimpleUploadedFile("other_flair.nii.gz", b"nifti-data")
         response = self.request(
             "post", f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
             data={"model_id": "3d_unet_v2", **volumes}, format="multipart",
         )
-        self.assertEqual(response.status_code, 400)
-        registry.return_value.run_segmentation.assert_not_called()
+        self.assertEqual(response.status_code, 200, response.data)
+        get_registry.return_value.run_segmentation.assert_called_once()
+        forwarded = get_registry.return_value.run_segmentation.call_args.args[1]
+        self.assertEqual(forwarded.modalities["flair"].name, "other_flair.nii.gz")
