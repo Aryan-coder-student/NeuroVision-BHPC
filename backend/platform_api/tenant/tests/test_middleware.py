@@ -104,7 +104,8 @@ class WorkspaceTenantMiddlewareTests(SimpleTestCase):
         request.tenant = MagicMock(schema_name="public")
         self.assertIsNone(self.middleware.process_request(request))
         memberships.filter.assert_called_once_with(
-            user=user, institution_id=self.workspace_id, is_active=True
+            user=user, institution_id=self.workspace_id,
+            institution__owner_id=user.id, is_active=True
         )
         connection.set_tenant.assert_called_once_with(tenant)
         self.assertIs(request.tenant, tenant)

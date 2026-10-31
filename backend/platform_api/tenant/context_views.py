@@ -18,5 +18,4 @@ class TenantContextView(APIView):
             "id": str(tenant.id),
             "name": tenant.name,
             "schema_name": tenant.schema_name,
-            "role": membership.role,
         })

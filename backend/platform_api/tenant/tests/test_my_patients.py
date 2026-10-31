@@ -46,12 +46,12 @@ class MyPatientsTests(TenantTestCase):
         connection.set_schema_to_public()
         super().tearDown()
 
-    @staticmethod
-    def create_workspace(name, schema_name):
+    def create_workspace(self, name, schema_name):
         return Institution.objects.create(
             name=name,
             slug=schema_name.replace("_", "-"),
             schema_name=schema_name,
+            owner=self.user,
         )
 
     @staticmethod
@@ -105,6 +105,28 @@ class MyPatientsTests(TenantTestCase):
         self.assertEqual(by_code.data["results"][0]["display_name"], "Meera South")
         self.assertEqual(by_name.data["count"], 1)
         self.assertEqual(by_name.data["results"][0]["patient_code"], "NORTH-001")
+
+    def test_active_nonowner_workspace_membership_does_not_expose_patients(self):
+        other_user, _ = create_user(
+            username="my_patients_other_owner",
+            email="my-patients-other-owner@example.com",
+            is_otp_verified=True,
+        )
+        self.hidden_workspace.owner = other_user
+        self.hidden_workspace.save(update_fields=["owner"])
+        InstitutionMembership.objects.create(
+            user=self.user,
+            institution=self.hidden_workspace,
+            is_active=True,
+        )
+        response = self.client.get("/api/v1/my-patients/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        denied = self.client.get(
+            "/api/v1/my-patients/",
+            {"workspace_id": str(self.hidden_workspace.id)},
+        )
+        self.assertEqual(denied.status_code, 404)
 
     def test_requires_authentication(self):
         self.client.cookies.clear()

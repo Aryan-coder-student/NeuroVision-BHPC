@@ -34,11 +34,12 @@ class PatientRegistrationTests(TenantTestCase):
             name="Patient Registration Hospital",
             slug="patient-reg-hospital",
             schema_name="patient_reg_hospital",
+            owner=self.admin,
         )
         InstitutionMembership.objects.create(
             user=self.admin,
             institution=self.workspace,
-            role=InstitutionMembership.Role.ADMIN,
+
             is_active=True,
         )
         self.client.cookies["access_token"] = str(

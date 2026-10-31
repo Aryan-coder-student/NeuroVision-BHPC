@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { CheckCircle2, Loader2, MessageSquare, Pencil, ScanLine, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Loader2, MessageSquare, Pencil, ScanLine } from 'lucide-react';
 import PatientEmailVerification from '../components/PatientEmailVerification';
 import { useAuth } from '../context/auth-context';
 import { fetchPatientGrant, updatePatientDetails } from '../services/api';
@@ -22,7 +22,6 @@ export default function PatientDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const nameInputRef = useRef(null);
   const dobInputRef = useRef(null);
-  const isAdmin = org.role === 'ADMIN';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,7 +53,7 @@ export default function PatientDashboard() {
 
   const saveDetails = async (event) => {
     event.preventDefault();
-    if (!isAdmin || isSaving) return;
+    if (isSaving) return;
     const { values, errors } = validatePatientDetails(editForm);
     setEditErrors(errors);
     setEditError('');
@@ -111,7 +110,7 @@ export default function PatientDashboard() {
           <div className="patient-card-label">Patient overview</div>
           <div className="patient-summary-header">
             <h1>{patient.display_name}</h1>
-            {isAdmin && !isEditing && (
+            {!isEditing && (
               <button type="button" className="patient-edit-trigger" onClick={startEditing}>
                 <Pencil size={14} aria-hidden="true" /> Edit details
               </button>
@@ -200,8 +199,6 @@ export default function PatientDashboard() {
             <div className="identity-readonly" role="alert">{error}</div>
           ) : verified ? (
             <div className="identity-success" role="status"><CheckCircle2 size={17} /> Email contact verified</div>
-          ) : !isAdmin ? (
-            <div className="identity-readonly"><ShieldCheck size={16} /> An organization administrator can start verification.</div>
           ) : (
             <PatientEmailVerification
               workspaceId={org.id}

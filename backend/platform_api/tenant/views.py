@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
 
+from .models import Institution
 from .serializers import InstitutionSerializer
 from .utils import create_slug, create_domain_routing
 
@@ -15,8 +16,11 @@ class InstitutionViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-
-        return self.request.user.institutions.all()
+        return Institution.objects.filter(
+            owner=self.request.user,
+            institution_memberships__user=self.request.user,
+            institution_memberships__is_active=True,
+        )
 
     @action(detail=False, methods=["get"])
     def current(self, request):
@@ -31,12 +35,13 @@ class InstitutionViewSet(ModelViewSet):
         name = serializer.validated_data.get("name")
         slug, schema_name = create_slug(name)
 
-        institution = serializer.save(slug=slug, schema_name=schema_name)
+        institution = serializer.save(
+            slug=slug, schema_name=schema_name, owner=self.request.user,
+        )
 
         create_domain_routing(institution)
 
         InstitutionMembership.objects.create(
             user=self.request.user,
             institution=institution,
-            role=InstitutionMembership.Role.ADMIN,
         )

@@ -42,6 +42,7 @@ class MyPatientsView(APIView):
             InstitutionMembership.objects.filter(
                 user=request.user,
                 is_active=True,
+                institution__owner=request.user,
             )
             .select_related("institution")
             .order_by("institution__name")

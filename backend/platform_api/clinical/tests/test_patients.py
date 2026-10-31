@@ -38,19 +38,19 @@ class PatientTenantIsolationTests(TenantTestCase):
             is_otp_verified=True,
         )
         self.apollo = Institution.objects.create(
-            name="Apollo Test", slug="apollo-test", schema_name="apollo_test"
+            name="Apollo Test", slug="apollo-test", schema_name="apollo_test", owner=self.admin
         )
         self.aiims = Institution.objects.create(
-            name="AIIMS Test", slug="aiims-test", schema_name="aiims_test"
+            name="AIIMS Test", slug="aiims-test", schema_name="aiims_test", owner=self.admin
         )
         for institution in (self.apollo, self.aiims):
             InstitutionMembership.objects.create(
                 user=self.admin, institution=institution,
-                role=InstitutionMembership.Role.ADMIN, is_active=True,
+                is_active=True,
             )
         InstitutionMembership.objects.create(
             user=self.member, institution=self.apollo,
-            role=InstitutionMembership.Role.MEMBER, is_active=True,
+            is_active=True,
         )
         self.url = "/api/v1/tenant/patients/"
 
@@ -103,30 +103,33 @@ class PatientTenantIsolationTests(TenantTestCase):
         with schema_context(self.aiims.schema_name):
             self.assertEqual(Patient.objects.count(), 1)
 
-    def test_member_can_read_but_cannot_write(self):
+    def test_workspace_owner_can_create_edit_and_delete(self):
         self.authenticate(self.admin)
-        response = self.request("post", self.apollo, data={
-            "patient_code": "P-002", "display_name": "Readable Patient",
+        created = self.request("post", self.apollo, data={
+            "display_name": "Editable Patient",
         })
-        self.assertEqual(response.status_code, 201)
-
-        self.authenticate(self.member)
+        self.assertEqual(created.status_code, 201, created.data)
         self.assertEqual(self.request("get", self.apollo).status_code, 200)
+
+        updated = self.request(
+            "patch", self.apollo,
+            path=f"{self.url}{created.data['id']}/",
+            data={"display_name": "Updated Patient", "version": created.data["version"]},
+        )
+        self.assertEqual(updated.status_code, 200, updated.data)
+        self.assertEqual(updated.data["display_name"], "Updated Patient")
+        self.assertEqual(
+            self.request("delete", self.apollo, path=f"{self.url}{created.data['id']}/").status_code,
+            204,
+        )
+        self.assertEqual(self.request("get", self.apollo).data["results"], [])
+
+    def test_active_nonowner_member_cannot_access_patient_records(self):
+        self.authenticate(self.member)
+        self.assertEqual(self.request("get", self.apollo).status_code, 404)
         self.assertEqual(self.request("post", self.apollo, data={
-            "patient_code": "P-003", "display_name": "Denied",
-        }).status_code, 403)
-        self.assertEqual(
-            self.request("delete", self.apollo, path=f"{self.url}{response.data['id']}/").status_code,
-            403,
-        )
-        self.assertEqual(
-            self.request(
-                "patch", self.apollo,
-                path=f"{self.url}{response.data['id']}/",
-                data={"display_name": "Unauthorized edit"},
-            ).status_code,
-            403,
-        )
+            "display_name": "Denied",
+        }).status_code, 404)
 
     def test_nonmember_cannot_read_or_create(self):
         self.authenticate(self.outsider)
@@ -189,21 +192,23 @@ class PatientTenantIsolationTests(TenantTestCase):
             ["AIIMS Record"],
         )
 
-    def test_member_can_read_grant_status_but_cannot_start_grant(self):
+    def test_workspace_owner_can_verify_patient_email(self):
         self.authenticate(self.admin)
         patient = self.request("post", self.apollo, data={
-            "patient_code": "P-READ", "display_name": "Status Patient",
+            "display_name": "Status Patient",
         }).data
-        self.authenticate(self.member)
+        code = mail.outbox[-1].body.split("code is ", 1)[1].split(".", 1)[0]
+        self.authenticate(self.admin)
         path = f"{self.url}{patient['id']}/identity-grant/"
         status_response = self.request("get", self.apollo, path=path)
         self.assertEqual(status_response.status_code, 200)
-        self.assertEqual(status_response.data, {"status": "PENDING", "verified_at": None})
-        self.assertEqual(self.request(
-            "post", self.apollo,
-            path=f"{self.url}{patient['id']}/identity-grant/request/",
-            data={"email": "patient@example.com"},
-        ).status_code, 403)
+        self.assertEqual(status_response.data["status"], "PENDING")
+        verified = self.request(
+            "post", self.apollo, path=f"{path}verify/",
+            data={"challenge_id": patient["identity_verification"]["challenge_id"], "otp": code},
+        )
+        self.assertEqual(verified.status_code, 200, verified.data)
+        self.assertEqual(verified.data["status"], PatientAccessGrant.Status.ACTIVE)
 
     def test_active_identity_cannot_be_replaced_by_another_email(self):
         self.authenticate(self.admin)
