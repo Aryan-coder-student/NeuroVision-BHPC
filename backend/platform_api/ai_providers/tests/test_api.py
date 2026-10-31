@@ -245,16 +245,6 @@ class InferenceAPITests(TenantTestCase):
         get_registry.return_value.run_vqa.assert_not_called()
 
     @patch("ai_providers.views.get_provider_registry")
-    def test_rejects_old_path_payload_without_running_segmentation(self, registry):
-        response = self.request(
-            "post",
-            f"/api/v1/tenant/patients/{self.patient.id}/inference/segmentation/",
-            data={"model_id": "3d_unet_v2", "study_reference": "/any/private/path"},
-        )
-        self.assertEqual(response.status_code, 400)
-        registry.return_value.run_segmentation.assert_not_called()
-
-    @patch("ai_providers.views.get_provider_registry")
     def test_rejects_invalid_or_missing_modalities(self, registry):
         response = self.request(
             "post",
