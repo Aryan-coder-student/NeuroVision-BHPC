@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = ""
 
     MONAI_SEGMENTATION_BASE_URL: str = "http://127.0.0.1:5000"
+    # Disabled until MONAI implements authenticated POST /predict/files.
+    MONAI_SEGMENTATION_UPLOAD_ENABLED: bool = False
     MONAI_SEGMENTATION_TIMEOUT_SECONDS: float = 120.0
     MONAI_SEGMENTATION_API_TOKEN: str = ""
     MONAI_SEGMENTATION_MODEL_VERSION: str = "2.1"

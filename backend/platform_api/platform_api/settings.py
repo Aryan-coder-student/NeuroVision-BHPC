@@ -245,7 +245,8 @@ AI_PROVIDER_REGISTRY = {
         "BASE_URL": settings.MONAI_SEGMENTATION_BASE_URL,
         "TIMEOUT_SECONDS": settings.MONAI_SEGMENTATION_TIMEOUT_SECONDS,
         "TOKEN": settings.MONAI_SEGMENTATION_API_TOKEN,
-        "ENABLED": bool(settings.MONAI_SEGMENTATION_BASE_URL.strip()),
+        "ENABLED": bool(settings.MONAI_SEGMENTATION_BASE_URL.strip())
+        and settings.MONAI_SEGMENTATION_UPLOAD_ENABLED,
     },
     "blip_vqa": {
         "ADAPTER": "ai_providers.vqa.adapters.BlipVQAAdapter",
@@ -276,3 +277,6 @@ AI_MODEL_CATALOG = (
 )
 
 AI_INFERENCE_MAX_IMAGE_BYTES = 10 * 1024 * 1024
+# Experimental synchronous upload limit: 4 * 32 MiB maximum.
+# Larger studies require private object storage and asynchronous inference.
+AI_INFERENCE_MAX_MRI_FILE_BYTES = 32 * 1024 * 1024
