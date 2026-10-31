@@ -1,6 +1,11 @@
-"""Contribution requests save tenant-local metadata; raw MRI bytes are never accepted."""
-from uuid import uuid4
+"""Full private MRI contribution uploads, no public URLs and strict tenant isolation."""
+import gzip
+import io
+import tempfile
+import zipfile
+from unittest.mock import patch
 
+from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import override_settings
@@ -8,30 +13,61 @@ from django_tenants.utils import schema_context
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from clinical.models import DatasetContribution
+from clinical.models import DatasetContribution, DatasetContributionFile
+from clinical.storage import PrivateReportStorage
 from tenant.models import Institution
 from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase, create_user
 from users.models import InstitutionMembership
 
 
-@override_settings(ALLOWED_HOSTS=["testserver"], ENCRYPTION_KEY=TEST_FERNET_KEY)
+def nifti(name, *, gzip_compressed=True):
+    raw = (348).to_bytes(4, "little") + bytes(344)
+    data = gzip.compress(raw) if gzip_compressed else raw
+    ext = ".nii.gz" if gzip_compressed else ".nii"
+    return SimpleUploadedFile(name + ext, data, content_type="application/octet-stream")
+
+
+def dicom_archive(path="synthetic/volume1.dcm"):
+    data = b"\x00" * 128 + b"DICM" + b"research pixels"
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(path, data)
+    return SimpleUploadedFile("research-dicom.zip", output.getvalue(), content_type="application/zip")
+
+
+@override_settings(
+    ALLOWED_HOSTS=["testserver"],
+    ENCRYPTION_KEY=TEST_FERNET_KEY,
+    NEUROVISION_REPORT_STORAGE="huggingface",
+)
 class DatasetContributionAPITests(TenantTestCase):
     def setUp(self):
         connection.set_schema_to_public()
+        self.disk = tempfile.TemporaryDirectory()
+        self.backend_patch = patch.object(
+            PrivateReportStorage, "_backend",
+            return_value=FileSystemStorage(location=self.disk.name),
+        )
+        self.backend_patch.start()
+        self.addCleanup(self.backend_patch.stop)
+        self.addCleanup(self.disk.cleanup)
+
         self.client = APIClient()
         self.owner, _ = create_user(
-            username="contrib_owner", email="contrib-owner@example.com", is_otp_verified=True,
+            username="contrib_owner", email="contrib-owner@example.com",
+            is_otp_verified=True,
         )
         self.outsider, _ = create_user(
-            username="contrib_outsider", email="contrib-outsider@example.com", is_otp_verified=True,
+            username="contrib_outsider", email="contrib-outsider@example.com",
+            is_otp_verified=True,
         )
         self.workspace = Institution.objects.create(
-            name="Contrib Workspace", slug="contrib-workspace", schema_name="contrib_workspace",
-            owner=self.owner,
+            name="Contrib Workspace", slug="contrib-workspace",
+            schema_name="contrib_workspace", owner=self.owner,
         )
         self.other = Institution.objects.create(
-            name="Other Contrib", slug="other-contrib", schema_name="other_contrib",
-            owner=self.outsider,
+            name="Other Contrib", slug="other-contrib",
+            schema_name="other_contrib", owner=self.outsider,
         )
         InstitutionMembership.objects.create(
             user=self.owner, institution=self.workspace, is_active=True,
@@ -56,88 +92,102 @@ class DatasetContributionAPITests(TenantTestCase):
         )
 
     @staticmethod
-    def proposal(**extra):
+    def payload(**fields):
         return {
-            "title": "Public reference cohort",
+            "title": "Public reference MRI cohort",
             "modality": "multi_modal",
             "origin": "public",
-            "description": "Research data with a public redistribution license.",
-            "license_info": "CC BY 4.0",
-            "sample_count": 22,
-            "no_phi_attestation": True,
-            **extra,
+            "description": "Research only, no patient data.",
+            "license_info": "Academic research license",
+            "sample_count": 1,
+            "no_phi_attestation": "true",
+            **fields,
         }
 
-    def test_submission_persists_metadata_and_returns_pending_status(self):
-        response = self.request("post", data=self.proposal())
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response.data["status"], "pending_review")
-        self.assertNotIn("no_phi_attestation", response.data)
-        with schema_context(self.workspace.schema_name):
-            saved = DatasetContribution.objects.get(pk=response.data["id"])
-            self.assertEqual(saved.submitted_by_user_id, self.owner.id)
-            self.assertEqual(saved.sample_count, 22)
-            self.assertTrue(saved.no_phi_attestation)
-        listing = self.request()
-        self.assertEqual(listing.status_code, 200)
-        self.assertEqual(listing.data["count"], 1)
-        self.assertEqual(listing.data["results"][0]["id"], response.data["id"])
-        detail = self.request(path=f"{self.base}{response.data['id']}/")
-        self.assertEqual(detail.status_code, 200)
+    @staticmethod
+    def four_volumes():
+        return {key: nifti(f"brats_{key}") for key in ("t1", "t1ce", "t2", "flair")}
 
-    def test_attestation_is_mandatory_and_not_automated_anonymization(self):
-        for data in (self.proposal(no_phi_attestation=False),
-                     {k: v for k, v in self.proposal().items() if k != "no_phi_attestation"}):
-            response = self.request("post", data=data)
+    def test_four_niftis_are_saved_in_private_workspace_prefix(self):
+        response = self.request("post", data={
+            **self.payload(), **self.four_volumes(),
+        }, fmt="multipart")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["format"], "nifti")
+        self.assertEqual(response.data["file_count"], 4)
+        self.assertEqual(response.data["status"], "uploaded")
+        self.assertNotIn("object_file", response.data)
+        with schema_context(self.workspace.schema_name):
+            record = DatasetContribution.objects.get(pk=response.data["id"])
+            self.assertEqual(record.submitted_by_user_id, self.owner.id)
+            self.assertEqual(record.uploads.count(), 4)
+            for file in record.uploads.all():
+                key = file.object_file.name
+                self.assertTrue(key.startswith(f"contributions/{self.workspace.id}/{record.id}/"), key)
+                self.assertNotIn("brats_", key)
+                self.assertGreater(file.byte_size, 0)
+                self.assertTrue(file.object_file.storage.exists(key))
+                with self.assertRaises(ValueError):
+                    file.object_file.storage.url(key)
+        self.assertEqual(self.request().data["count"], 1)
+        self.assertEqual(self.request(path=f"{self.base}{record.id}/").status_code, 200)
+
+    def test_dicom_zip_upload_is_validated_and_saved(self):
+        response = self.request("post", data={
+            **self.payload(modality="other"), "dicom_archive": dicom_archive(),
+        }, fmt="multipart")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["file_count"], 1)
+        self.assertEqual(response.data["format"], "dicom_zip")
+        with schema_context(self.workspace.schema_name):
+            obj = DatasetContributionFile.objects.get(contribution_id=response.data["id"])
+            self.assertTrue(obj.object_file.name.endswith("/dicom_archive.zip"))
+
+    def test_rejects_invalid_uploads_without_database_writes(self):
+        cases = [
+            self.payload(),  # no scans
+            {**self.payload(), **{key: v for key, v in self.four_volumes().items() if key != "t2"}},
+            {**self.payload(), **self.four_volumes(), "evil": nifti("evil")},
+            {**self.payload(), "dicom_archive": dicom_archive("../patient.dcm")},
+            {**self.payload(), "dicom_archive": SimpleUploadedFile("f.zip", b"bad")},
+            {**self.payload(no_phi_attestation="false"), **self.four_volumes()},
+            {**self.payload(), **self.four_volumes(), "file": SimpleUploadedFile("phi.nii", b"PHI")},
+        ]
+        for data in cases:
+            response = self.request("post", data=data, fmt="multipart")
             self.assertEqual(response.status_code, 400, response.data)
         with schema_context(self.workspace.schema_name):
             self.assertFalse(DatasetContribution.objects.exists())
 
-    def test_rejects_file_payload_including_unrecognized_field_names(self):
-        data = self.proposal(scan=SimpleUploadedFile("patient.nii.gz", b"PHI"))
-        response = self.request("post", data=data, fmt="multipart")
-        self.assertEqual(response.status_code, 400, response.data)
-        self.assertIn("file", response.data)
-        with schema_context(self.workspace.schema_name):
-            self.assertFalse(DatasetContribution.objects.exists())
-
-    def test_cannot_set_status_or_reviewer_via_post(self):
-        response = self.request("post", data=self.proposal(
-            status="metadata_approved", review_note="approve", reviewed_by_user_id=str(uuid4()),
-        ))
+    def test_status_cannot_be_forged_and_nonmember_has_no_access(self):
+        response = self.request("post", data={
+            **self.payload(status="approved", review_note="approved"),
+            "dicom_archive": dicom_archive(),
+        }, fmt="multipart")
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response.data["status"], "pending_review")
+        self.assertEqual(response.data["status"], "uploaded")
         self.assertEqual(response.data["review_note"], "")
-
-    def test_other_workspace_or_owner_cannot_read_submissions(self):
-        created = self.request("post", data=self.proposal())
-        self.assertEqual(created.status_code, 201, created.data)
         self.auth(self.outsider)
         self.assertEqual(self.request(workspace=self.workspace).status_code, 404)
-        other_list = self.request(workspace=self.other)
-        self.assertEqual(other_list.status_code, 200)
-        self.assertEqual(other_list.data["results"], [])
-        other_detail = self.request(
-            workspace=self.other, path=f"{self.base}{created.data['id']}/",
-        )
-        self.assertEqual(other_detail.status_code, 404)
-        other_post = self.request(
-            "post", data=self.proposal(title="Other cohort"), workspace=self.other,
-        )
-        self.assertEqual(other_post.status_code, 201)
-        with schema_context(self.workspace.schema_name):
-            self.assertEqual(DatasetContribution.objects.count(), 1)
-        with schema_context(self.other.schema_name):
-            self.assertEqual(DatasetContribution.objects.count(), 1)
+        self.assertEqual(self.request(workspace=self.other).data["results"], [])
+        self.assertEqual(self.request(
+            path=f"{self.base}{response.data['id']}/", workspace=self.other,
+        ).status_code, 404)
 
-    def test_invalid_modality_origin_and_sample_count_rejected(self):
-        for invalid in (
-            {"origin": "private_patient_data"},
-            {"modality": "dicom_protected"},
-            {"sample_count": 0},
-            {"sample_count": 10000001},
-        ):
-            response = self.request("post", data=self.proposal(**invalid))
-            self.assertEqual(response.status_code, 400, response.data)
+    def test_fail_closed_without_hf_configuration(self):
+        with override_settings(NEUROVISION_REPORT_STORAGE="filesystem"):
+            response = self.request("post", data={
+                **self.payload(), "dicom_archive": dicom_archive(),
+            }, fmt="multipart")
+        self.assertEqual(response.status_code, 503)
         with schema_context(self.workspace.schema_name):
-            self.assertEqual(DatasetContribution.objects.count(), 0)
+            self.assertFalse(DatasetContribution.objects.exists())
+
+    def test_failed_object_save_rolls_back_contribution(self):
+        with patch.object(PrivateReportStorage, "_save", side_effect=OSError("object unavailable")):
+            response = self.request("post", data={
+                **self.payload(), "dicom_archive": dicom_archive(),
+            }, fmt="multipart")
+        self.assertEqual(response.status_code, 503)
+        with schema_context(self.workspace.schema_name):
+            self.assertFalse(DatasetContribution.objects.exists())
