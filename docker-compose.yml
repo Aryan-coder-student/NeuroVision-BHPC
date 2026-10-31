@@ -8,6 +8,10 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      - NEUROVISION_MEDIA_ROOT=/app/platform_api/media
+    volumes:
+      - report_media:/app/platform_api/media
     depends_on:
       db:
         condition: service_healthy
@@ -50,3 +54,4 @@ services:
 
 volumes:
   postgres_data:
+  report_media:

@@ -288,7 +288,10 @@ paths to third-party services. Filenames remain based on the names at report
 creation time if patient/workspace names are later changed.
 
 `NEUROVISION_MEDIA_ROOT` optionally selects the root directory; by default it
-is `backend/platform_api/media`. For a deployed backend **mount a persistent
+is `backend/platform_api/media`. Docker Compose persists report images in the named `report_media` volume and
+sets `NEUROVISION_MEDIA_ROOT=/app/platform_api/media`.
+
+For a deployed backend **mount a persistent
 volume and set `NEUROVISION_MEDIA_ROOT` to its mount path**, e.g.
 `/var/data/neurovision-media` on a disk-equipped Render service. Without a
 persistent mounted disk, redeploys/instance replacement can permanently lose
@@ -303,3 +306,10 @@ preview. The admin deliberately does **not** permit adding/editing inferred repo
 which must pass signed inference-proof checks. Database deletions clean up report
 files after the transaction commits. Original MRI and interactive NIfTI masks
 remain transient.
+
+The existing `render.yaml` backend uses `plan: free`, **which has no configured
+persistent disk**; this PR intentionally does not upgrade or bill a paid Render
+plan. To preserve reports in Render production, switch to a disk-capable plan,
+mount a persistent disk, configure `NEUROVISION_MEDIA_ROOT` to that mounted
+path, ensure the non-root runtime user has write permissions, and verify
+persistence across deploys before storing actual patient report images.

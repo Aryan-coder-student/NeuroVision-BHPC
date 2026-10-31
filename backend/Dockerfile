@@ -46,6 +46,9 @@ EXPOSE 8000
 # Switch to non-root user
 USER python
 
+# Ensure the private media mount point is writable by the non-root runtime.
+RUN mkdir -p /app/platform_api/media && chown python:python /app/platform_api/media
+
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 

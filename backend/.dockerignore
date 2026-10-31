@@ -12,3 +12,6 @@ db.sqlite3
 tests/
 node_modules/
 .DS_Store
+
+# Never include patient report images in Docker build layers.
+platform_api/media/
