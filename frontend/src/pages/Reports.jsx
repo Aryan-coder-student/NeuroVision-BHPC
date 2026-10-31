@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useOutletContext, useSearchParams } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
+import { createSearchParams } from 'react-router-dom';
 
 import { fetchSegmentationReport, fetchSegmentationSnapshot } from '../services/api';
 import { formatIndiaDateTime } from '../utils/date-time';
@@ -74,6 +75,14 @@ function SavedReportDetail({ patient, workspaceId, reportId }) {
       </dl>
       <h3 style={{ fontSize: 14, marginTop: 20, color: 'var(--text-bright)' }}>Model region measurements</h3>
       <MeasurementRows measurements={report.measurements_cm3} />
+      <Link
+        to={`/feedback?${createSearchParams({
+          report_id: report.id, model_id: report.model_id,
+        })}`}
+        style={{ color: 'var(--accent-primary)', display: 'inline-block', marginTop: 16 }}
+      >
+        Report an issue with this inference
+      </Link>
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 15 }}>
         <ShieldCheck size={14} /> Saved with server-signed inference provenance. No clinical interpretation is generated.
       </p>

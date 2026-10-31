@@ -321,3 +321,18 @@ export async function fetchDatasetContributions(workspaceId) {
   });
   return res.data;
 }
+
+/** Real model feedback persistence; never send scans or patient-identifying text. */
+export async function createModelFeedback(workspaceId, details) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post', url: '/tenant/model-feedback/', data: details,
+  });
+  return res.data;
+}
+
+export async function fetchModelFeedback(workspaceId) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get', url: '/tenant/model-feedback/',
+  });
+  return res.data;
+}

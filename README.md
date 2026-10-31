@@ -399,3 +399,10 @@ datasets". Admin review is optional for research-use governance and does not
 imply an ML training job or HIPAA compliance. If the bucket is not configured,
 the endpoint responds **503** rather than silently storing on Render's
 ephemeral disk. No GPU training pipeline is started.
+
+### Model feedback (PR #38)
+
+The Model Feedback page records real, tenant-local model/feature feedback,
+with verified model IDs, compatible feedback categories, optional saved report
+links, and tenant-owner review states. It does not retrain models automatically.
+Do not enter patient identifiers or protected health information.

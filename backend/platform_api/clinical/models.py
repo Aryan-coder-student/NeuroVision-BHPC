@@ -190,3 +190,41 @@ class DatasetContributionFile(models.Model):
                 name="unique_contribution_modality",
             ),
         ]
+
+class ModelFeedbackRecord(models.Model):
+    """Tenant-local, user-authored research feedback; not a diagnostic ground truth."""
+
+    class Category(models.TextChoices):
+        FALSE_POSITIVE = "false_positive", "False positive"
+        FALSE_NEGATIVE = "false_negative", "False negative"
+        HALLUCINATION = "hallucination", "Incorrect VQA answer"
+        FEATURE = "feature_request", "Feature request"
+        UI = "ui_issue", "Platform issue"
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        TRIAGED = "triaged", "Triaged"
+        RESOLVED = "resolved", "Resolved"
+        DISMISSED = "dismissed", "Dismissed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submitted_by_user_id = models.UUIDField(editable=False)
+    model_id = models.CharField(max_length=120)
+    model_name = models.CharField(max_length=160)
+    category = models.CharField(max_length=32, choices=Category.choices)
+    description = models.TextField(max_length=2000)
+    report = models.ForeignKey(
+        SegmentationReport, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="feedback_entries",
+    )
+    no_phi_attestation = models.BooleanField(default=False, editable=False)
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.NEW,
+    )
+    reviewer_note = models.TextField(max_length=1000, blank=True)
+    reviewed_by_user_id = models.UUIDField(null=True, blank=True, editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
