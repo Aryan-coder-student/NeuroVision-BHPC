@@ -20,11 +20,6 @@ jobs:
         run: uv python install 3.13
       - name: Install dependencies
         run: uv sync
-      # Temporary safe diagnostic: the uv sync above updates the lockfile
-      # in the runner. Surface the resulting patch for the PR's committed lock.
-      - name: Display updated dependency lock diff
-        run: git diff -- backend/uv.lock
-        working-directory: .
       - name: Run Ruff
         run: uvx ruff==0.15.12 check .
 
