@@ -4,6 +4,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from users.models import InstitutionMembership
+from tenant.permissions import HasVerifiedTenantMembership, verified_tenant_membership
 
 from .models import Patient
 from .services import (
@@ -36,15 +37,15 @@ class PatientPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class VerifiedTenantMembership(permissions.BasePermission):
+class VerifiedTenantMembership(HasVerifiedTenantMembership):
     """Require membership established by tenant middleware, including for reads."""
 
     def has_permission(self, request, view):
-        membership = getattr(request._request, "tenant_membership", None)
-        if membership is None or membership.institution_id != request.tenant.id:
+        if not super().has_permission(request, view):
             return False
         if request.method in permissions.SAFE_METHODS:
             return True
+        membership = verified_tenant_membership(request)
         return membership.role == InstitutionMembership.Role.ADMIN
 
 
