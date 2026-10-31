@@ -139,3 +139,31 @@ class ProviderRegistryTests(SimpleTestCase):
         model = ProviderRegistry().catalog(capability="segmentation")[0]
 
         self.assertFalse(model.is_configured)
+
+    @override_settings(
+        AI_PROVIDER_REGISTRY={
+            **PROVIDERS,
+            "monai": {
+                **PROVIDERS["monai"],
+                "ADAPTER": "missing.provider.Adapter",
+            },
+        }
+    )
+    def test_missing_adapter_is_not_advertised_as_configured(self):
+        model = ProviderRegistry().catalog(capability="segmentation")[0]
+
+        self.assertFalse(model.is_configured)
+
+    @override_settings(
+        AI_PROVIDER_REGISTRY={
+            **PROVIDERS,
+            "monai": {
+                **PROVIDERS["monai"],
+                "ADAPTER": "ai_providers.tests.test_registry.FakeVQAProvider",
+            },
+        }
+    )
+    def test_adapter_for_wrong_capability_is_not_advertised_as_configured(self):
+        model = ProviderRegistry().catalog(capability="segmentation")[0]
+
+        self.assertFalse(model.is_configured)

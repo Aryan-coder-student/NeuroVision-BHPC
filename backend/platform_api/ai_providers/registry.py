@@ -11,6 +11,12 @@ from .vqa.contracts import VQAProvider, VQARequest
 from .exceptions import ModelNotFound, ProviderNotConfigured
 
 
+PROVIDER_CONTRACTS = {
+    CAPABILITY_SEGMENTATION: SegmentationProvider,
+    CAPABILITY_VQA: VQAProvider,
+}
+
+
 class ProviderRegistry:
     """Resolve catalog models to configured provider adapters."""
 
@@ -30,7 +36,7 @@ class ProviderRegistry:
     def catalog(self, capability: str | None = None) -> list[ModelDefinition]:
         normalized_capability = capability.lower() if capability else None
         return [
-            model.with_configuration(self._provider_is_configured(model.provider))
+            model.with_configuration(self._provider_is_configured(model))
             for model in self._models
             if normalized_capability is None or model.capability == normalized_capability
         ]
@@ -68,26 +74,44 @@ class ProviderRegistry:
             raise ProviderNotConfigured()
         return model
 
-    def _provider_is_configured(self, provider_name: str) -> bool:
-        configuration = self._provider_settings.get(provider_name, {})
+    def _provider_is_configured(self, model: ModelDefinition) -> bool:
+        configuration = self._provider_settings.get(model.provider, {})
         if not configuration.get("ENABLED", False) or not configuration.get("ADAPTER"):
             return False
         try:
             self._configuration_for(configuration)
-        except (KeyError, TypeError, ValueError):
+            self._adapter_class_for(model, configuration)
+        except (KeyError, ProviderNotConfigured, TypeError, ValueError):
             return False
         return True
 
     def _build_provider(self, model: ModelDefinition):
         configuration = self._provider_settings.get(model.provider)
-        if not configuration or not self._provider_is_configured(model.provider):
+        if not configuration or not configuration.get("ENABLED", False):
             raise ProviderNotConfigured()
         try:
-            adapter_class = import_string(configuration["ADAPTER"])
             provider_configuration = self._configuration_for(configuration)
-        except (ImportError, KeyError, TypeError, ValueError) as error:
+            adapter_class = self._adapter_class_for(model, configuration)
+            return adapter_class(provider_configuration)
+        except (KeyError, ProviderNotConfigured, TypeError, ValueError) as error:
             raise ProviderNotConfigured() from error
-        return adapter_class(provider_configuration)
+
+    @staticmethod
+    def _adapter_class_for(
+        model: ModelDefinition,
+        configuration: Mapping[str, Any],
+    ):
+        try:
+            adapter_class = import_string(configuration["ADAPTER"])
+        except (ImportError, KeyError, TypeError) as error:
+            raise ProviderNotConfigured() from error
+
+        provider_contract = PROVIDER_CONTRACTS[model.capability]
+        if not isinstance(adapter_class, type) or not issubclass(
+            adapter_class, provider_contract
+        ):
+            raise ProviderNotConfigured()
+        return adapter_class
 
     @staticmethod
     def _configuration_for(configuration: Mapping[str, Any]) -> ProviderConfiguration:
