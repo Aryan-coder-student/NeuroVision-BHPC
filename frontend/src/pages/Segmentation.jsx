@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
 import {
   AlertTriangle, Brain, CheckCircle2, FileOutput, FlaskConical, FolderOpen, ScanLine, Loader,
@@ -27,6 +27,7 @@ export default function Segmentation() {
   const [error, setError] = useState('');
   const canvasRef = useRef(null);
   const niivueRef = useRef(null);
+  const inferenceSequenceRef = useRef(0);
   const isSample = preview?.type === 'sample';
   const hasMask = isSample || preview?.type === 'predicted';
 
@@ -101,6 +102,8 @@ export default function Segmentation() {
   }, [viewMode, viewerStatus, preview, hasMask]);
 
   const chooseSource = next => {
+    inferenceSequenceRef.current += 1;
+    setRunning(false);
     setSource(next);
     setPreview(null);
     setInferenceResult(null);
@@ -110,6 +113,8 @@ export default function Segmentation() {
   };
 
   const chooseFolder = fileList => {
+    inferenceSequenceRef.current += 1;
+    setRunning(false);
     const selected = resolveBraTSFolder(fileList);
     setFolder(selected);
     setInferenceResult(null);
@@ -134,11 +139,13 @@ export default function Segmentation() {
 
   const runAI = async () => {
     if (!complete || !modelId || running) return;
+    const sequence = ++inferenceSequenceRef.current;
     setRunning(true);
     setError('');
     setInferenceResult(null);
     try {
       const response = await runSegmentation(workspaceId, patient.id, folder.files, modelId);
+      if (sequence !== inferenceSequenceRef.current) return;
       const encoded = response?.result?.mask_nifti_base64;
       if (!encoded) throw new Error('Model response did not contain a segmentation mask.');
       const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
@@ -148,9 +155,10 @@ export default function Segmentation() {
       setViewMode('overlay');
       setPreview({ type: 'predicted', files: folder.files, mask });
     } catch (requestError) {
+      if (sequence !== inferenceSequenceRef.current) return;
       setError(requestError.response?.data?.detail || requestError.message || 'AI segmentation failed. No model result was generated.');
     } finally {
-      setRunning(false);
+      if (sequence === inferenceSequenceRef.current) setRunning(false);
     }
   };
 
@@ -197,9 +205,9 @@ export default function Segmentation() {
                 <div className="seg-instructions">
                   <strong>Prepare your MRI input folder</strong>
                   <ol>
-                    <li>Create a folder named <code>BraTS</code>.</li>
+                    <li>Inside your local <code>input/files</code> directory, create a folder named <code>BraTS</code> (<code>input/files/BraTS</code>).</li>
                     <li>Place the four NIfTI files inside: <code>*_t1.nii.gz</code>, <code>*_t1ce.nii.gz</code>, <code>*_t2.nii.gz</code>, <code>*_flair.nii.gz</code>.</li>
-                    <li>Select the entire folder below; the app identifies all four modalities automatically.</li>
+                    <li>Select the <code>BraTS</code> folder itself below (not individual files). The app extracts and checks T1, T1CE, T2 and FLAIR automatically; no filesystem path needs to be typed.</li>
                   </ol>
                 </div>
                 <label className="field-label" htmlFor="brats-folder">BraTS input folder</label>
@@ -300,7 +308,25 @@ export default function Segmentation() {
                   <span className="stat-val">{volume} cm³</span>
                 </div>
               ))}
-              <p className="seg-service-note">Predicted masks are displayed only in the renderer. A saved research report workflow is still pending; raw mask downloads are not offered.</p>
+              {inferenceResult && (
+                <Link
+                  className="run-seg-btn"
+                  to={`/patients/${patient.id}/reports`}
+                  state={{
+                    segmentationReport: {
+                      patient_id: patient.id,
+                      source: 'ai-inference',
+                      model: inferenceResult.model,
+                      measurements: inferenceResult.measurements,
+                      modality_count: MRI_MODALITIES.length,
+                    },
+                  }}
+                  style={{ display: 'inline-flex', textDecoration: 'none', marginTop: 12 }}
+                >
+                  <FileOutput size={14} /> View research report summary
+                </Link>
+              )}
+              <p className="seg-service-note">Predicted masks appear in the renderer only. The report page can preview model metadata and measured volumes for this browser session; no mask download or saved report is provided.</p>
             </>}
           </div>
         </div>
