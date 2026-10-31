@@ -266,6 +266,50 @@ NeuroVision is actively evolving as a brain-imaging research platform. The codeb
 No license file is currently included in this repository. Add an explicit license before redistributing or accepting external contributions under defined terms.
 
 
+### Private segmentation reports in Hugging Face Storage Buckets
+
+This PR supports two storage modes using one Django `FileField`:
+
+- `NEUROVISION_REPORT_STORAGE=filesystem`: local Docker development, with
+  `report_media` Docker volume; not durable on Render Free.
+- `NEUROVISION_REPORT_STORAGE=huggingface`: private S3-compatible
+  [pahariaryan/neuro-bucket](https://huggingface.co/buckets/pahariaryan/neuro-bucket).
+  The S3 endpoint is `https://s3.hf.co/pahariaryan`; the S3 API bucket name is
+  **`neuro-bucket`**, not `pahariaryan/neuro-bucket`.
+
+For the hosted demo, generate *S3 credentials* from a fine-grained Hugging Face
+write-capable access token scoped to this bucket. On Render backend environment,
+add `NEUROVISION_REPORT_STORAGE=huggingface`,
+`HUGGINGFACE_S3_NAMESPACE=pahariaryan`,
+`HUGGINGFACE_S3_BUCKET=neuro-bucket`,
+`HUGGINGFACE_S3_ACCESS_KEY_ID=HFAK...`, and
+`HUGGINGFACE_S3_SECRET_ACCESS_KEY=<secret>`. Never commit secrets, copy
+them into the React frontend, or paste them into issues. A regular Hugging Face
+token is **not** the S3 secret key. The gateway requires path-style addressing,
+region `us-east-1`, and request/response checksum mode `when_required`.
+
+Each report object is stored as
+`reports/<workspace-name>-<workspace-uuid>/<patient-name>-<patient-uuid>/<report-uuid>/3d-segmentation.png`
+in the **private bucket**. PostgreSQL stores only its relative object key and
+report metadata. Raw MRI and masks are never retained. All reads stream through
+the existing authenticated, tenant-scoped snapshot route; the object URL
+is never returned by Django and no public media route is created.
+Report deletion calls storage.delete after the transaction commits.
+
+**Privacy:** Workspace and patient names appear in the object key. Use only
+de-identified or synthetic/demo research data until PHI governance,
+retention, consent, applicable legal requirements and a signed data-processing
+agreement have been reviewed. For real patients, move to opaque-only object
+keys and an approved medical-data storage contract.
+
+**Deployment:** Render Free does not provide durable local media volumes.
+With the Hugging Face mode and secret env vars configured, uploads persist in
+the bucket across Render redeploys. Without keys the app deliberately rejects
+saves rather than falling back to unsafe ephemeral storage. Local development
+continues using the Docker named volume by default. Storage Gateway access
+still needs validation via an authenticated upload/read/delete smoke test against
+the actual private bucket.
+
 ### Private segmentation report media (PR #35)
 
 Segmentation report snapshots are **files on the Django backend filesystem**, not

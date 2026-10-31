@@ -49,3 +49,14 @@
 - Workspace/patient names in paths are sensitive. Keep the entire `MEDIA_ROOT` private; use authenticated tenant snapshot GET / staff-only admin preview, never a public media URL.
 - Development defaults to `backend/platform_api/media/`; on Render set `NEUROVISION_MEDIA_ROOT` to a persistent mounted disk path or the filesystem will be ephemeral.
 - Models Patient, ImagingStudy, SegmentationReport are registered read-only in tenant Django Admin to preserve API validation and audit rules.
+
+
+#### Hugging Face storage option (PR #35)
+- Reports use the same private Django FileField and authenticated snapshot endpoint
+  for both local filesystem and Hugging Face's S3-compatible bucket.
+- Configure `NEUROVISION_REPORT_STORAGE=huggingface`, namespace
+  `pahariaryan`, bucket `neuro-bucket`, and generated HF S3 key pair in
+  backend environment variables. Do not put secrets in code.
+- Bucket object keys follow the existing workspace/patient/report path.
+  No public URLs or anonymous reads; no real patient data on free research
+  hosting without compliance approval.
