@@ -32,18 +32,12 @@ class User(AbstractUser):
 
 
 class InstitutionMembership(models.Model):
-    class Role(models.TextChoices):
-        ADMIN = "ADMIN", "Admin"
-        MEMBER = "MEMBER", "Member"
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
     institution = models.ForeignKey(
         "tenant.Institution",
         on_delete=models.CASCADE,
         related_name="institution_memberships",
     )
-
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

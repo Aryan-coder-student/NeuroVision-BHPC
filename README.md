@@ -31,7 +31,7 @@ The platform uses schema-based multi-tenancy: each institution has an isolated d
 | Area | Included today |
 | --- | --- |
 | Identity and access | Registration, email OTP verification, cookie-based JWT authentication, CSRF protection, and workspace membership checks |
-| Organization workspaces | Institution selection, tenant-aware routing, role-sensitive patient access, and cross-workspace patient discovery for authorized users |
+| Organization workspaces | Institution selection, tenant-aware routing, owner-scoped workspace and patient access, and cross-workspace patient discovery for authorized users |
 | Patient registry | Patient registration, generated identifiers, date-of-birth validation, identity-grant workflow, pagination, search, and tenant-scoped records |
 | Imaging workspace | Patient-scoped segmentation viewer, visual question answering, history, reports, model registry, data contribution, and feedback surfaces |
 | Delivery | Docker development stack, Render blueprint, and GitHub Actions checks for backend lint/tests, frontend verification, and container security |

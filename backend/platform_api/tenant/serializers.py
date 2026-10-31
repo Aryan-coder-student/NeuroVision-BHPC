@@ -10,7 +10,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Institution
         fields = "__all__"
-        read_only_fields = ["id", "slug", "schema_name", "created_at", "updated_at"]
+        read_only_fields = ["id", "owner", "slug", "schema_name", "created_at", "updated_at"]
 
     def get_domain_url(self, obj):
         return get_domain_url_from_obj(obj)
