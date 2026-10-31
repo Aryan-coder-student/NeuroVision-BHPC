@@ -141,7 +141,7 @@ class SegmentationReportAPITests(TenantTestCase):
         self.assertEqual(self.request("post", data=self.upload(token=wrong_workspace), fmt="multipart").status_code, 400)
         wrong_actor = self.proof(actor=self.outsider)
         self.assertEqual(self.request("post", data=self.upload(token=wrong_actor), fmt="multipart").status_code, 400)
-        self.assertEqual(self.request("post", data=self.upload(imaging_study_id=str(uuid4())), fmt="multipart").status_code, 400)
+        self.assertEqual(self.request("post", data=self.upload(imaging_study_id=str(uuid4())), fmt="multipart").status_code, 404)
 
     def test_invalid_and_oversized_snapshots_rejected(self):
         missing = self.upload()
@@ -154,6 +154,13 @@ class SegmentationReportAPITests(TenantTestCase):
             self.assertEqual(self.request("post", data=self.upload(), fmt="multipart").status_code, 400)
         with schema_context(self.workspace.schema_name):
             self.assertFalse(SegmentationReport.objects.exists())
+
+    def test_expired_or_wrongly_salted_token_rejected(self):
+        expired = signing.dumps(
+            {"kind": "real_segmentation_inference"},
+            salt="another-application",
+        )
+        self.assertEqual(self.request("post", data=self.upload(token=expired), fmt="multipart").status_code, 400)
 
     def test_no_saved_reports_seeded_from_demo_or_study(self):
         self.assertEqual(self.request("get").data["results"], [])

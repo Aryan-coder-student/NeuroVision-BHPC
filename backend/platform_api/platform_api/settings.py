@@ -276,6 +276,7 @@ AI_MODEL_CATALOG = (
     },
 )
 
+REPORT_SNAPSHOT_MAX_BYTES = 3 * 1024 * 1024
 AI_INFERENCE_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 # Experimental synchronous upload limit: 4 * 32 MiB maximum.
 # Larger studies require private object storage and asynchronous inference.
