@@ -9,6 +9,18 @@ import { applySampleView } from './segmentation-demo.js';
  * an attach still in progress may register observers after an early cleanup.
  * React remounts the canvas on Retry to avoid stale WebGL context state.
  */
+export function selectReferenceView(viewer, requested) {
+  try {
+    applySampleView(viewer, requested, true);
+    return requested;
+  } catch (error) {
+    if (requested !== 'render') throw error;
+    // The WebGL 3D pipeline can fail independently of regular 2D volume display.
+    applySampleView(viewer, 'overlay', true);
+    return 'overlay';
+  }
+}
+
 export function startReferenceViewer({ viewer, canvas, volumes, onReady, onError }) {
   let active = true;
   let finished = false;
@@ -31,14 +43,7 @@ export function startReferenceViewer({ viewer, canvas, volumes, onReady, onError
         throw new Error('Both the BraTS MRI and reference segmentation mask are required.');
       }
 
-      let mode = 'render';
-      try {
-        applySampleView(viewer, mode, true);
-      } catch {
-        // An unavailable 3D renderer should not hide a usable reference MRI.
-        mode = 'overlay';
-        applySampleView(viewer, mode, true);
-      }
+      const mode = selectReferenceView(viewer, 'render');
       if (active) onReady(mode);
     } catch (error) {
       if (active) onError(error);

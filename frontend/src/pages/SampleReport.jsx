@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
 import { AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
 
-import { SAMPLE_VIEWS, applySampleView } from './segmentation-demo';
-import { startReferenceViewer } from './sample-viewer';
+import { SAMPLE_VIEWS } from './segmentation-demo';
+import { startReferenceViewer, selectReferenceView } from './sample-viewer';
 import { BRATS_SAMPLE_REPORT } from './sample-report';
 import './SampleReport.css';
 
@@ -23,6 +23,7 @@ export default function SampleReport({ patientId }) {
   const viewerRef = useRef(null);
   const [status, setStatus] = useState('loading');
   const [viewMode, setViewMode] = useState('render');
+  const [renderSupported, setRenderSupported] = useState(true);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -32,13 +33,13 @@ export default function SampleReport({ patientId }) {
       dragAndDropEnabled: false,
     });
     viewerRef.current = nv;
-    setStatus('loading');
     const controller = startReferenceViewer({
       viewer: nv,
       canvas: canvasRef.current,
       volumes: BRATS_SAMPLE_REPORT.volumes,
       onReady: initialMode => {
         setViewMode(initialMode);
+        setRenderSupported(initialMode === 'render');
         setStatus('ready');
       },
       onError: () => setStatus('error'),
@@ -52,8 +53,15 @@ export default function SampleReport({ patientId }) {
 
   const changeView = mode => {
     if (status !== 'ready' || !viewerRef.current) return;
-    applySampleView(viewerRef.current, mode.id);
-    setViewMode(mode.id);
+    try {
+      const applied = selectReferenceView(viewerRef.current, mode.id);
+      setViewMode(applied);
+      if (mode.id === 'render' && applied !== 'render') {
+        setRenderSupported(false);
+      }
+    } catch {
+      setStatus('error');
+    }
   };
 
   return (
@@ -84,7 +92,11 @@ export default function SampleReport({ patientId }) {
               <div className="brats-report-state" role="alert">
                 <AlertTriangle size={22} />
                 <span>Could not load the bundled sample MRI or segmentation mask.</span>
-                <button type="button" onClick={() => setRetry(n => n + 1)}>
+                <button type="button" onClick={() => {
+                  setStatus('loading');
+                  setRenderSupported(true);
+                  setRetry(n => n + 1);
+                }}>
                   <RotateCcw size={14} /> Retry viewer
                 </button>
               </div>
@@ -92,7 +104,7 @@ export default function SampleReport({ patientId }) {
           </div>
           <div className="brats-report-toolbar" role="group" aria-label="Reference MRI visualization modes">
             {SAMPLE_VIEWS.map(mode => (
-              <button type="button" key={mode.id} disabled={status !== 'ready'}
+              <button type="button" key={mode.id} disabled={status !== 'ready' || (mode.id === 'render' && !renderSupported)}
                 aria-pressed={viewMode === mode.id}
                 className={viewMode === mode.id ? 'selected' : ''}
                 onClick={() => changeView(mode)}
@@ -101,6 +113,11 @@ export default function SampleReport({ patientId }) {
               </button>
             ))}
           </div>
+          {!renderSupported && (
+            <p className="brats-report-hint" role="status">
+              3D rendering is unavailable in this browser. MRI and reference mask remain available in 2D.
+            </p>
+          )}
           <p className="brats-report-hint">
             The viewer loads the project's bundled T1CE NIfTI volume and corresponding reference mask.
             It does not display a fabricated AI prediction.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { startReferenceViewer } from './sample-viewer.js';
+import { startReferenceViewer, selectReferenceView } from './sample-viewer.js';
 
 function deferred() {
   let resolve;
@@ -105,4 +105,14 @@ test('failed 3D renderer falls back to usable MRI and mask overlay', async () =>
   await ctrl.done;
   assert.deepEqual(ready, ['overlay']);
   ctrl.dispose();
+});
+
+
+test('switching back to unavailable 3D rendering falls back without crashing', () => {
+  const { viewer } = mockViewer();
+  viewer.setSliceType = mode => {
+    if (mode === viewer.sliceTypeRender) throw new Error('WebGL 3D lost');
+  };
+  assert.equal(selectReferenceView(viewer, 'render'), 'overlay');
+  assert.equal(selectReferenceView(viewer, 'mri'), 'mri');
 });
