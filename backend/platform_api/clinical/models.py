@@ -83,3 +83,33 @@ class ImagingStudy(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["patient", "-created_at"], name="clinical_im_patient_732189_idx")]
+
+
+class SegmentationReport(models.Model):
+    """Tenant-local summary of real model inference, with a static PNG only.
+
+    The original MRI and interactive NIfTI mask are deliberately not retained.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(
+        Patient, on_delete=models.CASCADE, related_name="segmentation_reports",
+    )
+    imaging_study = models.ForeignKey(
+        ImagingStudy, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="segmentation_reports",
+    )
+    proof_nonce = models.UUIDField(unique=True, editable=False)
+    created_by_user_id = models.UUIDField(editable=False)
+    model_id = models.CharField(max_length=120)
+    model_name = models.CharField(max_length=160)
+    model_version = models.CharField(max_length=80)
+    measurements_cm3 = models.JSONField(default=dict)
+    snapshot_png = models.BinaryField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["patient", "-created_at"], name="clinical_re_patient_6394aa_idx"),
+        ]

@@ -1,5 +1,8 @@
 from uuid import UUID
 
+from django.db import IntegrityError, transaction
+from django.http import HttpResponse
+
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -9,7 +12,9 @@ from rest_framework.response import Response
 
 from tenant.permissions import HasVerifiedTenantMembership
 
-from .models import ImagingStudy, Patient
+from .models import ImagingStudy, Patient, SegmentationReport
+from .report_serializers import SegmentationReportReadSerializer, SegmentationReportSaveSerializer
+from .reports import verify_inference_report_token
 from .services import (
     PatientVersionConflict,
     correct_patient_demographics,
@@ -155,6 +160,85 @@ class PatientViewSet(viewsets.ModelViewSet):
             raise NotFound("Imaging study not found.") from error
         study = get_object_or_404(patient.imaging_studies, pk=normalized_study_id)
         return Response(ImagingStudyReadSerializer(study).data)
+
+    @action(detail=True, methods=("get", "post"), url_path="segmentation-reports")
+    def segmentation_reports(self, request, pk=None):
+        """Saved reports contain verified AI metadata and a static PNG, not scans."""
+        patient = self.get_object()
+        if request.method == "GET":
+            items = patient.segmentation_reports.defer("snapshot_png")
+            page = self.paginate_queryset(items)
+            if page is not None:
+                return self.get_paginated_response(
+                    SegmentationReportReadSerializer(page, many=True).data
+                )
+            return Response(SegmentationReportReadSerializer(items, many=True).data)
+
+        serializer = SegmentationReportSaveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        input_data = serializer.validated_data
+        proof = verify_inference_report_token(
+            input_data["report_token"],
+            patient_id=patient.id, workspace_id=request.tenant.id,
+            actor_id=request.user.id,
+        )
+        study = None
+        if input_data.get("imaging_study_id"):
+            study = get_object_or_404(
+                patient.imaging_studies, id=input_data["imaging_study_id"],
+            )
+        try:
+            with transaction.atomic():
+                report = SegmentationReport.objects.create(
+                    patient=patient,
+                    imaging_study=study,
+                    proof_nonce=proof["nonce"],
+                    created_by_user_id=request.user.id,
+                    model_id=proof["model_id"][:120],
+                    model_name=proof["model_name"][:160],
+                    model_version=proof["model_version"][:80],
+                    measurements_cm3=proof["measurements_cm3"],
+                    snapshot_png=input_data["snapshot"].read(),
+                )
+        except IntegrityError:
+            return Response(
+                {"detail": "This inference result has already been saved."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(
+            SegmentationReportReadSerializer(report).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def _get_segmentation_report(self, patient, report_id):
+        try:
+            report_uuid = UUID(report_id)
+        except (TypeError, ValueError) as error:
+            raise NotFound("Report not found.") from error
+        return get_object_or_404(
+            patient.segmentation_reports, id=report_uuid,
+        )
+
+    @action(
+        detail=True, methods=("get",),
+        url_path=r"segmentation-reports/(?P<report_id>[0-9a-f-]{36})",
+    )
+    def segmentation_report_detail(self, request, pk=None, report_id=None):
+        patient = self.get_object()
+        report = self._get_segmentation_report(patient, report_id)
+        return Response(SegmentationReportReadSerializer(report).data)
+
+    @action(
+        detail=True, methods=("get",),
+        url_path=r"segmentation-reports/(?P<report_id>[0-9a-f-]{36})/snapshot",
+    )
+    def segmentation_report_snapshot(self, request, pk=None, report_id=None):
+        patient = self.get_object()
+        report = self._get_segmentation_report(patient, report_id)
+        response = HttpResponse(bytes(report.snapshot_png), content_type="image/png")
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
     def perform_destroy(self, instance):
         delete_patient(patient=instance, institution=self.request.tenant)
