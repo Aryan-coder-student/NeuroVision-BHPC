@@ -92,9 +92,15 @@ export default function ModelFeedback() {
             <option value="feature_request">Feature request</option>
             <option value="ui_issue">Platform / UI issue</option>
           </select>
-          <label htmlFor="feedback-report" style={label}>Saved report UUID (optional; no patient details)</label>
-          <input id="feedback-report" className="field-input" value={form.report_id}
-            onChange={e => update('report_id', e.target.value)} placeholder="Paste a saved segmentation report UUID" />
+          {form.report_id && (
+            <div role="note" style={{ margin: '14px 0', padding: 12, border: '1px solid var(--outline-dim)', color: 'var(--text-muted)', fontSize: 12 }}>
+              Linked to the saved segmentation report you opened. The backend verifies that it belongs to this workspace and selected model.
+              <button type="button" onClick={() => update('report_id', '')}
+                style={{ marginLeft: 10, color: 'var(--accent-primary)', background: 'transparent', border: 0, cursor: 'pointer' }}>
+                Remove report reference
+              </button>
+            </div>
+          )}
           <label htmlFor="feedback-description" style={label}>Description (no protected health information)</label>
           <textarea id="feedback-description" required maxLength={2000} rows={5} className="field-input"
             value={form.description} onChange={e => update('description', e.target.value)}

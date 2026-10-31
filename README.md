@@ -357,3 +357,30 @@ plan. To preserve reports in Render production, either configure the Hugging Fac
 private S3 bucket as described above (recommended for the synthetic demo),
 or switch to a disk-capable plan and mount a persistent disk for filesystem mode.
 Never use ephemeral Render Free filesystem storage for durable reports.
+
+
+### Data Contribution and Model Feedback (PRs #37–38)
+
+The Data Contribution page records **tenant-scoped metadata review requests** only.
+It is not a scan-upload service. The earlier mock upload success, claim of a
+5 GB limit, automatic PHI anonymization, and federated-training queue were not
+implemented; they are now removed. No dataset files, MRI scans or DICOM archives
+are accepted by the metadata endpoint. Each request records origin, usage rights,
+modality, sample count, description, a mandatory non-PHI attestation, and a
+review status. Tenant-authorized Django Admin can review the metadata.
+
+Model Feedback records real submissions in the tenant PostgreSQL schema and
+tracks review status. It validates the selected model ID against the registry,
+checks category compatibility, and can link a **saved segmentation report**
+in the same tenant when launched from the report page. Feedback does not verify
+clinical ground truth, automatically retrain models, or change model weights.
+User-entered text must not include patient-identifying information.
+
+Backend routes:
+- `GET/POST /api/v1/tenant/contributions/`; `GET /.../contributions/<uuid>/`
+- `GET/POST /api/v1/tenant/model-feedback/`; `GET /.../model-feedback/<uuid>/`
+
+Both require owner-authorized tenant membership and `X-Workspace-ID`. A
+separate governed storage and scanning service, appropriate data processing
+agreements, retention controls, audit logs, and security review are prerequisites
+to accepting real medical dataset files.
