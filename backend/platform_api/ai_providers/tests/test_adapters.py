@@ -2,9 +2,12 @@ from unittest.mock import MagicMock
 
 from django.test import SimpleTestCase
 
-from ai_providers.adapters import BlipVQAAdapter, MonaiSegmentationAdapter
+from ai_providers.segmentation.adapters import MonaiSegmentationAdapter
+from ai_providers.vqa.adapters import BlipVQAAdapter
 from ai_providers.catalog import ModelDefinition
-from ai_providers.contracts import ProviderConfiguration, SegmentationRequest, VQARequest
+from ai_providers.contracts import ProviderConfiguration
+from ai_providers.segmentation.contracts import SegmentationRequest
+from ai_providers.vqa.contracts import VQARequest
 from ai_providers.exceptions import ProviderProtocolError
 
 

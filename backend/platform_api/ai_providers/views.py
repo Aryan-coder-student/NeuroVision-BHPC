@@ -9,7 +9,6 @@ from clinical.models import Patient
 from tenant.permissions import HasVerifiedTenantMembership
 
 from .catalog import SUPPORTED_CAPABILITIES
-from .contracts import SegmentationRequest, VQARequest
 from .exceptions import (
     ModelNotFound,
     ProviderNotConfigured,
@@ -19,7 +18,6 @@ from .exceptions import (
     ProviderUnavailable,
 )
 from .registry import get_provider_registry
-from .serializers import SegmentationInferenceSerializer, VQAInferenceSerializer
 
 
 PROVIDER_ERROR_STATUSES = {
@@ -77,47 +75,25 @@ class ModelCatalogView(TenantInferenceView):
         return Response({"results": [model.as_public_dict() for model in models]})
 
 
-class SegmentationInferenceView(TenantInferenceView):
+class PatientInferenceView(TenantInferenceView):
+    """One authenticated HTTP lifecycle for task-specific capability views."""
+
+    serializer_class = None
+    registry_method = None
+
+    def build_request(self, validated_data):
+        raise NotImplementedError
+
     def post(self, request, patient_id):
         patient = self.get_patient(patient_id)
-        serializer = SegmentationInferenceSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        model_id = serializer.validated_data["model_id"]
         try:
-            result = get_provider_registry().run_segmentation(
-                serializer.validated_data["model_id"],
-                SegmentationRequest(
-                    study_reference=serializer.validated_data["study_reference"]
-                ),
-            )
+            runner = getattr(get_provider_registry(), self.registry_method)
+            result = runner(model_id, self.build_request(serializer.validated_data))
         except tuple(PROVIDER_ERROR_STATUSES) as error:
             return _provider_error_response(
-                error,
-                patient_id=patient.id,
-                model_id=serializer.validated_data["model_id"],
-            )
-        return _inference_response(patient, result)
-
-
-class VQAInferenceView(TenantInferenceView):
-    def post(self, request, patient_id):
-        patient = self.get_patient(patient_id)
-        serializer = VQAInferenceSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        image = serializer.validated_data.get("image")
-        try:
-            result = get_provider_registry().run_vqa(
-                serializer.validated_data["model_id"],
-                VQARequest(
-                    question=serializer.validated_data["question"],
-                    image_name=image.name if image else None,
-                    image_bytes=image.read() if image else None,
-                    image_content_type=image.content_type if image else None,
-                ),
-            )
-        except tuple(PROVIDER_ERROR_STATUSES) as error:
-            return _provider_error_response(
-                error,
-                patient_id=patient.id,
-                model_id=serializer.validated_data["model_id"],
+                error, patient_id=patient.id, model_id=model_id
             )
         return _inference_response(patient, result)

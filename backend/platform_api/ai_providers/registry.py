@@ -5,14 +5,9 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from .catalog import CAPABILITY_SEGMENTATION, CAPABILITY_VQA, ModelDefinition
-from .contracts import (
-    InferenceResult,
-    ProviderConfiguration,
-    SegmentationProvider,
-    SegmentationRequest,
-    VQAProvider,
-    VQARequest,
-)
+from .contracts import InferenceResult, ProviderConfiguration
+from .segmentation.contracts import SegmentationProvider, SegmentationRequest
+from .vqa.contracts import VQAProvider, VQARequest
 from .exceptions import ModelNotFound, ProviderNotConfigured
 
 

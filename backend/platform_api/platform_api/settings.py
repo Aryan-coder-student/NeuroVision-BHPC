@@ -241,14 +241,14 @@ ENCRYPTION_KEY = settings.ENCRYPTION_KEY
 # catalog model; they cannot provide or override provider URLs or credentials.
 AI_PROVIDER_REGISTRY = {
     "monai_segmentation": {
-        "ADAPTER": "ai_providers.adapters.MonaiSegmentationAdapter",
+        "ADAPTER": "ai_providers.segmentation.adapters.MonaiSegmentationAdapter",
         "BASE_URL": settings.MONAI_SEGMENTATION_BASE_URL,
         "TIMEOUT_SECONDS": settings.MONAI_SEGMENTATION_TIMEOUT_SECONDS,
         "TOKEN": settings.MONAI_SEGMENTATION_API_TOKEN,
         "ENABLED": bool(settings.MONAI_SEGMENTATION_BASE_URL.strip()),
     },
     "blip_vqa": {
-        "ADAPTER": "ai_providers.adapters.BlipVQAAdapter",
+        "ADAPTER": "ai_providers.vqa.adapters.BlipVQAAdapter",
         "BASE_URL": settings.BLIP_VQA_BASE_URL,
         "TIMEOUT_SECONDS": settings.BLIP_VQA_TIMEOUT_SECONDS,
         "TOKEN": settings.BLIP_VQA_API_TOKEN,

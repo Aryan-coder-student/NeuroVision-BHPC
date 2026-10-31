@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+"""Transport-neutral contracts shared by both inference capabilities."""
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping
 from urllib.parse import urlparse
@@ -22,39 +22,6 @@ class ProviderConfiguration:
 
 
 @dataclass(frozen=True)
-class SegmentationRequest:
-    study_reference: str
-
-
-@dataclass(frozen=True)
-class VQARequest:
-    question: str
-    image_name: str | None = None
-    image_bytes: bytes | None = None
-    image_content_type: str | None = None
-
-
-@dataclass(frozen=True)
 class InferenceResult:
     model: "ModelDefinition"
     payload: Mapping[str, Any]
-
-
-class SegmentationProvider(ABC):
-    @abstractmethod
-    def segment(
-        self,
-        request: SegmentationRequest,
-        model: "ModelDefinition",
-    ) -> Mapping[str, Any]:
-        """Run segmentation using a normalized request."""
-
-
-class VQAProvider(ABC):
-    @abstractmethod
-    def answer(
-        self,
-        request: VQARequest,
-        model: "ModelDefinition",
-    ) -> Mapping[str, Any]:
-        """Answer a visual question using a normalized request."""

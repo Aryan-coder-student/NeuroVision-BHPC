@@ -1,11 +1,7 @@
 from django.test import SimpleTestCase, override_settings
 
-from ai_providers.contracts import (
-    SegmentationProvider,
-    SegmentationRequest,
-    VQAProvider,
-    VQARequest,
-)
+from ai_providers.segmentation.contracts import SegmentationProvider, SegmentationRequest
+from ai_providers.vqa.contracts import VQAProvider, VQARequest
 from ai_providers.exceptions import ModelNotFound, ProviderNotConfigured
 from ai_providers.registry import ProviderRegistry
 

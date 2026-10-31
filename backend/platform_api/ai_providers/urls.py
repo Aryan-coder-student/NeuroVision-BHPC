@@ -1,6 +1,8 @@
 from django.urls import path
 
-from .views import ModelCatalogView, SegmentationInferenceView, VQAInferenceView
+from .views import ModelCatalogView
+from .segmentation.views import SegmentationInferenceView
+from .vqa.views import VQAInferenceView
 
 
 urlpatterns = [

@@ -96,3 +96,8 @@ class ProviderHTTPTransport:
         if not isinstance(payload, dict):
             raise ProviderProtocolError()
         return payload
+
+
+def provider_endpoint(base_url: str, path: str) -> str:
+    """Join provider origin and task-specific route once for both adapters."""
+    return f"{base_url.rstrip('/')}/{path.lstrip('/')}"

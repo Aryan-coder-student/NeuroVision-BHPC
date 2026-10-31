@@ -193,6 +193,18 @@ The separate **Patient study (experimental)** option still requires a locally
 running Flask `/predict` service, but the browser now reaches it only through
 the tenant-authorized Django inference API.
 
+### Separate inference capability modules
+
+Backend inference modules live in `backend/platform_api/ai_providers/`:
+
+- `segmentation/` owns the MONAI 3D UNet request contract, serializer, adapter, and view.
+- `vqa/` owns the BLIP question + image contract, serializer, adapter, and view.
+
+Only model catalog/selection, transport, configuration, tenant permissions,
+response formatting and provider error handling are shared. Both task views
+inherit a single patient-scoped request lifecycle from `PatientInferenceView`.
+No second provider service or job queue is introduced by this refactor.
+
 ### AI provider registry
 
 The Django provider registry exposes the existing MONAI 3D UNet and fine-tuned BLIP models through patient-scoped endpoints. The catalog reports configuration and version metadata only; it does not claim that a provider is live until an inference request succeeds.
