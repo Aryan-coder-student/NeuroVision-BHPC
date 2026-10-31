@@ -1,27 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
 import {
-  AlertTriangle, Brain, CheckCircle2, FileOutput, FlaskConical, FolderOpen, ScanLine,
+  AlertTriangle, Brain, CheckCircle2, FileOutput, FlaskConical, FolderOpen, ScanLine, Loader,
 } from 'lucide-react';
 import {
   SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
 } from './segmentation-demo';
 import { MRI_MODALITIES, resolveBraTSFolder, formatFileSize } from './segmentation-files';
+import { runSegmentation, fetchAvailableModels } from '../services/api';
+import { configuredModels } from '../services/model-catalog';
 import './Segmentation.css';
 
 export default function Segmentation() {
-  const { patient } = useOutletContext();
+  const { patient, workspaceId } = useOutletContext();
   const [source, setSource] = useState('sample');
   const [folder, setFolder] = useState({ files: {}, error: '', folderName: '' });
+  const [models, setModels] = useState([]);
+  const [modelId, setModelId] = useState('');
+  const [catalogError, setCatalogError] = useState('');
+  const [running, setRunning] = useState(false);
+  const [inferenceResult, setInferenceResult] = useState(null);
   const [preview, setPreview] = useState(null);
   const [viewMode, setViewMode] = useState('overlay');
   const [viewerStatus, setViewerStatus] = useState('idle');
   const [error, setError] = useState('');
   const canvasRef = useRef(null);
   const niivueRef = useRef(null);
+  const inferenceSequenceRef = useRef(0);
   const isSample = preview?.type === 'sample';
-  const hasMask = isSample;
+  const hasMask = isSample || preview?.type === 'predicted';
+
+  useEffect(() => {
+    let mounted = true;
+    fetchAvailableModels(workspaceId, 'segmentation')
+      .then(data => {
+        if (!mounted) return;
+        const selectable = configuredModels(data, 'segmentation');
+        setModels(selectable);
+        setModelId(selectable[0]?.id ?? '');
+        setCatalogError(selectable.length ? '' : 'MRI model inference is not configured yet.');
+      })
+      .catch(() => {
+        if (mounted) setCatalogError('Unable to load the model catalog.');
+      });
+    return () => { mounted = false; };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!preview || !canvasRef.current) return undefined;
@@ -45,10 +69,15 @@ export default function Segmentation() {
           const uri = URL.createObjectURL(selected);
           urls.push(uri);
           volumes = [{ url: uri, name: selected.name, colormap: 'gray' }];
+          if (preview.type === 'predicted') {
+            const maskUri = URL.createObjectURL(preview.mask);
+            urls.push(maskUri);
+            volumes.push({ url: maskUri, name: 'predicted_mask.nii.gz', colormap: 'red', opacity: 0.55 });
+          }
         }
         await nv.loadVolumes(volumes);
         if (!active) return;
-        applySampleView(nv, isSample ? 'overlay' : 'mri', isSample);
+        applySampleView(nv, preview.type === 'local' ? 'mri' : 'overlay', preview.type !== 'local');
         setViewerStatus('ready');
       } catch {
         if (active) {
@@ -73,16 +102,22 @@ export default function Segmentation() {
   }, [viewMode, viewerStatus, preview, hasMask]);
 
   const chooseSource = next => {
+    inferenceSequenceRef.current += 1;
+    setRunning(false);
     setSource(next);
     setPreview(null);
+    setInferenceResult(null);
     setViewerStatus('idle');
     setViewMode(next === 'sample' ? 'overlay' : 'mri');
     setError('');
   };
 
   const chooseFolder = fileList => {
+    inferenceSequenceRef.current += 1;
+    setRunning(false);
     const selected = resolveBraTSFolder(fileList);
     setFolder(selected);
+    setInferenceResult(null);
     setPreview(null);
     setViewerStatus('idle');
     setError('');
@@ -90,6 +125,7 @@ export default function Segmentation() {
 
   const showSample = () => {
     setViewMode('overlay');
+    setInferenceResult(null);
     setError('');
     setPreview({ type: 'sample', nonce: Date.now() });
   };
@@ -99,6 +135,31 @@ export default function Segmentation() {
     setViewMode('mri');
     setError('');
     setPreview({ type: 'local', files: folder.files });
+  };
+
+  const runAI = async () => {
+    if (!complete || !modelId || running) return;
+    const sequence = ++inferenceSequenceRef.current;
+    setRunning(true);
+    setError('');
+    setInferenceResult(null);
+    try {
+      const response = await runSegmentation(workspaceId, patient.id, folder.files, modelId);
+      if (sequence !== inferenceSequenceRef.current) return;
+      const encoded = response?.result?.mask_nifti_base64;
+      if (!encoded) throw new Error('Model response did not contain a segmentation mask.');
+      const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+      if (!bytes.length) throw new Error('Model returned an empty segmentation mask.');
+      const mask = new Blob([bytes], { type: 'application/octet-stream' });
+      setInferenceResult({ model: response.model, measurements: response.result.region_volumes_cm3 || null });
+      setViewMode('overlay');
+      setPreview({ type: 'predicted', files: folder.files, mask });
+    } catch (requestError) {
+      if (sequence !== inferenceSequenceRef.current) return;
+      setError(requestError.response?.data?.detail || requestError.message || 'AI segmentation failed. No model result was generated.');
+    } finally {
+      if (sequence === inferenceSequenceRef.current) setRunning(false);
+    }
   };
 
   const modes = hasMask
@@ -112,7 +173,7 @@ export default function Segmentation() {
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)', letterSpacing: '-0.02em' }}>3D Segmentation Workspace</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {patient.patient_code} · {source === 'sample' ? 'BraTS 2021 reference sample' : 'BraTS input folder · local preview'}
+            {patient.patient_code} · {source === 'sample' ? 'BraTS 2021 reference sample' : 'BraTS MRI folder · patient-scoped inference'}
           </div>
         </div>
         <span className="sample-availability"><FlaskConical size={14} /> Research workflow</span>
@@ -172,12 +233,26 @@ export default function Segmentation() {
                     </div>
                   ))}
                 </div>
-                <button className="run-seg-btn" type="button" disabled={!complete} onClick={showFolder}>
+                <button className="run-seg-btn" type="button" disabled={!complete || running} onClick={showFolder}>
                   <Brain size={14} /> Preview selected MRI
                 </button>
+                <div className="field-row" style={{ marginTop: 14 }}>
+                  <label className="field-label" htmlFor="seg-model">AI segmentation model</label>
+                  <select id="seg-model" className="field-input" value={modelId}
+                    onChange={e => setModelId(e.target.value)} disabled={running || !models.length}>
+                    {models.length ? models.map(model => (
+                      <option key={model.id} value={model.id}>{model.name} · {model.version}</option>
+                    )) : <option value="">Not available</option>}
+                  </select>
+                </div>
+                <button className="run-seg-btn" type="button"
+                  disabled={!complete || !modelId || running} onClick={runAI}>
+                  {running ? <><Loader size={14} className="spin" /> Running segmentation…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
+                </button>
+                {catalogError && <p className="seg-service-note" role="status">{catalogError}</p>}
                 <div className="seg-inference-note" role="note">
                   <AlertTriangle size={15} />
-                  <span>The AI segmentation API is not connected to folder uploads yet. This PR previews the input safely; a generated segmentation mask will appear here only after an actual model run succeeds.</span>
+                  <span>Segmentation runs only when the configured MONAI service supports authenticated MRI file uploads. The existing legacy Flask model API does not yet support this contract. No result is simulated.</span>
                 </div>
               </>
             )}
@@ -204,7 +279,7 @@ export default function Segmentation() {
                   ))}
                 </div>
                 <div className="viewer-model-note">
-                  <CheckCircle2 size={11} /> {isSample ? 'Reference annotation · no model inference' : 'MRI input only · no predicted mask'}
+                  <CheckCircle2 size={11} /> {isSample ? 'Reference annotation · no model inference' : preview.type === 'predicted' ? 'AI-generated mask · experimental research' : 'MRI input only · no predicted mask'}
                 </div>
               </>}
             </>}
@@ -221,8 +296,37 @@ export default function Segmentation() {
               <p className="seg-service-note">Reference mask is displayed in the renderer only. It is not offered as a downloadable file.</p>
             </> : <>
               <div className="stat-row"><span className="stat-key">Input status</span><span className="stat-val">{complete ? '4 / 4 ready' : 'Awaiting BraTS folder'}</span></div>
-              <div className="stat-row"><span className="stat-key">Segmentation output</span><span className="stat-val">Not generated</span></div>
-              <p className="seg-service-note">After a successful model run, the output mask will appear in the renderer and be available to the future report workflow. No direct mask download is offered.</p>
+              <div className="stat-row"><span className="stat-key">Segmentation output</span>
+                <span className="stat-val">{inferenceResult ? 'Generated · visible in renderer' : 'Not generated'}</span>
+              </div>
+              {inferenceResult && <div className="stat-row"><span className="stat-key">Model version</span>
+                <span className="stat-val">{inferenceResult.model.version}</span>
+              </div>}
+              {inferenceResult?.measurements && Object.entries(inferenceResult.measurements).map(([region, volume]) => (
+                <div className="stat-row" key={region}>
+                  <span className="stat-key">{region.replaceAll('_', ' ')}</span>
+                  <span className="stat-val">{volume} cm³</span>
+                </div>
+              ))}
+              {inferenceResult && (
+                <Link
+                  className="run-seg-btn"
+                  to={`/patients/${patient.id}/reports`}
+                  state={{
+                    segmentationReport: {
+                      patient_id: patient.id,
+                      source: 'ai-inference',
+                      model: inferenceResult.model,
+                      measurements: inferenceResult.measurements,
+                      modality_count: MRI_MODALITIES.length,
+                    },
+                  }}
+                  style={{ display: 'inline-flex', textDecoration: 'none', marginTop: 12 }}
+                >
+                  <FileOutput size={14} /> View research report summary
+                </Link>
+              )}
+              <p className="seg-service-note">Predicted masks appear in the renderer only. The report page can preview model metadata and measured volumes for this browser session; no mask download or saved report is provided.</p>
             </>}
           </div>
         </div>
