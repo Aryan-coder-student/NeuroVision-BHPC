@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, LayoutDashboard, Loader2, MessageSquare, ScanLine, ShieldCheck } from 'lucide-react';
+import { Activity, ArrowLeft, LayoutDashboard, Loader2, MessageSquare, ScanLine, ShieldCheck, FolderOpen } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { fetchPatient } from '../services/api';
 import './PatientWorkspace.css';
@@ -66,6 +66,7 @@ export default function PatientWorkspace() {
       </header>
       <nav className="patient-tabs" aria-label="Patient workspace">
         <NavLink end to={`${base}/dashboard`}><LayoutDashboard size={14} /> Overview</NavLink>
+        <NavLink to={`${base}/imaging-studies`}><FolderOpen size={14} /> Imaging Studies</NavLink>
         <NavLink to={`${base}/segmentation`}><ScanLine size={14} /> 3D Segmentation</NavLink>
         <NavLink to={`${base}/vqa`}><MessageSquare size={14} /> VQA</NavLink>
         <NavLink to={`${base}/history`}><Activity size={14} /> History</NavLink>
