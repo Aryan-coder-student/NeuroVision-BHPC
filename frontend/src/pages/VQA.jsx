@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { sendVQAQuery, fetchAvailableModels } from '../services/api';
 import { Send, Brain, MessageSquare, Trash2 } from 'lucide-react';
+import { configuredModels, modelLabel } from '../services/model-catalog';
 import './VQA.css';
 
 const SYSTEM_WELCOME = {
@@ -18,21 +19,31 @@ const QUICK_PROMPTS = [
 ];
 
 export default function VQA() {
-  const { patient } = useOutletContext();
+  const { patient, workspaceId } = useOutletContext();
   const [messages, setMessages] = useState([SYSTEM_WELCOME]);
   const [input, setInput]       = useState('');
   const [typing, setTyping]     = useState(false);
   const [imageBlob, setImageBlob] = useState(null);
   const [models, setModels]     = useState([]);
   const [selModel, setSelModel] = useState('');
+  const [catalogError, setCatalogError] = useState('');
   const endRef = useRef(null);
 
   useEffect(() => {
-    fetchAvailableModels('vqa').then(data => {
-      setModels(data);
-      if (data.length > 0) setSelModel(data[0].id);
-    });
-  }, []);
+    let active = true;
+    fetchAvailableModels(workspaceId, 'vqa')
+      .then(data => {
+        if (!active) return;
+        const selectable = configuredModels(data, 'vqa');
+        setModels(selectable);
+        setSelModel(selectable[0]?.id || '');
+        setCatalogError(selectable.length ? '' : 'No VQA provider is configured.');
+      })
+      .catch(() => {
+        if (active) setCatalogError('The model catalog could not be loaded.');
+      });
+    return () => { active = false; };
+  }, [workspaceId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,16 +58,26 @@ export default function VQA() {
 
   const sendMsg = async (text) => {
     const q = text || input.trim();
-    if (!q) return;
+    if (!q || !selModel) return;
     setInput('');
     setMessages(m => [...m, { role: 'user', text: q }]);
     setTyping(true);
 
     try {
-      const res = await sendVQAQuery(q, imageBlob, selModel);
-      setMessages(m => [...m, { role: 'ai', text: res.response || res.answer || res.result || JSON.stringify(res) }]);
-    } catch {
-      setMessages(m => [...m, { role: 'ai', text: 'The VQA service is unavailable. No diagnostic answer was generated or saved.' }]);
+      const response = await sendVQAQuery(
+        workspaceId,
+        patient.id,
+        q,
+        imageBlob,
+        selModel,
+      );
+      const payload = response.result;
+      setMessages(m => [...m, { role: 'ai', text: payload.answer }]);
+    } catch (requestError) {
+      setMessages(m => [...m, {
+        role: 'ai',
+        text: requestError.response?.data?.detail || 'The VQA service is unavailable. No diagnostic answer was generated or saved.',
+      }]);
     } finally {
       setTyping(false);
     }
@@ -117,8 +138,11 @@ export default function VQA() {
                 value={selModel}
                 onChange={e => setSelModel(e.target.value)}
               >
-                {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {models.map(model => (
+                  <option key={model.id} value={model.id}>{modelLabel(model)}</option>
+                ))}
               </select>
+              {catalogError && <span role="status" style={{ color: 'var(--error)', fontSize: 11 }}>{catalogError}</span>}
             </div>
             <button style={{ background: 'none', border: 'none', color: 'var(--text-label)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}
               onClick={() => setMessages([SYSTEM_WELCOME])}>
@@ -158,7 +182,7 @@ export default function VQA() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
             />
-            <button className="chat-send-btn" onClick={() => sendMsg()} disabled={!input.trim() || typing}>
+            <button className="chat-send-btn" onClick={() => sendMsg()} disabled={!input.trim() || typing || !selModel}>
               <Send size={13} /> Send
             </button>
           </div>

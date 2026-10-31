@@ -71,7 +71,7 @@ export default function PatientWorkspace() {
         <NavLink to={`${base}/history`}><Activity size={14} /> History</NavLink>
         <NavLink to={`${base}/reports`}><Activity size={14} /> Reports</NavLink>
       </nav>
-      <Outlet context={{ patient, refreshPatient, replacePatient }} />
+      <Outlet context={{ patient, workspaceId: org.id, refreshPatient, replacePatient }} />
     </section>
   );
 }

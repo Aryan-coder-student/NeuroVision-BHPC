@@ -1,8 +1,26 @@
-import { useState } from 'react';
-import { MessageSquarePlus, CheckCircle2, Send } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Send } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
+import { fetchAvailableModels } from '../services/api';
+import { modelLabel } from '../services/model-catalog';
 
 export default function ModelFeedback() {
+  const { org } = useAuth();
   const [submitted, setSubmitted] = useState(false);
+  const [models, setModels] = useState([]);
+  const [catalogError, setCatalogError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetchAvailableModels(org.id)
+      .then(catalog => {
+        if (active) setModels(catalog);
+      })
+      .catch(() => {
+        if (active) setCatalogError('Model catalog unavailable.');
+      });
+    return () => { active = false; };
+  }, [org.id]);
   
   const submitFeedback = (e) => {
     e.preventDefault();
@@ -36,10 +54,12 @@ export default function ModelFeedback() {
               </label>
               <select className="field-input" required>
                 <option value="">Select AI Model</option>
-                <option value="3d_unet">3D Segmentation (U-Net)</option>
-                <option value="vqa">Diagnostic Chat (VQA)</option>
-                <option value="other">Platform / UI Issue</option>
+                {models.map(model => (
+                  <option key={model.id} value={model.id}>{modelLabel(model)}</option>
+                ))}
+                <option value="platform">Platform / UI Issue</option>
               </select>
+              {catalogError && <div role="status" style={{ color: 'var(--error)', fontSize: 11, marginTop: 6 }}>{catalogError}</div>}
             </div>
 
             <div style={{ marginBottom: 16 }}>

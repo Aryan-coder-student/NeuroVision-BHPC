@@ -193,50 +193,43 @@ export async function createWorkspace(data) {
   return res.data;
 }
 
-const SEGMENTATION_BASE = 'http://127.0.0.1:5000';
-/** 3D Brain Segmentation: POST /predict */
-export async function runSegmentation(patientFolder, modelVersion) {
-  const res = await axios.post(`${SEGMENTATION_BASE}/predict`, {
-    patient_folder: patientFolder,
-    model_version: modelVersion || undefined,
+/** Tenant-authorized 3D brain segmentation routed through Django. */
+export async function runSegmentation(workspaceId, patientId, studyReference, modelId) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/inference/segmentation/`,
+    data: {
+      study_reference: studyReference,
+      model_id: modelId,
+    },
   });
   return res.data;
 }
 
-const VQA_BASE = 'https://pahariaryan121-neurovision-api.hf.space';
-
-/** VQA Chat: POST /predict/ */
-export async function sendVQAQuery(query, imageBlob, modelVersion) {
+/** Tenant-authorized BLIP VQA routed through Django. */
+export async function sendVQAQuery(workspaceId, patientId, query, imageBlob, modelId) {
   const formData = new FormData();
   formData.append('question', query);
-  if (modelVersion) formData.append('model_version', modelVersion);
+  formData.append('model_id', modelId);
   if (imageBlob) {
-    formData.append('file', imageBlob, 'vqa_demo.jpg');
+    formData.append('image', imageBlob, 'vqa_demo.jpg');
   }
-  const res = await axios.post(`${VQA_BASE}/predict/`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/inference/vqa/`,
+    data: formData,
   });
   return res.data;
 }
 
-/** Mock Endpoint: Fetch Available Models */
-export async function fetchAvailableModels(type) {
-  // Simulating an API call to a backend model registry
-  await new Promise(r => setTimeout(r, 600));
-  if (type === 'segmentation') {
-    return [
-      { id: '3d_unet_v2', name: '3D-UNet v2.1 (Optimized)', status: 'Deployed' },
-      { id: '3d_unet_v1', name: '3D-UNet v1.0 (Legacy)', status: 'Archived' },
-      { id: 'swin_unetr', name: 'SwinUNETR Medical', status: 'In-Training' },
-    ];
-  } else if (type === 'vqa') {
-    return [
-      { id: 'blip_med_v1', name: 'BLIP-Med VQA v1', status: 'Deployed' },
-      { id: 'llava_med_15', name: 'LLaVA-Med v1.5', status: 'Deployed' },
-      { id: 'gemma_4_med', name: 'Gemma-4-Med (Experimental)', status: 'In-Training' },
-    ];
-  }
-  return [];
+/** Read the server-configured model catalog without asserting provider health. */
+export async function fetchAvailableModels(workspaceId, capability) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: '/tenant/models/',
+    params: capability ? { capability } : {},
+  });
+  return res.data.results;
 }
 
 export function setTenantDomain() {

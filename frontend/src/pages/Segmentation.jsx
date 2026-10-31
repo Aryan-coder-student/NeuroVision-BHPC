@@ -7,6 +7,7 @@ import {
   Loader, Brain, AlertTriangle, CheckCircle2, FlaskConical
 } from 'lucide-react';
 import { SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView } from './segmentation-demo';
+import { configuredModels, modelLabel } from '../services/model-catalog';
 import './Segmentation.css';
 
 function formatMetric(value, unit) {
@@ -14,7 +15,7 @@ function formatMetric(value, unit) {
 }
 
 export default function Segmentation() {
-  const { patient } = useOutletContext();
+  const { patient, workspaceId } = useOutletContext();
   const [patientFolder, setPatientFolder] = useState('');
   const [source, setSource] = useState('sample');
   const [sampleView, setSampleView] = useState('overlay');
@@ -23,6 +24,7 @@ export default function Segmentation() {
   const [error, setError]       = useState('');
   const [models, setModels]     = useState([]);
   const [selModel, setSelModel] = useState('');
+  const [catalogError, setCatalogError] = useState('');
   const [viewerStatus, setViewerStatus] = useState('idle');
   const [sampleLoadRequest, setSampleLoadRequest] = useState(0);
   const canvasRef = useRef(null);
@@ -31,14 +33,19 @@ export default function Segmentation() {
 
   useEffect(() => {
     let active = true;
-    fetchAvailableModels('segmentation').then(data => {
-      if (active) {
-        setModels(data);
-        if (data.length > 0) setSelModel(data[0].id);
-      }
-    });
+    fetchAvailableModels(workspaceId, 'segmentation')
+      .then(data => {
+        if (!active) return;
+        const selectable = configuredModels(data, 'segmentation');
+        setModels(selectable);
+        setSelModel(selectable[0]?.id || '');
+        setCatalogError(selectable.length ? '' : 'No segmentation provider is configured.');
+      })
+      .catch(() => {
+        if (active) setCatalogError('The model catalog could not be loaded.');
+      });
     return () => { active = false; };
-  }, []);
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!isSample || !canvasRef.current) return undefined;
@@ -100,10 +107,15 @@ export default function Segmentation() {
     if (!patientFolder.trim() || loading) return;
     setLoading(true); setError(''); setResult(null); setViewerStatus('idle');
     try {
-      const data = await runSegmentation(patientFolder, selModel);
-      setResult(data);
-    } catch {
-      setError('Segmentation service is unavailable. No clinical result was saved.');
+      const data = await runSegmentation(
+        workspaceId,
+        patient.id,
+        patientFolder,
+        selModel,
+      );
+      setResult({ ...data.result, model_version: data.model.version });
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail || 'Segmentation service is unavailable. No clinical result was saved.');
     } finally {
       setLoading(false);
     }
@@ -201,8 +213,11 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
                   <label className="field-label" htmlFor="seg-model">Model Selection</label>
                   <select id="seg-model" className="field-input" value={selModel}
                     onChange={e => setSelModel(e.target.value)} disabled={loading}>
-                    {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    {models.map(model => (
+                      <option key={model.id} value={model.id}>{modelLabel(model)}</option>
+                    ))}
                   </select>
+                  {catalogError && <p className="seg-service-note" role="status">{catalogError}</p>}
                 </div>
               </>
             )}
@@ -213,7 +228,7 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
               </div>
             )}
 
-            <button type="button" className="run-seg-btn" onClick={handleRun} disabled={loading || (source === 'patient' && !patientFolder.trim())}>
+            <button type="button" className="run-seg-btn" onClick={handleRun} disabled={loading || (source === 'patient' && (!patientFolder.trim() || !selModel))}>
               {loading ? <><Loader size={14} className="spin" /> Processing…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
             </button>
           </div>

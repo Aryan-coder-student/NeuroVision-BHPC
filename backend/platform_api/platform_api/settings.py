@@ -50,6 +50,7 @@ SHARED_APPS = [
     "tenant",  # Managing Institutions (Tenants)
     "users",  # Handing Identity and Memberships
     "patient_identity",  # Cross-institution identity and consent grants
+    "ai_providers",  # Model catalog and external inference adapters
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -235,3 +236,43 @@ DEFAULT_FROM_EMAIL = settings.DEFAULT_FROM_EMAIL
 
 # Encryption
 ENCRYPTION_KEY = settings.ENCRYPTION_KEY
+
+# External inference is server-configured. Browser requests can select only a
+# catalog model; they cannot provide or override provider URLs or credentials.
+AI_PROVIDER_REGISTRY = {
+    "monai_segmentation": {
+        "ADAPTER": "ai_providers.adapters.MonaiSegmentationAdapter",
+        "BASE_URL": settings.MONAI_SEGMENTATION_BASE_URL,
+        "TIMEOUT_SECONDS": settings.MONAI_SEGMENTATION_TIMEOUT_SECONDS,
+        "TOKEN": settings.MONAI_SEGMENTATION_API_TOKEN,
+        "ENABLED": bool(settings.MONAI_SEGMENTATION_BASE_URL.strip()),
+    },
+    "blip_vqa": {
+        "ADAPTER": "ai_providers.adapters.BlipVQAAdapter",
+        "BASE_URL": settings.BLIP_VQA_BASE_URL,
+        "TIMEOUT_SECONDS": settings.BLIP_VQA_TIMEOUT_SECONDS,
+        "TOKEN": settings.BLIP_VQA_API_TOKEN,
+        "ENABLED": bool(settings.BLIP_VQA_BASE_URL.strip()),
+    },
+}
+
+AI_MODEL_CATALOG = (
+    {
+        "ID": "3d_unet_v2",
+        "NAME": "MONAI 3D UNet",
+        "CAPABILITY": "segmentation",
+        "VERSION": settings.MONAI_SEGMENTATION_MODEL_VERSION,
+        "PROVIDER": "monai_segmentation",
+        "UPSTREAM_MODEL_VERSION": "3d_unet_v2",
+    },
+    {
+        "ID": "blip_med_v1",
+        "NAME": "Fine-tuned BLIP VQA",
+        "CAPABILITY": "vqa",
+        "VERSION": settings.BLIP_VQA_MODEL_VERSION,
+        "PROVIDER": "blip_vqa",
+        "UPSTREAM_MODEL_VERSION": "blip_med_v1",
+    },
+)
+
+AI_INFERENCE_MAX_IMAGE_BYTES = 10 * 1024 * 1024

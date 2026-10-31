@@ -28,6 +28,16 @@ class Settings(BaseSettings):
     TENANT_BASE_DOMAIN: str = "localtest.me"
     JWT_ALGORITHM: str = ""
 
+    MONAI_SEGMENTATION_BASE_URL: str = "http://127.0.0.1:5000"
+    MONAI_SEGMENTATION_TIMEOUT_SECONDS: float = 120.0
+    MONAI_SEGMENTATION_API_TOKEN: str = ""
+    MONAI_SEGMENTATION_MODEL_VERSION: str = "2.1"
+
+    BLIP_VQA_BASE_URL: str = "https://pahariaryan121-neurovision-api.hf.space"
+    BLIP_VQA_TIMEOUT_SECONDS: float = 60.0
+    BLIP_VQA_API_TOKEN: str = ""
+    BLIP_VQA_MODEL_VERSION: str = "1.0"
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent / ".env", env_file_encoding="utf-8", extra="ignore"
     )
