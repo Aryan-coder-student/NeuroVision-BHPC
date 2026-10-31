@@ -8,26 +8,31 @@ import { MRI_MODALITIES, formatFileSize } from './segmentation-files';
 
 export default function ImagingStudies() {
   const { patient, workspaceId } = useOutletContext();
-  const [page, setPage] = useState(1);
-  const [response, setResponse] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  return <PatientImagingStudies key={`${workspaceId}:${patient.id}`} patient={patient} workspaceId={workspaceId} />;
+}
 
-  useEffect(() => { setPage(1); setResponse(null); }, [patient.id, workspaceId]);
+function PatientImagingStudies({ patient, workspaceId }) {
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState({ key: null, data: null, error: '' });
+  const requestKey = `${workspaceId}:${patient.id}:${page}`;
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setResponse(null);
-    setError('');
     fetchImagingStudies(workspaceId, patient.id, page)
-      .then(data => { if (active) setResponse(data); })
-      .catch(() => { if (active) setError('Could not load imaging study records.'); })
-      .finally(() => { if (active) setLoading(false); });
+      .then(data => {
+        if (active) setResult({ key: requestKey, data, error: '' });
+      })
+      .catch(() => {
+        if (active) setResult({ key: requestKey, data: null, error: 'Could not load imaging study records.' });
+      });
     return () => { active = false; };
-  }, [workspaceId, patient.id, page]);
+  }, [workspaceId, patient.id, page, requestKey]);
 
+  const loading = result.key !== requestKey;
+  const response = loading ? null : result.data;
+  const error = loading ? '' : result.error;
   const studies = response?.results || [];
+
   return (
     <section aria-labelledby="imaging-title">
       <h1 id="imaging-title" style={{ fontSize: 22, color: 'var(--text-bright)' }}>Imaging Studies</h1>

@@ -1,5 +1,5 @@
-from rest_framework import permissions, status, viewsets
 from django.shortcuts import get_object_or_404
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -123,7 +123,6 @@ class PatientViewSet(viewsets.ModelViewSet):
             context=self.get_serializer_context(),
         ).data
         return Response(data)
-
 
     @action(detail=True, methods=("get", "post"), url_path="imaging-studies")
     def imaging_studies(self, request, pk=None):

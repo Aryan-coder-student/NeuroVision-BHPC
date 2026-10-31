@@ -82,4 +82,4 @@ class ImagingStudy(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["patient", "-created_at"])]
+        indexes = [models.Index(fields=["patient", "-created_at"], name="clinical_im_patient_732189_idx")]

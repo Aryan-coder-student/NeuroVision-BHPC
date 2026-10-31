@@ -165,7 +165,7 @@ export default function Segmentation() {
   };
 
   const runAI = async () => {
-    if (!complete || !modelId || running) return;
+    if (!complete || !modelId || running || recording) return;
     const sequence = ++inferenceSequenceRef.current;
     setRunning(true);
     setError('');
@@ -290,7 +290,7 @@ export default function Segmentation() {
                   </select>
                 </div>
                 <button className="run-seg-btn" type="button"
-                  disabled={!complete || !modelId || running} onClick={runAI}>
+                  disabled={!complete || !modelId || running || recording} onClick={runAI}>
                   {running ? <><Loader size={14} className="spin" /> Running segmentation…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
                 </button>
                 {catalogError && <p className="seg-service-note" role="status">{catalogError}</p>}
