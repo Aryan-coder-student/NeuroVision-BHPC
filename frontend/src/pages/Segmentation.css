@@ -344,3 +344,47 @@
   .viewer-mode-btn { font-size: 10px; padding: 5px 6px; }
   .viewer-model-note { font-size: 10px; }
 }
+
+/* BraTS folder intake: no path text entry and no output download. */
+.seg-file-row {
+  border: 1px solid var(--outline-dim);
+  padding: 11px 12px;
+  margin-bottom: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.seg-file-input {
+  color: var(--text-primary);
+  max-width: 100%;
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  margin-top: 8px;
+}
+.seg-file-input::file-selector-button {
+  border: 1px solid var(--outline-dim);
+  background: var(--bg-card-high);
+  color: var(--text-bright);
+  padding: 8px 10px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.seg-file-input:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.seg-file-info { font-size: 11px; color: var(--text-muted); margin-top: 7px; }
+.seg-file-error { font-size: 11px; color: var(--error); margin-top: 6px; line-height: 1.5; overflow-wrap: anywhere; }
+.seg-file-output { border-color: var(--accent-primary); }
+.seg-file-completeness { display: flex; align-items: start; gap: 8px; color: var(--text-muted); font-size: 11px; line-height: 1.5; margin: 12px 0; }
+.seg-file-completeness svg { flex-shrink: 0; }
+.seg-inference-note { display: flex; gap: 9px; padding: 12px; margin-top: 12px; background: var(--bg-card-high); border: 1px solid var(--outline-dim); color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+.seg-inference-note svg { flex-shrink: 0; color: var(--text-label); }
+.seg-inference-note strong { color: var(--text-bright); }
+
+.seg-instructions { padding: 12px; background: var(--bg-card-high); border: 1px solid var(--outline-dim); margin-bottom: 15px; font-size: 12px; color: var(--text-primary); line-height: 1.65; }
+.seg-instructions ol { padding-left: 19px; margin: 8px 0 0; color: var(--text-muted); }
+.seg-instructions code { color: var(--text-bright); overflow-wrap: anywhere; }
+.seg-folder-name { font-size: 12px; color: var(--text-muted); margin: 12px 0; overflow-wrap: anywhere; }
+.seg-modalities { margin: 12px 0; }
+.seg-modalities .seg-file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.seg-modalities .seg-file-row .field-label { min-width: 50px; font-weight: 700; color: var(--text-bright); }
+.seg-modalities .seg-file-row .seg-file-info { flex: 1; margin: 0; min-width: 0; }
+.seg-modalities .seg-file-row svg { color: var(--success); }
