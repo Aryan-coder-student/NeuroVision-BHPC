@@ -3,11 +3,12 @@ from django.conf import settings
 from django.contrib import admin
 from django.db import connection
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils.html import format_html
 
-from .models import ImagingStudy, Patient, SegmentationReport
+from .models import DatasetContribution, DatasetContributionFile, ImagingStudy, Patient, SegmentationReport
 
 
 class TenantClinicalAdmin(admin.ModelAdmin):
@@ -98,3 +99,43 @@ class SegmentationReportAdmin(TenantClinicalAdmin):
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+
+class DatasetContributionFileInline(admin.TabularInline):
+    model = DatasetContributionFile
+    extra = 0
+    can_delete = False
+    fields = ("modality", "byte_size", "object_key")
+    readonly_fields = fields
+
+    @admin.display(description="Private object key")
+    def object_key(self, obj):
+        return obj.object_file.name if obj and obj.object_file else "Not available"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DatasetContribution)
+class DatasetContributionAdmin(TenantClinicalAdmin):
+    inlines = (DatasetContributionFileInline,)
+    list_display = ("title", "origin", "modality", "status", "created_at")
+    list_filter = ("status", "origin", "modality")
+    search_fields = ("title",)
+    readonly_fields = (
+        "id", "submitted_by_user_id", "title", "modality", "origin",
+        "description", "license_info", "source_url", "sample_count",
+        "no_phi_attestation", "format", "file_count", "total_bytes",
+        "created_at", "reviewed_at", "reviewed_by_user_id",
+    )
+    fields = readonly_fields + ("status", "review_note")
+
+    def has_change_permission(self, request, obj=None):
+        return self._is_workspace_owner(request) and admin.ModelAdmin.has_change_permission(self, request, obj)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            raise PermissionError("Dataset uploads must originate from the authenticated API.")
+        obj.reviewed_by_user_id = request.user.id
+        obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
