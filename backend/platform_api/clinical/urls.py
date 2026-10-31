@@ -5,4 +5,8 @@ from .views import PatientViewSet
 
 router = DefaultRouter()
 router.register("patients", PatientViewSet, basename="tenant-patients")
-urlpatterns = [path("", include("clinical.contribution_urls")), *router.urls]
+urlpatterns = [
+    path("", include("clinical.contribution_urls")),
+    path("", include("clinical.feedback_urls")),
+    *router.urls,
+]

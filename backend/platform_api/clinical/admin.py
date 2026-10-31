@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils.html import format_html
 
-from .models import DatasetContribution, ImagingStudy, Patient, SegmentationReport
+from .models import DatasetContribution, ImagingStudy, ModelFeedbackRecord, Patient, SegmentationReport
 
 
 class TenantClinicalAdmin(admin.ModelAdmin):
@@ -119,6 +119,29 @@ class DatasetContributionAdmin(TenantClinicalAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             raise PermissionError("Contribution requests must originate from the authenticated API.")
+        obj.reviewed_by_user_id = request.user.id
+        obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(ModelFeedbackRecord)
+class ModelFeedbackAdmin(TenantClinicalAdmin):
+    list_display = ("model_name", "category", "status", "created_at")
+    list_filter = ("category", "status")
+    search_fields = ("model_id", "model_name")
+    readonly_fields = (
+        "id", "submitted_by_user_id", "model_id", "model_name", "category",
+        "description", "report", "no_phi_attestation", "created_at",
+        "reviewed_at", "reviewed_by_user_id",
+    )
+    fields = readonly_fields + ("status", "reviewer_note")
+
+    def has_change_permission(self, request, obj=None):
+        return self._is_workspace_owner(request) and admin.ModelAdmin.has_change_permission(self, request, obj)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            raise PermissionError("Feedback must originate from the authenticated API.")
         obj.reviewed_by_user_id = request.user.id
         obj.reviewed_at = timezone.now()
         super().save_model(request, obj, form, change)
