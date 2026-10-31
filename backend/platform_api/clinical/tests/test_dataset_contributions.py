@@ -4,7 +4,6 @@ import io
 import tempfile
 import zipfile
 from unittest.mock import patch
-from uuid import uuid4
 
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
