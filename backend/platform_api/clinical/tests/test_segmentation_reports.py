@@ -1,6 +1,11 @@
 """Reports are persisted only with signed evidence of successful segmentation."""
 import struct
+import tempfile
 import zlib
+from pathlib import Path
+
+from django.contrib import admin
+from django.core.files.storage import FileSystemStorage
 from uuid import uuid4
 
 from django.core import signing
@@ -12,6 +17,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from clinical.models import ImagingStudy, Patient, SegmentationReport
+from clinical.storage import PrivateReportStorage
 from clinical.reports import create_inference_report_token
 from tenant.models import Institution
 from users.auth.tests.common import TEST_FERNET_KEY, TenantTestCase, create_user
@@ -32,6 +38,11 @@ def png_snapshot():
 class SegmentationReportAPITests(TenantTestCase):
     def setUp(self):
         connection.set_schema_to_public()
+        self.report_media = tempfile.TemporaryDirectory(prefix="nv-test-media-")
+        self.addCleanup(self.report_media.cleanup)
+        media_override = override_settings(MEDIA_ROOT=self.report_media.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
         self.client = APIClient()
         self.owner, _ = create_user(username="report_owner", email="report-owner@example.com", is_otp_verified=True)
         self.outsider, _ = create_user(username="report_outsider", email="report-outsider@example.com", is_otp_verified=True)
@@ -91,9 +102,19 @@ class SegmentationReportAPITests(TenantTestCase):
         self.assertEqual(result.data["source"], "ai_inference")
         self.assertEqual(result.data["imaging_study_id"], str(self.study.id))
         self.assertNotIn("snapshot", result.data)
+        self.assertNotIn("snapshot_image", result.data)
         with schema_context(self.workspace.schema_name):
             saved = SegmentationReport.objects.get(pk=result.data["id"])
-            self.assertEqual(bytes(saved.snapshot_png), png_snapshot())
+            self.assertTrue(saved.snapshot_image.name.endswith("/3d-segmentation.png"))
+            self.assertEqual(saved.snapshot_image.read(), png_snapshot())
+            saved.snapshot_image.close()
+            self.assertTrue(Path(saved.snapshot_image.path).is_file())
+            self.assertTrue(str(Path(saved.snapshot_image.path).resolve()).startswith(self.report_media.name))
+            self.assertIn("report-workspace", saved.snapshot_image.name)
+            self.assertIn("report-patient", saved.snapshot_image.name)
+            self.assertIn(str(self.workspace.id), saved.snapshot_image.name)
+            self.assertIn(str(self.patient.id), saved.snapshot_image.name)
+            self.assertNotIn("viewer.png", saved.snapshot_image.name)
             self.assertEqual(saved.patient_id, self.patient.id)
             self.assertEqual(saved.created_by_user_id, self.owner.id)
 
@@ -102,8 +123,50 @@ class SegmentationReportAPITests(TenantTestCase):
         image = self.request("get", path=self.base + result.data["id"] + "/snapshot/")
         self.assertEqual(image.status_code, 200)
         self.assertEqual(image["Content-Type"], "image/png")
-        self.assertEqual(image.content, png_snapshot())
+        self.assertEqual(b"".join(image.streaming_content), png_snapshot())
         self.assertEqual(image["Cache-Control"], "private, no-store")
+
+    def test_uploaded_file_is_private_and_not_stored_in_postgres(self):
+        report = self.request("post", data=self.upload(), fmt="multipart")
+        self.assertEqual(report.status_code, 201, report.data)
+        with schema_context(self.workspace.schema_name):
+            instance = SegmentationReport.objects.get(id=report.data["id"])
+            self.assertIsInstance(instance.snapshot_image.storage, PrivateReportStorage)
+            with self.assertRaises(ValueError):
+                _ = instance.snapshot_image.url
+            self.assertIsInstance(instance.snapshot_image.name, str)
+            self.assertEqual(len(instance.snapshot_image.name.encode()), len(instance.snapshot_image.name))
+            self.assertFalse(hasattr(instance, "snapshot_png"))
+
+    def test_replayed_report_does_not_leave_second_file(self):
+        token = self.proof()
+        first = self.request("post", data=self.upload(token=token), fmt="multipart")
+        self.assertEqual(first.status_code, 201, first.data)
+        before = list(Path(self.report_media.name).rglob("*.png"))
+        replay = self.request("post", data=self.upload(token=token), fmt="multipart")
+        self.assertEqual(replay.status_code, 409, replay.data)
+        self.assertEqual(list(Path(self.report_media.name).rglob("*.png")), before)
+
+    def test_patient_names_are_sanitized_and_ids_disambiguate_paths(self):
+        self.patient.display_name = "Jane / Dangerous../ Path"
+        with schema_context(self.workspace.schema_name):
+            self.patient.save(update_fields=["display_name"])
+        created = self.request("post", data=self.upload(), fmt="multipart")
+        self.assertEqual(created.status_code, 201, created.data)
+        with schema_context(self.workspace.schema_name):
+            report = SegmentationReport.objects.get(id=created.data["id"])
+            parts = Path(report.snapshot_image.name).parts
+            self.assertEqual(parts[0], "reports")
+            self.assertTrue(parts[1].startswith("report-workspace-"))
+            self.assertTrue(parts[2].startswith("jane-dangerous-path-"))
+            self.assertEqual(parts[-2], str(report.id))
+            self.assertEqual(parts[-1], "3d-segmentation.png")
+            self.assertFalse(".." in parts)
+
+    def test_reports_are_registered_in_django_admin(self):
+        self.assertIn(SegmentationReport, admin.site._registry)
+        self.assertIn(Patient, admin.site._registry)
+        self.assertIn(ImagingStudy, admin.site._registry)
 
     def test_listing_is_patient_scoped_without_embedded_png(self):
         created = self.request("post", data=self.upload(), fmt="multipart")
@@ -111,7 +174,7 @@ class SegmentationReportAPITests(TenantTestCase):
         results = self.request("get")
         self.assertEqual(results.status_code, 200, results.data)
         self.assertEqual([record["id"] for record in results.data["results"]], [created.data["id"]])
-        self.assertNotIn("snapshot_png", str(results.data))
+        self.assertNotIn("snapshot_image", str(results.data))
         another_path = f"/api/v1/tenant/patients/{self.other_patient.id}/segmentation-reports/"
         self.assertEqual(self.request("get", path=another_path).data["results"], [])
         self.assertEqual(self.request("get", path=another_path + created.data["id"] + "/").status_code, 404)
