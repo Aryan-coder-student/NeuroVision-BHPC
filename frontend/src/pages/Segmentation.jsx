@@ -10,7 +10,8 @@ import {
 } from './segmentation-demo';
 import { MRI_MODALITIES, resolveBraTSFolder, formatFileSize } from './segmentation-files';
 import { runSegmentation, fetchAvailableModels, recordImagingStudy, saveSegmentationReport } from '../services/api';
-import { blobToDataURL, captureViewerPng } from './report-image';
+import { captureViewerPng } from './report-image';
+import { sampleReportPath } from './sample-report';
 import { configuredModels } from '../services/model-catalog';
 import './Segmentation.css';
 
@@ -185,26 +186,9 @@ export default function Segmentation() {
     }
   };
 
-  const previewSampleReport = async () => {
-    if (!isSample || savingReport) return;
-    setSavingReport(true);
-    setError('');
-    try {
-      const image = await blobToDataURL(await capture3D());
-      navigate(`/patients/${patient.id}/reports`, {
-        state: {
-          sampleReport: {
-            source: 'sample_reference',
-            patient_id: patient.id,
-            snapshot_data_url: image,
-          },
-        },
-      });
-    } catch (captureError) {
-      setError(captureError.message || 'Could not create the sample report preview.');
-    } finally {
-      setSavingReport(false);
-    }
+  const previewSampleReport = () => {
+    if (!isSample || savingReport || viewerStatus !== 'ready') return;
+    navigate(sampleReportPath(patient.id));
   };
 
   const saveRealReport = async () => {
@@ -400,9 +384,9 @@ export default function Segmentation() {
               <div className="stat-row"><span className="stat-key">Volume measurements</span><span className="stat-val">Not calculated for reference demo</span></div>
               <p className="seg-service-note">Reference mask is displayed in the renderer only. It is not offered as a downloadable file.</p>
               <button className="run-seg-btn" type="button" disabled={viewerStatus !== 'ready' || savingReport} onClick={previewSampleReport}>
-                <FileOutput size={14} /> {savingReport ? 'Capturing 3D preview…' : 'Preview sample report with 3D image'}
+                <FileOutput size={14} /> View sample report with 3D reference image
               </button>
-              <p className="seg-service-note">The sample report is a temporary reference preview. No patient inference, clinical findings or database record is created.</p>
+              <p className="seg-service-note">The reference report can be reopened from Reports at any time. No patient inference, clinical findings or database record is created.</p>
             </> : <>
               <div className="stat-row"><span className="stat-key">Input status</span><span className="stat-val">{complete ? '4 / 4 ready' : 'Awaiting BraTS folder'}</span></div>
               <div className="stat-row"><span className="stat-key">Segmentation output</span>

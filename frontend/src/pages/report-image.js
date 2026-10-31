@@ -16,12 +16,3 @@ export function captureViewerPng(canvas, viewer) {
     }, 'image/png');
   });
 }
-
-export function blobToDataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Unable to preview the segmentation snapshot.'));
-    reader.readAsDataURL(blob);
-  });
-}
