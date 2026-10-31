@@ -32,10 +32,10 @@ const VIEW_SETTINGS = Object.freeze({
 });
 
 /** Switch views without downloading the same NIfTI volumes again. */
-export function applySampleView(nv, view) {
+export function applySampleView(nv, view, hasMask = true) {
   const settings = VIEW_SETTINGS[view] || VIEW_SETTINGS.overlay;
   nv.setOpacity(0, settings.mri);
-  nv.setOpacity(1, settings.mask);
+  if (hasMask) nv.setOpacity(1, settings.mask);
   nv.setSliceType(settings.render ? nv.sliceTypeRender : nv.sliceTypeMultiplanar);
   nv.drawScene();
 }

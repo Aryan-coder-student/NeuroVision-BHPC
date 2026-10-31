@@ -1,142 +1,136 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Niivue } from '@niivue/niivue';
-import { runSegmentation, fetchAvailableModels } from '../services/api';
 import {
-  ScanLine, FileText,
-  Loader, Brain, AlertTriangle, CheckCircle2, FlaskConical
+  AlertTriangle, Brain, CheckCircle2, Download, FileOutput,
+  FlaskConical, ScanLine, UploadCloud,
 } from 'lucide-react';
-import { SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView } from './segmentation-demo';
+import {
+  SAMPLE_SEGMENTATION, SAMPLE_VOLUMES, SAMPLE_VIEWS, applySampleView,
+} from './segmentation-demo';
+import {
+  MRI_MODALITIES, getNiftiFileError, hasAllModalities,
+  hasPreviewInput, formatFileSize,
+} from './segmentation-files';
 import './Segmentation.css';
-
-function formatMetric(value, unit) {
-  return value == null ? 'Not available' : `${value}${unit}`;
-}
 
 export default function Segmentation() {
   const { patient } = useOutletContext();
-  const [patientFolder, setPatientFolder] = useState('');
   const [source, setSource] = useState('sample');
-  const [sampleView, setSampleView] = useState('overlay');
-  const [loading, setLoading]   = useState(false);
-  const [result, setResult]     = useState(null);
-  const [error, setError]       = useState('');
-  const [models, setModels]     = useState([]);
-  const [selModel, setSelModel] = useState('');
+  const [files, setFiles] = useState({});
+  const [maskFile, setMaskFile] = useState(null);
+  const [selectedModality, setSelectedModality] = useState('t1ce');
+  const [preview, setPreview] = useState(null);
+  const [viewMode, setViewMode] = useState('overlay');
   const [viewerStatus, setViewerStatus] = useState('idle');
-  const [sampleLoadRequest, setSampleLoadRequest] = useState(0);
+  const [error, setError] = useState('');
   const canvasRef = useRef(null);
   const niivueRef = useRef(null);
-  const isSample = result?.source === 'sample';
+
+  const sampleLoaded = preview?.type === 'sample';
+  const isLocalPreview = preview?.type === 'files';
+  const hasMask = sampleLoaded || Boolean(preview?.mask);
+  const readyToPreview = hasPreviewInput(files);
+  const allModalitiesPresent = hasAllModalities(files);
 
   useEffect(() => {
+    if (!preview || !canvasRef.current) return undefined;
     let active = true;
-    fetchAvailableModels('segmentation').then(data => {
-      if (active) {
-        setModels(data);
-        if (data.length > 0) setSelModel(data[0].id);
-      }
+    const objectUrls = [];
+    const nv = new Niivue({
+      backColor: [0.023, 0.055, 0.125, 1],
+      dragAndDropEnabled: false,
     });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!isSample || !canvasRef.current) return undefined;
-
-    let active = true;
-    const nv = new Niivue({ backColor: [0.023, 0.055, 0.125, 1] });
     niivueRef.current = nv;
-
-    const loadSampleVolumes = async () => {
+    const loadViewer = async () => {
       setViewerStatus('loading');
       try {
         await nv.attachToCanvas(canvasRef.current);
         if (!active) return;
-        await nv.loadVolumes(SAMPLE_VOLUMES.map(volume => ({ ...volume })));
+        let volumes;
+        if (preview.type === 'sample') {
+          volumes = SAMPLE_VOLUMES.map(volume => ({ ...volume }));
+        } else {
+          const selected = preview.files[preview.modality];
+          const imageUrl = URL.createObjectURL(selected);
+          objectUrls.push(imageUrl);
+          volumes = [{ url: imageUrl, name: selected.name, colormap: 'gray' }];
+          if (preview.mask) {
+            const maskUrl = URL.createObjectURL(preview.mask);
+            objectUrls.push(maskUrl);
+            volumes.push({ url: maskUrl, name: preview.mask.name, colormap: 'red', opacity: 0.55 });
+          }
+        }
+        await nv.loadVolumes(volumes);
         if (!active) return;
-        applySampleView(nv, 'overlay');
+        applySampleView(nv, preview.mask || preview.type === 'sample' ? 'overlay' : 'mri', volumes.length > 1);
         setViewerStatus('ready');
       } catch {
-        if (active) setViewerStatus('error');
+        if (active) {
+          setError('Could not load the selected NIfTI volumes. Check the files and their geometry.');
+          setViewerStatus('error');
+        }
       }
     };
-
-    loadSampleVolumes();
+    loadViewer();
     return () => {
       active = false;
       if (niivueRef.current === nv) niivueRef.current = null;
       nv.cleanup();
+      objectUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  }, [isSample, sampleLoadRequest]);
+  }, [preview]);
 
   useEffect(() => {
-    if (isSample && viewerStatus === 'ready' && niivueRef.current) {
-      applySampleView(niivueRef.current, sampleView);
-    }
-  }, [isSample, viewerStatus, sampleView]);
+    if (!preview || viewerStatus !== 'ready' || !niivueRef.current) return;
+    applySampleView(niivueRef.current, viewMode, hasMask);
+  }, [viewMode, viewerStatus, preview, hasMask]);
 
-  const handleSourceChange = (nextSource) => {
-    if (loading) return;
-    setSource(nextSource);
-    setResult(null);
-    setError('');
+  const chooseSource = next => {
+    setSource(next);
+    setPreview(null);
     setViewerStatus('idle');
-  };
-
-  const handleLoadSample = () => {
-    setLoading(false);
+    setViewMode(next === 'sample' ? 'overlay' : 'mri');
     setError('');
-    setViewerStatus('loading');
-    setSampleView('overlay');
-    setResult(SAMPLE_SEGMENTATION);
-    setSampleLoadRequest(request => request + 1);
   };
 
-  const handleRun = async () => {
-    if (source === 'sample') {
-      handleLoadSample();
-      return;
-    }
-    if (!patientFolder.trim() || loading) return;
-    setLoading(true); setError(''); setResult(null); setViewerStatus('idle');
-    try {
-      const data = await runSegmentation(patientFolder, selModel);
-      setResult(data);
-    } catch {
-      setError('Segmentation service is unavailable. No clinical result was saved.');
-    } finally {
-      setLoading(false);
-    }
+  const chooseFile = (id, file) => {
+    setPreview(null);
+    setViewerStatus('idle');
+    setError('');
+    if (id === 'mask') setMaskFile(file || null);
+    else setFiles(current => ({ ...current, [id]: file || null }));
   };
 
-  const generateReport = () => {
-    if (!result) return;
-    const text = `NEUROVISION PATHOLOGY REPORT
-===========================
-Generated: ${new Date().toLocaleString()}
-
-PATIENT FOLDER: ${patientFolder}
-PATIENT ID: ${patient.patient_code}
-PATIENT: ${patient.display_name}
-
-FINDINGS:
-  Tumor Type:   ${result.tumor_type}
-  Grade:        ${result.grade}
-  Location:     ${result.location}
-  Volume:       ${result.volume_cm3 ?? result.volume} cm³
-  Surface Area: ${result.surface_area} mm²
-  Confidence:   ${result.confidence}%
-  Model:        ${result.model_version}
-  Process Time: ${result.processing_s}s
-
-DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clinician.`;
-    const blob = new Blob([text], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `NeuroVision_Report_${patient.patient_code.replace(/[^a-z0-9_-]/gi, '_')}.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const openSample = () => {
+    setError('');
+    setViewMode('overlay');
+    setPreview({ type: 'sample', nonce: Date.now() });
   };
+
+  const openLocalPreview = () => {
+    if (!readyToPreview) return;
+    const requested = files[selectedModality] && !getNiftiFileError(files[selectedModality])
+      ? selectedModality
+      : MRI_MODALITIES.find(({ id }) => files[id] && !getNiftiFileError(files[id])).id;
+    setError('');
+    setViewMode(maskFile ? 'overlay' : 'mri');
+    setPreview({ type: 'files', files: { ...files }, mask: !getNiftiFileError(maskFile) ? maskFile : null, modality: requested });
+  };
+
+  const downloadMask = () => {
+    if (!maskFile || getNiftiFileError(maskFile)) return;
+    const url = URL.createObjectURL(maskFile);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = maskFile.name;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const viewOptions = hasMask
+    ? SAMPLE_VIEWS
+    : SAMPLE_VIEWS.filter(option => option.id === 'mri' || option.id === 'render');
 
   return (
     <>
@@ -146,200 +140,155 @@ DISCLAIMER: This report is AI-generated and must be reviewed by a qualified clin
             3D Segmentation Workspace
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {patient.patient_code} · {source === 'sample' ? 'Research reference data, not linked to this patient' : 'Experimental patient inference'}
+            {patient.patient_code} · {source === 'sample' ? 'De-identified BraTS reference sample' : 'Local MRI inspection · not uploaded'}
           </div>
         </div>
-        <span className="sample-availability"><FlaskConical size={14} /> BraTS 2021 reference dataset</span>
+        <span className="sample-availability"><FlaskConical size={14} /> Research workflow</span>
       </div>
 
       <div className="seg-workspace">
-        {/* ── Left: Upload Panel ── */}
         <div className="seg-panel">
-          <div className="seg-panel-header"><ScanLine size={13} /> Data Source</div>
+          <div className="seg-panel-header"><UploadCloud size={13} /> Input Files</div>
           <div className="seg-panel-body">
             <fieldset className="seg-source-picker">
-              <legend className="field-label">Data source</legend>
+              <legend className="field-label">Choose data source</legend>
               <label className={`seg-source-option ${source === 'sample' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" checked={source === 'sample'}
-                  onChange={() => handleSourceChange('sample')} disabled={loading} />
-                BraTS 2021 sample
+                <input type="radio" name="segmentation-source" checked={source === 'sample'} onChange={() => chooseSource('sample')} />
+                BraTS 2021 reference sample
               </label>
-              <label className={`seg-source-option ${source === 'patient' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" checked={source === 'patient'}
-                  onChange={() => handleSourceChange('patient')} disabled={loading} />
-                Patient study (experimental)
+              <label className={`seg-source-option ${source === 'files' ? 'selected' : ''}`}>
+                <input type="radio" name="segmentation-source" checked={source === 'files'} onChange={() => chooseSource('files')} />
+                Select my MRI / mask files
               </label>
             </fieldset>
-
             {source === 'sample' ? (
-              <div className="sample-data-note" role="note">
-                Run to inspect the bundled T1CE MRI, tumor reference mask and 3D overlay.
-                This is a demonstration, not a model prediction or a patient scan.
-              </div>
+              <>
+                <div className="sample-data-note" role="note">
+                  Load the bundled T1CE MRI and its BraTS reference mask for 2D slices or 3D overlay.
+                  This is not an AI prediction and is not linked to the selected patient.
+                </div>
+                <button type="button" className="run-seg-btn" onClick={openSample}>
+                  <ScanLine size={14} /> Open reference 3D sample
+                </button>
+              </>
             ) : (
               <>
-                <div className="field-row">
-                  <label className="field-label" htmlFor="seg-patient-folder">Patient Folder Path</label>
-                  <input
-                    id="seg-patient-folder" className="field-input"
-                    placeholder="Path accessible to the inference service"
-                    value={patientFolder} onChange={e => setPatientFolder(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
                 <p className="seg-service-note">
-                  Requires a locally running Flask segmentation service. The path is
-                  resolved by that service, not uploaded from the browser.
+                  Choose NIfTI (.nii / .nii.gz) MRI scans from your device.
+                  Files stay in this browser for preview; they are not uploaded or analyzed by AI.
                 </p>
-                {patientFolder && (
-                  <div className="file-loaded">
-                    <Brain size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-                    <span className="seg-path-display">{patientFolder}</span>
+                {MRI_MODALITIES.map(modality => (
+                  <div className="seg-file-row" key={modality.id}>
+                    <label className="field-label" htmlFor={`mri-file-${modality.id}`}>{modality.label}</label>
+                    <input
+                      className="seg-file-input"
+                      id={`mri-file-${modality.id}`}
+                      type="file"
+                      accept=".nii,.nii.gz"
+                      onChange={event => chooseFile(modality.id, event.target.files?.[0])}
+                    />
+                    {files[modality.id] && (
+                      <div className="seg-file-info">
+                        {files[modality.id].name} · {formatFileSize(files[modality.id].size)}
+                      </div>
+                    )}
+                    {getNiftiFileError(files[modality.id]) && (
+                      <div className="seg-file-error" role="alert">{getNiftiFileError(files[modality.id])}</div>
+                    )}
                   </div>
-                )}
-                <div className="field-row" style={{ marginTop: 16 }}>
-                  <label className="field-label" htmlFor="seg-model">Model Selection</label>
-                  <select id="seg-model" className="field-input" value={selModel}
-                    onChange={e => setSelModel(e.target.value)} disabled={loading}>
-                    {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                ))}
+                <div className="seg-file-row seg-file-output">
+                  <label className="field-label" htmlFor="seg-output-mask">Output: Segmentation mask (optional)</label>
+                  <input
+                    className="seg-file-input" id="seg-output-mask" type="file" accept=".nii,.nii.gz"
+                    onChange={event => chooseFile('mask', event.target.files?.[0])}
+                  />
+                  {maskFile && <div className="seg-file-info">{maskFile.name} · {formatFileSize(maskFile.size)}</div>}
+                  {getNiftiFileError(maskFile) && (
+                    <div className="seg-file-error" role="alert">{getNiftiFileError(maskFile)}</div>
+                  )}
+                  <p className="seg-service-note">Optional pre-existing mask for overlay; this UI does not generate a mask.</p>
+                </div>
+                <div className="field-row">
+                  <label className="field-label" htmlFor="seg-preview-modality">MRI to preview</label>
+                  <select id="seg-preview-modality" className="field-input" value={selectedModality} onChange={e => setSelectedModality(e.target.value)}>
+                    {MRI_MODALITIES.map(modality => <option key={modality.id} value={modality.id}>{modality.label}</option>)}
                   </select>
+                </div>
+                <div className="seg-file-completeness">
+                  <CheckCircle2 size={13} /> {allModalitiesPresent ? 'All four modalities selected' : 'Four modalities required for future model inference; one is sufficient to preview'}
+                </div>
+                <button type="button" className="run-seg-btn" onClick={openLocalPreview} disabled={!readyToPreview}>
+                  <Brain size={14} /> Preview MRI {maskFile && !getNiftiFileError(maskFile) ? '+ mask' : ''}
+                </button>
+                <div className="seg-inference-note" role="note">
+                  <AlertTriangle size={15} />
+                  <span><strong>AI inference not connected yet.</strong> The existing model service accepts a server folder path, not browser uploads. No model run or report is produced here.</span>
                 </div>
               </>
             )}
-
-            {error && (
-              <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--error-container)', color: 'var(--error)', fontSize: 12, display: 'flex', gap: 8 }}>
-                <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 1 }} />{error}
-              </div>
-            )}
-
-            <button type="button" className="run-seg-btn" onClick={handleRun} disabled={loading || (source === 'patient' && !patientFolder.trim())}>
-              {loading ? <><Loader size={14} className="spin" /> Processing…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
-            </button>
+            {error && <p className="seg-file-error" role="alert">{error}</p>}
           </div>
         </div>
 
-        {/* ── Center: Viewer ── */}
         <div className="seg-panel" style={{ position: 'relative' }}>
           <div className="seg-panel-header"><Brain size={13} /> MRI and Segmentation Viewer</div>
           <div className="viewer-area">
-            {loading && (
-              <div className="viewer-loading">
-                <Loader size={28} style={{ color: 'var(--accent-primary)', animation: 'spin 1s linear infinite' }} />
-                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 12 }}>Running 3D-UNet segmentation…</div>
-                <div className="viewer-loading-bar"><div className="viewer-loading-bar-inner" /></div>
-              </div>
-            )}
-            {!result && !loading && (
-              <div className="viewer-placeholder">
-                <Brain size={48} style={{ margin: '0 auto 16px', opacity: 0.2 }} />
-                <div style={{ fontSize: 13 }}>No scan loaded</div>
-                <div style={{ fontSize: 12, color: 'var(--text-label)', marginTop: 6 }}>{source === 'sample' ? 'Run to explore the bundled BraTS sample MRI and mask' : 'Enter a service-side study path to run inference'}</div>
-              </div>
-            )}
-            {isSample && !loading && (
-              <>
-                <canvas ref={canvasRef} aria-label="Interactive sample MRI and reference tumor segmentation viewer" style={{ width: '100%', height: '100%', display: 'block' }} />
-                {viewerStatus === 'loading' && (
-                  <div className="viewer-loading">
-                    <Loader size={28} className="spin" />
-                    <div className="viewer-loading-copy">Loading sample MRI and mask…</div>
-                  </div>
-                )}
-                {viewerStatus === 'error' && (
-                  <div className="viewer-placeholder viewer-error" role="alert">
-                    <AlertTriangle size={30} />
-                    <div>Sample volume could not be loaded</div>
-                    <button className="sample-retry-btn" type="button" onClick={handleLoadSample}>Try again</button>
-                  </div>
-                )}
-                {viewerStatus === 'ready' && (
-                  <>
-                    <div className="viewer-toolbar" role="group" aria-label="Sample MRI visualization mode">
-                      {SAMPLE_VIEWS.map(view => (
-                        <button key={view.id} type="button"
-                          className={`viewer-mode-btn ${sampleView === view.id ? 'active' : ''}`}
-                          onClick={() => setSampleView(view.id)}
-                          aria-pressed={sampleView === view.id}>
-                          {view.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="viewer-result-badge">
-                      <div className="viewer-result-label">{sampleView === 'mri' ? 'Original T1CE MRI' : sampleView === 'mask' ? 'Reference tumor mask' : sampleView === 'render' ? '3D MRI + mask overlay' : 'MRI + reference mask'}</div>
-                      <div className="viewer-result-title">{result.tumor_type}</div>
-                      <div className="result-type-tag sample">{result.grade}</div>
-                    </div>
-                    <div className="viewer-model-note">
-                      <CheckCircle2 size={11} /> BraTS 2021 reference annotation · no AI inference
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-            {result && !isSample && !loading && (
-              <div className="viewer-placeholder">
-                <CheckCircle2 size={36} className="viewer-success-icon" />
-                <div>Segmentation completed</div>
-                <div className="viewer-placeholder-detail">The service did not return a preview volume.</div>
-              </div>
-            )}
+            {!preview && <div className="viewer-placeholder">
+              <Brain size={48} style={{ margin: '0 auto 16px', opacity: 0.2 }} />
+              <div>No imaging data loaded</div>
+              <div className="viewer-placeholder-detail">Open the BraTS sample or preview your own NIfTI files.</div>
+            </div>}
+            {preview && <>
+              <canvas ref={canvasRef} aria-label="Interactive MRI and segmentation preview" style={{ width: '100%', height: '100%', display: 'block' }} />
+              {viewerStatus === 'loading' && <div className="viewer-loading">Loading MRI volumes…</div>}
+              {viewerStatus === 'error' && <div className="viewer-placeholder viewer-error"><AlertTriangle size={25} /> Could not display NIfTI data.</div>}
+              {viewerStatus === 'ready' && <>
+                <div className="viewer-toolbar" role="group" aria-label="MRI preview controls">
+                  {viewOptions.map(option => (
+                    <button key={option.id} type="button" className={`viewer-mode-btn ${viewMode === option.id ? 'active' : ''}`}
+                      onClick={() => setViewMode(option.id)} aria-pressed={viewMode === option.id}>{option.label}</button>
+                  ))}
+                </div>
+                {sampleLoaded && <div className="viewer-result-badge">
+                  <div className="viewer-result-label">Reference annotation · no AI inference</div>
+                  <div className="viewer-result-title">{SAMPLE_SEGMENTATION.tumor_type}</div>
+                </div>}
+                {isLocalPreview && <div className="viewer-model-note"><CheckCircle2 size={11} /> Local browser preview · not a model prediction</div>}
+              </>}
+            </>}
           </div>
         </div>
 
-        {/* ── Right: Stats Panel ── */}
         <div className="seg-panel">
-          <div className="seg-panel-header"><FileText size={13} /> {isSample ? 'Sample Metrics' : 'Inference Metrics'}</div>
+          <div className="seg-panel-header"><FileOutput size={13} /> Output</div>
           <div className="seg-panel-body">
-            {!result ? (
-              <div style={{ fontSize: 13, color: 'var(--text-label)', textAlign: 'center', marginTop: 32 }}>
-                Run segmentation to view metrics
-              </div>
-            ) : (
+            {sampleLoaded ? (
               <>
-                {isSample && (
-                  <div className="sample-data-note" role="note">
-                    Demo data only. This sample is not linked to {patient.patient_code} and is not saved as a clinical record.
-                  </div>
-                )}
-                <div className="stat-row">
-                  <div className="stat-key">{isSample ? 'Dataset content' : 'Tumor Type'}</div>
-                  <div className="stat-val" style={{ fontSize: 12, maxWidth: 140, textAlign: 'right' }}>{result.tumor_type}</div>
+                <div className="sample-data-note" role="note">
+                  BraTS reference segmentation (ground-truth annotation), not a generated clinical finding.
                 </div>
-                <div className="stat-row">
-                  <div className="stat-key">{isSample ? 'Annotation' : 'Grade'}</div>
-                  <div className="stat-val" style={{ color: isSample ? 'var(--text-bright)' : 'var(--error)' }}>{result.grade}</div>
-                </div>
-                <div className="stat-row">
-                  <div className="stat-key">Location</div>
-                  <div className="stat-val" style={{ fontSize: 12, maxWidth: 140, textAlign: 'right' }}>{result.location}</div>
-                </div>
-                <div className="stat-row">
-                  <div className="stat-key">Volume</div>
-                  <div className="stat-val">{formatMetric(result.volume_cm3 ?? result.volume, ' cm³')}</div>
-                </div>
-                <div className="stat-row">
-                  <div className="stat-key">Surface Area</div>
-                  <div className="stat-val">{formatMetric(result.surface_area, ' mm²')}</div>
-                </div>
-                {result.confidence != null && (
-                  <div style={{ paddingTop: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span className="stat-key">AI Confidence</span>
-                      <span className="stat-val" style={{ color: 'var(--success)' }}>{result.confidence}%</span>
-                    </div>
-                    <div className="confidence-bar">
-                      <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
-                    </div>
-                  </div>
-                )}
-
-                {!isSample && (
-                  <button className="report-btn" onClick={generateReport}>
-                    <FileText size={14} /> Generate Pathology Report
-                  </button>
-                )}
+                <div className="stat-row"><span className="stat-key">MRI input</span><span className="stat-val">T1CE sample</span></div>
+                <div className="stat-row"><span className="stat-key">Mask output</span><span className="stat-val">Reference</span></div>
+                <div className="stat-row"><span className="stat-key">Sample volume (illustrative)</span><span className="stat-val">{SAMPLE_SEGMENTATION.volume_cm3} cm³</span></div>
+                <a className="report-btn" href="/data/BraTS2021_00000/BraTS2021_00000_seg.nii.gz" download="BraTS2021_00000_reference_mask.nii.gz">
+                  <Download size={14} /> Download reference mask
+                </a>
               </>
+            ) : source === 'files' ? (
+              <>
+                <div className="stat-row"><span className="stat-key">MRI files selected</span><span className="stat-val">{MRI_MODALITIES.filter(({ id }) => files[id] && !getNiftiFileError(files[id])).length} / 4</span></div>
+                <div className="stat-row"><span className="stat-key">Output mask</span><span className="stat-val">{maskFile && !getNiftiFileError(maskFile) ? 'Provided by user' : 'Not available'}</span></div>
+                <p className="seg-service-note">
+                  A segmentation result will appear here after a file-upload-capable model API is integrated.
+                  Uploaded masks shown here are user-supplied, not AI-generated.
+                </p>
+                {maskFile && !getNiftiFileError(maskFile) && <button className="report-btn" type="button" onClick={downloadMask}>
+                  <Download size={14} /> Download selected mask
+                </button>}
+              </>
+            ) : (
+              <div className="sample-data-note">Open the reference sample to inspect the annotated output.</div>
             )}
           </div>
         </div>
