@@ -49,10 +49,6 @@ def _valid_dicom_zip(file):
                 # A conservative DICOM Part-10 check; non-Part-10 raw streams
                 # are intentionally not accepted by this public demo upload.
                 with archive.open(entry) as stream:
-                    if len(stream.read(132)) != 132:
-                        return False
-                    stream.seek(0) if stream.seekable() else None
-                with archive.open(entry) as stream:
                     head = stream.read(132)
                     if head[128:132] != b"DICM":
                         return False

@@ -4,7 +4,7 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ValidationError, APIException
+from rest_framework.exceptions import APIException
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -76,7 +76,7 @@ class DatasetContributionListCreateView(generics.ListCreateAPIView):
                     record.object_file.save(safe_name, uploaded, save=False)
                     uploaded_names.append((record.object_file.storage, record.object_file.name))
                     record.save()
-        except (OSError, ValueError, RuntimeError, Exception) as error:
+        except Exception as error:
             # Roll back any already-uploaded objects if another upload or DB write fails.
             for storage, key in uploaded_names:
                 try:
