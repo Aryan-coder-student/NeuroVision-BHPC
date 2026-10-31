@@ -37,3 +37,9 @@ test('prevents confusing folder selection with a file path', () => {
   const files = braTSFiles().map(({name, size}) => ({ name, size, webkitRelativePath: '' }));
   assert.match(resolveBraTSFolder(files).error, /entire folder/);
 });
+
+test('rejects modalities combined from different BraTS studies', () => {
+  const mixed = braTSFiles();
+  mixed[2] = file('BraTS2021_00001_t2.nii.gz');
+  assert.match(resolveBraTSFolder(mixed).error, /different study/);
+});
