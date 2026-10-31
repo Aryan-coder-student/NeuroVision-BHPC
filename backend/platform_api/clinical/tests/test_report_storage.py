@@ -5,12 +5,31 @@ from unittest.mock import patch
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, override_settings
 
+from clinical.report_serializers import SegmentationReportSaveSerializer
 from clinical.storage import PrivateReportStorage
 
 
 class ReportStorageBackendTests(SimpleTestCase):
+    @override_settings(REPORT_SNAPSHOT_MAX_BYTES=3 * 1024 * 1024 + 2)
+    @patch("clinical.report_serializers.validate_snapshot_png")
+    def test_snapshot_serializer_uses_configured_size_limit(self, validate_png):
+        snapshot = SimpleUploadedFile(
+            "viewer.png",
+            b"x" * (3 * 1024 * 1024 + 1),
+            content_type="image/png",
+        )
+
+        serializer = SegmentationReportSaveSerializer(data={
+            "report_token": "signed-proof",
+            "snapshot": snapshot,
+        })
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        validate_png.assert_called_once()
+
     def test_defaults_to_private_local_media_for_development(self):
         with tempfile.TemporaryDirectory() as root:
             with override_settings(

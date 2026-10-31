@@ -109,32 +109,33 @@ export default function Segmentation() {
   }, [viewMode, viewerStatus, preview, hasMask]);
 
   const chooseSource = next => {
+    if (savingReport) return;
     inferenceSequenceRef.current += 1;
     setRunning(false);
     setSource(next);
     setPreview(null);
     setInferenceResult(null);
     setRecordedStudy(null);
-    setSavingReport(false);
     setViewerStatus('idle');
     setViewMode(next === 'sample' ? 'overlay' : 'mri');
     setError('');
   };
 
   const chooseFolder = fileList => {
+    if (savingReport) return;
     inferenceSequenceRef.current += 1;
     setRunning(false);
     const selected = resolveBraTSFolder(fileList);
     setFolder(selected);
     setInferenceResult(null);
     setRecordedStudy(null);
-    setSavingReport(false);
     setPreview(null);
     setViewerStatus('idle');
     setError('');
   };
 
   const showSample = () => {
+    if (savingReport) return;
     setViewMode('overlay');
     setInferenceResult(null);
     setError('');
@@ -142,7 +143,7 @@ export default function Segmentation() {
   };
 
   const showFolder = () => {
-    if (folder.error || !folder.files.t1ce) return;
+    if (savingReport || folder.error || !folder.files.t1ce) return;
     setViewMode('mri');
     setError('');
     setPreview({ type: 'local', files: folder.files });
@@ -151,7 +152,7 @@ export default function Segmentation() {
   const canRecordStudy = Boolean(org);
 
   const recordStudy = async () => {
-    if (!complete || recording || recordedStudy || !canRecordStudy) return;
+    if (!complete || recording || recordedStudy || savingReport || !canRecordStudy) return;
     const sequence = inferenceSequenceRef.current;
     setRecording(true);
     setError('');
@@ -225,7 +226,7 @@ export default function Segmentation() {
   };
 
   const runAI = async () => {
-    if (!complete || !modelId || running || recording) return;
+    if (!complete || !modelId || running || recording || savingReport) return;
     const sequence = ++inferenceSequenceRef.current;
     setRunning(true);
     setError('');
@@ -272,11 +273,11 @@ export default function Segmentation() {
             <fieldset className="seg-source-picker">
               <legend className="field-label">Data source</legend>
               <label className={`seg-source-option ${source === 'sample' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" disabled={recording} checked={source === 'sample'} onChange={() => chooseSource('sample')} />
+                <input type="radio" name="segmentation-source" disabled={recording || savingReport} checked={source === 'sample'} onChange={() => chooseSource('sample')} />
                 Built-in BraTS sample
               </label>
               <label className={`seg-source-option ${source === 'folder' ? 'selected' : ''}`}>
-                <input type="radio" name="segmentation-source" disabled={recording} checked={source === 'folder'} onChange={() => chooseSource('folder')} />
+                <input type="radio" name="segmentation-source" disabled={recording || savingReport} checked={source === 'folder'} onChange={() => chooseSource('folder')} />
                 Select BraTS MRI folder
               </label>
             </fieldset>
@@ -285,7 +286,7 @@ export default function Segmentation() {
                 <div className="sample-data-note" role="note">
                   Reference MRI and dataset annotation only. No AI inference or patient-specific prediction.
                 </div>
-                <button className="run-seg-btn" type="button" onClick={showSample}><ScanLine size={14} /> Open 3D reference sample</button>
+                <button className="run-seg-btn" type="button" disabled={savingReport} onClick={showSample}><ScanLine size={14} /> Open 3D reference sample</button>
               </>
             ) : (
               <>
@@ -305,7 +306,7 @@ export default function Segmentation() {
                   multiple
                   webkitdirectory=""
                   directory=""
-                  disabled={recording}
+                  disabled={recording || savingReport}
                   onChange={event => chooseFolder(event.target.files)}
                 />
                 {folder.error && <p className="seg-file-error" role="alert">{folder.error}</p>}
@@ -321,12 +322,12 @@ export default function Segmentation() {
                     </div>
                   ))}
                 </div>
-                <button className="run-seg-btn" type="button" disabled={!complete || running} onClick={showFolder}>
+                <button className="run-seg-btn" type="button" disabled={!complete || running || savingReport} onClick={showFolder}>
                   <Brain size={14} /> Preview selected MRI
                 </button>
                 {canRecordStudy && (
                   <button className="run-seg-btn" type="button"
-                    disabled={!complete || recording || Boolean(recordedStudy)} onClick={recordStudy}>
+                    disabled={!complete || recording || savingReport || Boolean(recordedStudy)} onClick={recordStudy}>
                     {recording ? 'Validating MRI upload…' : recordedStudy ? 'Study metadata recorded' : 'Record imaging study metadata'}
                   </button>
                 )}
@@ -343,14 +344,14 @@ export default function Segmentation() {
                 <div className="field-row" style={{ marginTop: 14 }}>
                   <label className="field-label" htmlFor="seg-model">AI segmentation model</label>
                   <select id="seg-model" className="field-input" value={modelId}
-                    onChange={e => setModelId(e.target.value)} disabled={running || !models.length}>
+                    onChange={e => setModelId(e.target.value)} disabled={running || savingReport || !models.length}>
                     {models.length ? models.map(model => (
                       <option key={model.id} value={model.id}>{model.name} · {model.version}</option>
                     )) : <option value="">Not available</option>}
                   </select>
                 </div>
                 <button className="run-seg-btn" type="button"
-                  disabled={!complete || !modelId || running || recording} onClick={runAI}>
+                  disabled={!complete || !modelId || running || recording || savingReport} onClick={runAI}>
                   {running ? <><Loader size={14} className="spin" /> Running segmentation…</> : <><ScanLine size={14} /> Run AI Segmentation</>}
                 </button>
                 {catalogError && <p className="seg-service-note" role="status">{catalogError}</p>}
@@ -379,7 +380,7 @@ export default function Segmentation() {
                 <div className="viewer-toolbar" role="group" aria-label="MRI visualization modes">
                   {modes.map(mode => (
                     <button type="button" key={mode.id} className={`viewer-mode-btn ${viewMode === mode.id ? 'active' : ''}`}
-                      onClick={() => setViewMode(mode.id)} aria-pressed={viewMode === mode.id}>{mode.label}</button>
+                      disabled={savingReport} onClick={() => setViewMode(mode.id)} aria-pressed={viewMode === mode.id}>{mode.label}</button>
                   ))}
                 </div>
                 <div className="viewer-model-note">

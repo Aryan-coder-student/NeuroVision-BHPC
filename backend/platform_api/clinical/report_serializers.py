@@ -1,4 +1,5 @@
 """Read-only report summaries and snapshot submission validation."""
+from django.conf import settings
 from rest_framework import serializers
 
 from .models import SegmentationReport
@@ -29,8 +30,8 @@ class SegmentationReportSaveSerializer(serializers.Serializer):
     imaging_study_id = serializers.UUIDField(required=False, allow_null=True)
 
     def validate_snapshot(self, image):
-        if image.size > 3 * 1024 * 1024:
-            raise serializers.ValidationError("Snapshot exceeds the 3 MB limit.")
+        if image.size > settings.REPORT_SNAPSHOT_MAX_BYTES:
+            raise serializers.ValidationError("Snapshot exceeds the configured upload limit.")
         if image.content_type != "image/png":
             raise serializers.ValidationError("Only PNG snapshots are supported.")
         validate_snapshot_png(image.read())

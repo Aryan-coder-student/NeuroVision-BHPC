@@ -108,7 +108,11 @@ class SegmentationReportAPITests(TenantTestCase):
             self.assertEqual(saved.snapshot_image.read(), png_snapshot())
             saved.snapshot_image.close()
             self.assertTrue(Path(saved.snapshot_image.path).is_file())
-            self.assertTrue(str(Path(saved.snapshot_image.path).resolve()).startswith(self.report_media.name))
+            self.assertTrue(
+                Path(saved.snapshot_image.path).resolve().is_relative_to(
+                    Path(self.report_media.name).resolve()
+                )
+            )
             self.assertIn("report-workspace", saved.snapshot_image.name)
             self.assertIn("report-patient", saved.snapshot_image.name)
             self.assertIn(str(self.workspace.id), saved.snapshot_image.name)

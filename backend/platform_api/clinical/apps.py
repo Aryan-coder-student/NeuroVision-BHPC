@@ -8,4 +8,3 @@ class ClinicalConfig(AppConfig):
     def ready(self):
         # Register post-delete cleanup for private report image files.
         from . import signals  # noqa: F401
-
