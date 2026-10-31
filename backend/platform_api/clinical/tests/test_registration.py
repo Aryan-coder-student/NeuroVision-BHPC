@@ -38,7 +38,7 @@ class PatientRegistrationTests(TenantTestCase):
         InstitutionMembership.objects.create(
             user=self.admin,
             institution=self.workspace,
-            role=InstitutionMembership.Role.ADMIN,
+
             is_active=True,
         )
         self.client.cookies["access_token"] = str(

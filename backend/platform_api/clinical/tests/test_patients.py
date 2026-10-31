@@ -46,11 +46,11 @@ class PatientTenantIsolationTests(TenantTestCase):
         for institution in (self.apollo, self.aiims):
             InstitutionMembership.objects.create(
                 user=self.admin, institution=institution,
-                role=InstitutionMembership.Role.ADMIN, is_active=True,
+                is_active=True,
             )
         InstitutionMembership.objects.create(
             user=self.member, institution=self.apollo,
-            role=InstitutionMembership.Role.MEMBER, is_active=True,
+            is_active=True,
         )
         self.url = "/api/v1/tenant/patients/"
 

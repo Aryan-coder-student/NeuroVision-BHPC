@@ -8,7 +8,7 @@
 | Date | Native date input | `DESIGN.md` and `premium-ui.json` | Platform calendar and locale accepted | India calendar-date boundary and browser smoke test |
 | Form | Page form with shared field tokens | `DESIGN.md` form contract | Identity OTP and patient registration | Inline errors, first-invalid focus, duplicate-submit check |
 | Scrollbar | Global document theme | `frontend/src/index.css` | Stable gutter on tables/tabs | Strict audit and browser overflow check |
-| CRUD | Tenant patient API and registry | `clinical.views.PatientViewSet` | Admin writes, member reads | Tenant isolation integration tests |
+| CRUD | Tenant patient API and registry | `clinical.views.PatientViewSet` | Active workspace membership for reads and writes | Tenant isolation integration tests |
 | Cross-workspace patient directory | Central My Patients route | `tenant.patient_views.MyPatientsView` | Search, workspace filter, pagination | Active-membership integration tests |
 
 ## Scope invariants
@@ -28,7 +28,7 @@
 ## Identity grant
 
 - Email OTP proves control of an email contact. It does not prove legal identity.
-- Only organization administrators may start or verify a grant; members may read its status.
+- Any authenticated user with active workspace membership may start or verify a grant, or read its status.
 - A verified global identity may have separate grants in multiple organizations. Those grants do not share clinical records.
 - The client receives only a masked email destination, challenge ID, expiry, status, and verification timestamp. Raw email is encrypted at rest and is not returned by grant APIs.
 - A verified patient link cannot be silently replaced with another email.

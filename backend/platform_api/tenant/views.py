@@ -38,5 +38,4 @@ class InstitutionViewSet(ModelViewSet):
         InstitutionMembership.objects.create(
             user=self.request.user,
             institution=institution,
-            role=InstitutionMembership.Role.ADMIN,
         )

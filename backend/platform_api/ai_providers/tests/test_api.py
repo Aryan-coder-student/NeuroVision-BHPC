@@ -70,7 +70,7 @@ class InferenceAPITests(TenantTestCase):
         InstitutionMembership.objects.create(
             user=self.member,
             institution=self.workspace,
-            role=InstitutionMembership.Role.MEMBER,
+
             is_active=True,
         )
         with schema_context(self.workspace.schema_name):
