@@ -98,6 +98,7 @@ class PatientGrantVerifySerializer(serializers.Serializer):
 class ImagingStudyReadSerializer(serializers.ModelSerializer):
     """Metadata-only record: files, filenames and predictions are not persisted."""
 
+    patient_id = serializers.UUIDField(read_only=True)
     storage_status = serializers.SerializerMethodField()
 
     class Meta:
