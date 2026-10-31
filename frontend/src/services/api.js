@@ -233,6 +233,46 @@ export async function runSegmentation(workspaceId, patientId, modalityFiles, mod
   return res.data;
 }
 
+/** Reports retain verified inference metadata and a static 3D PNG, never MRI bytes. */
+export async function fetchSegmentationReports(workspaceId, patientId, page = 1) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/segmentation-reports/`,
+    params: { page },
+  });
+  return res.data;
+}
+
+export async function fetchSegmentationReport(workspaceId, patientId, reportId) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/segmentation-reports/${reportId}/`,
+  });
+  return res.data;
+}
+
+export async function fetchSegmentationSnapshot(workspaceId, patientId, reportId) {
+  const res = await tenantRequest(workspaceId, {
+    method: 'get',
+    url: `/tenant/patients/${patientId}/segmentation-reports/${reportId}/snapshot/`,
+    responseType: 'blob',
+  });
+  return res.data;
+}
+
+export async function saveSegmentationReport(workspaceId, patientId, reportToken, snapshot, imagingStudyId) {
+  const data = new FormData();
+  data.append('report_token', reportToken);
+  data.append('snapshot', snapshot, 'segmentation-view.png');
+  if (imagingStudyId) data.append('imaging_study_id', imagingStudyId);
+  const res = await tenantRequest(workspaceId, {
+    method: 'post',
+    url: `/tenant/patients/${patientId}/segmentation-reports/`,
+    data,
+  });
+  return res.data;
+}
+
 /** Tenant-authorized BLIP VQA routed through Django. */
 export async function sendVQAQuery(workspaceId, patientId, query, imageBlob, modelId) {
   const formData = new FormData();
